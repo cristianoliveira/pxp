@@ -1,27 +1,27 @@
 # Purpose
 
-`internal/imagecontext` provides optional OpenRouter and OpenAI visual descriptions for comparison regions. It is advisory context layered on top of deterministic image evidence.
+`internal/imagecontext` provides optional visual descriptions for comparison regions through OpenRouter or OpenAI-compatible providers.
 
 # Boundaries
 
-The package owns provider configuration, request serialization, response parsing, and provider selection. It must not change image metrics, classify deterministic differences, or become required for comparison.
+It owns provider configuration, request/response serialization, selection, and the advisory client contract. It must not change deterministic metrics, classify differences, or become required for a comparison.
 
 # Connections
 
-- [pxp orchestration](internal/pixelperfectcmd/AGENTS.md): requests advisory descriptions after deterministic analysis.
-- [Image comparison](internal/imagediff/AGENTS.md): consumes region identity and bounds but remains the source of truth for metrics.
+- [Command orchestration](internal/pixelperfectcmd/AGENTS.md): enables and configures advisory descriptions after comparison.
+- [Image comparison](internal/imagediff/AGENTS.md): supplies region identity and bounds that providers describe.
 
 # Landmarks
 
-- `internal/imagecontext/client.go:NewClient`: selects a configured provider.
-- `internal/imagecontext/openrouter.go:OpenRouter.Describe`: requests region descriptions from OpenRouter.
-- `internal/imagecontext/openai.go:OpenAI.Describe`: requests region descriptions from OpenAI.
+- `internal/imagecontext/client.go:NewClient`: selects a configured provider client.
+- `internal/imagecontext/openrouter.go:OpenRouter.Describe`: sends region context to OpenRouter.
+- `internal/imagecontext/openai.go:OpenAI.Describe`: sends region context to OpenAI.
 - `internal/imagecontext/config.go:LoadProviderConfig`: resolves provider configuration.
 
 # Boundary flows
 
-- Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/imagecontext/client.go:Client` via `internal/pixelperfectcmd/command.go:NewCommand`; value: `[]imagecontext.Region`.
+- Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/imagecontext/openrouter.go:OpenRouter.Describe` via `internal/pixelperfectcmd/command.go:NewCommand`; value: `[]imagecontext.Region`.
 
 # Placement
 
-Keep new providers behind the `Client` contract. Put deterministic image analysis in `imagediff` and command flags/orchestration in `pixelperfectcmd`.
+Keep each provider behind the shared client contract. Put deterministic analysis in `imagediff` and command flags in `pixelperfectcmd`.

@@ -1,15 +1,21 @@
 # Purpose
 
-`internal/` contains the private capabilities behind `pxp`.
+`internal/` contains the private runtime capabilities behind [the `pxp` executable](cmd/AGENTS.md).
 
 # Boundaries
 
-- `internal/pixelperfectcmd` owns command options and orchestration.
-- `internal/imagediff` owns deterministic PNG comparison.
-- `internal/imagecontext` owns optional visual descriptions.
-- `internal/annotations` owns annotation data and intersection math.
-- `internal/pixelperfectreport` owns HTML report rendering.
-- `internal/output` owns structured output and filesystem artifacts.
-- `internal/cli` owns shared Cobra error and output helpers.
+- [Command orchestration](internal/pixelperfectcmd/AGENTS.md) owns options, validation, and workflow sequencing.
+- [Image comparison](internal/imagediff/AGENTS.md) owns deterministic PNG evidence.
+- [Visual context](internal/imagecontext/AGENTS.md) owns optional provider protocols.
+- [Annotations](internal/annotations/AGENTS.md) owns annotation data integrity and geometry.
+- [Reports](internal/pixelperfectreport/AGENTS.md) owns HTML presentation.
+- [Output](internal/output/AGENTS.md) owns structured output and filesystem artifacts.
+- [CLI runtime](internal/cli/AGENTS.md) owns shared process helpers and error contracts.
 
-Keep external integrations at the edge and image metrics independent of them.
+# Connections
+
+The command package coordinates capabilities. Core image evidence may consume annotation geometry and output file helpers; provider and report packages consume comparison results without changing their meaning.
+
+# Placement
+
+Place a responsibility in the narrowest package that owns its decisions. Keep composition in `pixelperfectcmd`, infrastructure adapters at the edges, and deterministic analysis independent of external services.
