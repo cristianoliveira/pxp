@@ -11,6 +11,46 @@ import (
 	"github.com/cristianoliveira/pxp/internal/artifact"
 )
 
+type documentDTO struct {
+	Version         int             `json:"version"`
+	CoordinateSpace sizeDTO         `json:"coordinateSpace"`
+	Annotations     []annotationDTO `json:"annotations"`
+}
+type sizeDTO struct {
+	Width  int `json:"width"`
+	Height int `json:"height"`
+}
+type boundsDTO struct {
+	X      int `json:"x"`
+	Y      int `json:"y"`
+	Width  int `json:"width"`
+	Height int `json:"height"`
+}
+type annotationDTO struct {
+	ID       string         `json:"id"`
+	Label    string         `json:"label,omitempty"`
+	Bounds   boundsDTO      `json:"bounds"`
+	Metadata map[string]any `json:"metadata,omitempty"`
+}
+
+func toDTO(document annotations.Document) documentDTO {
+	return documentDTO{Version: document.Version, CoordinateSpace: sizeDTO{Width: document.CoordinateSpace.Width, Height: document.CoordinateSpace.Height}, Annotations: func() []annotationDTO {
+		items := make([]annotationDTO, len(document.Annotations))
+		for index, annotation := range document.Annotations {
+			items[index] = annotationDTO{ID: annotation.ID, Label: annotation.Label, Bounds: boundsDTO{X: annotation.Bounds.X, Y: annotation.Bounds.Y, Width: annotation.Bounds.Width, Height: annotation.Bounds.Height}, Metadata: annotation.Metadata}
+		}
+		return items
+	}()}
+}
+
+func fromDTO(document documentDTO) annotations.Document {
+	result := annotations.Document{Version: document.Version, CoordinateSpace: annotations.Size{Width: document.CoordinateSpace.Width, Height: document.CoordinateSpace.Height}, Annotations: make([]annotations.Annotation, len(document.Annotations))}
+	for index, annotation := range document.Annotations {
+		result.Annotations[index] = annotations.Annotation{ID: annotation.ID, Label: annotation.Label, Bounds: annotations.Bounds{X: annotation.Bounds.X, Y: annotation.Bounds.Y, Width: annotation.Bounds.Width, Height: annotation.Bounds.Height}, Metadata: annotation.Metadata}
+	}
+	return result
+}
+
 // Write persists an annotation document as indented JSON.
 func Write(path string, document annotations.Document) error {
 	file, err := artifact.CreateFile(path)
@@ -19,7 +59,7 @@ func Write(path string, document annotations.Document) error {
 	}
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
-	encodeErr := encoder.Encode(document)
+	encodeErr := encoder.Encode(toDTO(document))
 	closeErr := file.Close()
 	if encodeErr != nil {
 		return fmt.Errorf("write annotations: %w", encodeErr)
@@ -39,13 +79,14 @@ func Load(path string) (*annotations.Document, error) {
 	defer func() { _ = file.Close() }()
 	decoder := json.NewDecoder(file)
 	decoder.DisallowUnknownFields()
-	var document annotations.Document
-	if err := decoder.Decode(&document); err != nil {
+	var wire documentDTO
+	if err := decoder.Decode(&wire); err != nil {
 		return nil, fmt.Errorf("decode annotations: %w", err)
 	}
 	if err := rejectTrailingJSON(decoder); err != nil {
 		return nil, err
 	}
+	document := fromDTO(wire)
 	if err := document.Validate(); err != nil {
 		return nil, err
 	}

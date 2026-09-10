@@ -4,9 +4,12 @@ import (
 	"go/parser"
 	"go/token"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/cristianoliveira/pxp/internal/annotations"
 )
 
 func TestDomainPackagesHaveNoPersistenceDependencies(t *testing.T) {
@@ -26,6 +29,16 @@ func TestDomainPackagesHaveNoPersistenceDependencies(t *testing.T) {
 				if imports[forbidden] {
 					t.Errorf("%s domain imports persistence mechanism %q", packageName, forbidden)
 				}
+			}
+		}
+	}
+}
+
+func TestDomainTypesDoNotExposeJSONTags(t *testing.T) {
+	for _, typ := range []reflect.Type{reflect.TypeOf(annotations.Size{}), reflect.TypeOf(annotations.Bounds{}), reflect.TypeOf(annotations.Annotation{}), reflect.TypeOf(annotations.Document{})} {
+		for index := 0; index < typ.NumField(); index++ {
+			if typ.Field(index).Tag.Get("json") != "" {
+				t.Errorf("%s.%s has a serialization tag", typ.Name(), typ.Field(index).Name)
 			}
 		}
 	}

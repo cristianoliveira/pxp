@@ -4,7 +4,7 @@
 
 # Boundaries
 
-The package is the source of truth for measurements. It does not open files, encode PNGs, parse Cobra flags, call visual providers, render HTML, or decide command exit policy. File/path adapters live in [imageio](internal/imageio/AGENTS.md).
+The package is the source of truth for measurements. It does not open files, encode PNGs, parse Cobra flags, call visual providers, render HTML, or decide command exit policy. File/path adapters live in [imageio](internal/imageio/AGENTS.md). JSON tags remain on result structs as the existing structured-output contract; removing them requires a coordinated output DTO migration and is explicitly deferred from TASK-0005.
 
 # Connections
 

@@ -3,36 +3,32 @@ package annotations
 import "fmt"
 
 type Size struct {
-	Width  int `json:"width"`
-	Height int `json:"height"`
+	Width  int
+	Height int
 }
-
 type Bounds struct {
-	X      int `json:"x"`
-	Y      int `json:"y"`
-	Width  int `json:"width"`
-	Height int `json:"height"`
+	X      int
+	Y      int
+	Width  int
+	Height int
 }
-
 type Annotation struct {
-	ID       string         `json:"id"`
-	Label    string         `json:"label,omitempty"`
-	Bounds   Bounds         `json:"bounds"`
-	Metadata map[string]any `json:"metadata,omitempty"`
+	ID       string
+	Label    string
+	Bounds   Bounds
+	Metadata map[string]any
 }
-
 type Document struct {
-	Version         int          `json:"version"`
-	CoordinateSpace Size         `json:"coordinateSpace"`
-	Annotations     []Annotation `json:"annotations"`
+	Version         int
+	CoordinateSpace Size
+	Annotations     []Annotation
 }
-
 type Match struct {
-	ID                          string         `json:"id"`
-	Label                       string         `json:"label,omitempty"`
-	RegionIntersectionRatio     float64        `json:"regionIntersectionRatio"`
-	AnnotationIntersectionRatio float64        `json:"annotationIntersectionRatio"`
-	Metadata                    map[string]any `json:"metadata,omitempty"`
+	ID                          string
+	Label                       string
+	RegionIntersectionRatio     float64
+	AnnotationIntersectionRatio float64
+	Metadata                    map[string]any
 }
 
 // Validate checks the domain invariants without reading or writing external data.
@@ -74,11 +70,7 @@ func (document Document) Intersections(region Bounds) []Match {
 		if area == 0 {
 			continue
 		}
-		matches = append(matches, Match{
-			ID: annotation.ID, Label: annotation.Label, Metadata: annotation.Metadata,
-			RegionIntersectionRatio:     float64(area) / float64(region.Width*region.Height),
-			AnnotationIntersectionRatio: float64(area) / float64(annotation.Bounds.Width*annotation.Bounds.Height),
-		})
+		matches = append(matches, Match{ID: annotation.ID, Label: annotation.Label, Metadata: annotation.Metadata, RegionIntersectionRatio: float64(area) / float64(region.Width*region.Height), AnnotationIntersectionRatio: float64(area) / float64(annotation.Bounds.Width*annotation.Bounds.Height)})
 	}
 	return matches
 }

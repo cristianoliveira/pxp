@@ -24,9 +24,14 @@ func TestLoadRejectsMissingMalformedAndTrailingJSON(t *testing.T) {
 	assert.EqualError(t, err, "decode annotations: multiple JSON values")
 }
 
+func TestWriteReportsArtifactCreationFailure(t *testing.T) {
+	err := Write(filepath.Join("/dev/null", "nested", "annotations.json"), annotations.Document{Version: 1, CoordinateSpace: annotations.Size{Width: 1, Height: 1}})
+	assert.Error(t, err)
+}
+
 func TestWriteCreatesParentAndRoundTripsDocument(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "nested", "annotations.json")
-	document := annotations.Document{Version: 1, CoordinateSpace: annotations.Size{Width: 10, Height: 10}}
+	document := annotations.Document{Version: 1, CoordinateSpace: annotations.Size{Width: 10, Height: 10}, Annotations: []annotations.Annotation{}}
 
 	require.NoError(t, Write(path, document))
 	loaded, err := Load(path)
