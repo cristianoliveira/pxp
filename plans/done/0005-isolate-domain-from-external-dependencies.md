@@ -1,7 +1,7 @@
 ---
 id: TASK-0005
 title: Isolate domain logic from all external dependencies
-status: doing
+status: done
 depends_on: [TASK-0002,TASK-0004]
 priority: normal
 tags: []
