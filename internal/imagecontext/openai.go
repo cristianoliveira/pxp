@@ -43,37 +43,20 @@ func (o *OpenAI) Describe(ctx context.Context, input Input) (Result, error) {
 		return Result{}, fmt.Errorf("request visual context: %w", err)
 	}
 	defer func() { _ = response.Body.Close() }()
-	var envelope struct {
-		Output []struct {
-			Content []struct {
-				Type string `json:"type"`
-				Text string `json:"text"`
-			} `json:"content"`
-		} `json:"output"`
-		Error *struct {
-			Message string `json:"message"`
-		} `json:"error"`
-	}
-	if err := json.NewDecoder(response.Body).Decode(&envelope); err != nil {
-		return Result{}, fmt.Errorf("decode visual context response: %w", err)
-	}
-	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		if envelope.Error != nil {
-			return Result{}, fmt.Errorf("OpenAI: %s", envelope.Error.Message)
-		}
-		return Result{}, fmt.Errorf("OpenAI returned HTTP %d", response.StatusCode)
-	}
-	content := ""
-	for _, output := range envelope.Output {
-		for _, part := range output.Content {
-			if part.Type == "output_text" {
-				content += part.Text
-			}
-		}
-	}
-	regions, err := parseRegionContexts(content, input.Regions)
+
+	envelope, err := decodeOpenAIResponse(response)
 	if err != nil {
 		return Result{}, err
 	}
-	return Result{Provider: "openai", Model: o.model, Advisory: true, Prompt: input.Prompt, Regions: regions}, nil
+	regions, err := parseRegionContexts(envelope.outputText(), input.Regions)
+	if err != nil {
+		return Result{}, err
+	}
+	return Result{
+		Provider: "openai",
+		Model:    o.model,
+		Advisory: true,
+		Prompt:   input.Prompt,
+		Regions:  regions,
+	}, nil
 }
