@@ -23,12 +23,14 @@ type Document struct {
 	CoordinateSpace Size
 	Annotations     []Annotation
 }
+
+// Match is an output contract consumed by structured comparison results.
 type Match struct {
-	ID                          string
-	Label                       string
-	RegionIntersectionRatio     float64
-	AnnotationIntersectionRatio float64
-	Metadata                    map[string]any
+	ID                          string         `json:"id"`
+	Label                       string         `json:"label,omitempty"`
+	RegionIntersectionRatio     float64        `json:"regionIntersectionRatio"`
+	AnnotationIntersectionRatio float64        `json:"annotationIntersectionRatio"`
+	Metadata                    map[string]any `json:"metadata,omitempty"`
 }
 
 // Validate checks the domain invariants without reading or writing external data.
