@@ -1,7 +1,7 @@
 ---
 id: TASK-0004
 title: Separate artifact file helpers from structured output
-status: doing
+status: done
 depends_on: []
 priority: low
 tags: []
