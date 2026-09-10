@@ -14,13 +14,13 @@ It validates annotation documents and computes geometric matches. It does not ow
 
 # Landmarks
 
-- `internal/annotations/annotations.go:Load`: decodes and validates a versioned document.
+- `internal/annotationio/annotationio.go:Load`: decodes JSON and delegates domain validation.
 - `internal/annotations/annotations.go:Document.Intersections`: returns annotation matches for a comparison region.
 - `internal/annotations/annotations.go:Document.Validate`: checks domain invariants without I/O.
 
 # Boundary flows
 
-- Information flow: `internal/annotations/annotations.go:Load` -> `internal/imagediff/image.go:CompareImagesWithThresholds` via `internal/commands/command.go:NewCommand`; value: `annotations.Document`.
+- Information flow: `internal/annotationio/annotationio.go:Load` -> `internal/imagediff/image.go:DecodedImages.Compare` via `internal/commands/compare.go:runComparisonCommand`; value: `annotations.Document`.
 
 # Placement
 

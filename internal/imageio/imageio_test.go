@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/cristianoliveira/pxp/internal/imagediff"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,6 +30,21 @@ func TestCompareImagesWritesMaskAtAdapterBoundary(t *testing.T) {
 	require.Equal(t, mask, result.Mask)
 	_, err = os.Stat(mask)
 	require.NoError(t, err)
+}
+
+func TestLoadDecodedImagesRejectsMissingAndMalformedFiles(t *testing.T) {
+	dir := t.TempDir()
+	_, err := LoadDecodedImages(filepath.Join(dir, "missing.png"), filepath.Join(dir, "actual.png"))
+	assert.ErrorContains(t, err, "decode reference")
+	invalid := filepath.Join(dir, "invalid.png")
+	require.NoError(t, os.WriteFile(invalid, []byte("not png"), 0o600))
+	_, err = LoadDecodedImages(invalid, invalid)
+	assert.ErrorContains(t, err, "decode reference")
+}
+
+func TestWritePNGReportsArtifactCreationFailure(t *testing.T) {
+	err := WritePNG(filepath.Join("/dev/null", "nested", "mask.png"), image.NewNRGBA(image.Rect(0, 0, 1, 1)))
+	assert.Error(t, err)
 }
 
 func TestIgnoredRegionsFromMaskKeepsDomainBoundsAtAdapterBoundary(t *testing.T) {
