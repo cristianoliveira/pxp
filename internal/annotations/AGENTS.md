@@ -10,7 +10,7 @@ It validates annotation documents and computes geometric matches. It does not ow
 
 - [Command orchestration](internal/pixelperfectcmd/AGENTS.md): loads and dimension-checks annotation documents at the command boundary.
 - [Image comparison](internal/imagediff/AGENTS.md): consumes intersection matches to enrich comparison regions.
-- [Output](internal/output/AGENTS.md): provides safe file creation used when writing the JSON contract.
+- [Artifact persistence](internal/artifact/AGENTS.md): provides safe file creation used when writing the JSON contract.
 
 # Landmarks
 

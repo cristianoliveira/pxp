@@ -10,7 +10,8 @@
 - [Visual context](internal/imagecontext/AGENTS.md) owns optional provider-backed descriptions.
 - [Annotations](internal/annotations/AGENTS.md) owns annotation contracts and geometry.
 - [Reports](internal/pixelperfectreport/AGENTS.md) owns HTML presentation.
-- [Output](internal/output/AGENTS.md) owns structured rendering and artifact files.
+- [Output](internal/output/AGENTS.md) owns structured rendering and serialization.
+- [Artifact persistence](internal/artifact/AGENTS.md) owns filesystem artifact creation and writing.
 - [CLI runtime](internal/cli/AGENTS.md) owns shared process and error behavior.
 - [Skill workflows](skills/AGENTS.md) and [evaluation controls](tests/evals/AGENTS.md) are agent-facing, not runtime code.
 

@@ -9,7 +9,7 @@ It owns presentation and safe embedding. It consumes comparison values and paths
 # Connections
 
 - [Image comparison](internal/imagediff/AGENTS.md): provides `ImageComparison` and image artifact paths.
-- [Output](internal/output/AGENTS.md): provides safe filesystem writing.
+- [Artifact persistence](internal/artifact/AGENTS.md): provides safe filesystem writing.
 - [Command orchestration](internal/pixelperfectcmd/AGENTS.md): assembles report input after command processing.
 
 # Landmarks

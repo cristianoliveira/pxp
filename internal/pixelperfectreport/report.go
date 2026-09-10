@@ -6,8 +6,8 @@ import (
 	"html/template"
 	"os"
 
+	"github.com/cristianoliveira/pxp/internal/artifact"
 	"github.com/cristianoliveira/pxp/internal/imagediff"
-	"github.com/cristianoliveira/pxp/internal/output"
 )
 
 type Input struct {
@@ -34,7 +34,7 @@ func Write(path string, input Input) error {
 	if err != nil {
 		return err
 	}
-	return output.WriteFile(path, html, 0o600)
+	return artifact.WriteFile(path, html, 0o600)
 }
 
 func Render(input Input) ([]byte, error) {
