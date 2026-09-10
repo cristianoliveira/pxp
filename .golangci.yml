@@ -32,10 +32,15 @@ linters:
 
   exclusions:
     rules:
-      # Repeated string literals are normal in test fixtures.
+      # Test fixtures and assertions contain intentionally long serialized values.
       - path: _test\.go$
         linters:
           - goconst
+          - lll
+      # The self-contained HTML template is kept readable as a single template.
+      - path: internal/report/report\.go$
+        linters:
+          - lll
 
 formatters:
   enable:

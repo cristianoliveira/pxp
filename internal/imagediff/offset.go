@@ -25,7 +25,11 @@ type SuggestedOffset struct {
 	Interpretation   string  `json:"interpretation"`
 }
 
-func (images *DecodedImages) SuggestOffset(radius int, region *Bounds, ignored []Bounds) SuggestedOffset {
+func (images *DecodedImages) SuggestOffset(
+	radius int,
+	region *Bounds,
+	ignored []Bounds,
+) SuggestedOffset {
 	reference, actual := images.Reference, images.Actual
 	area := Bounds{Width: reference.Bounds().Dx(), Height: reference.Bounds().Dy()}
 	if region != nil {
@@ -38,7 +42,15 @@ func (images *DecodedImages) SuggestOffset(radius int, region *Bounds, ignored [
 		}
 	}
 	sort.Slice(candidates, func(i, j int) bool {
-		ai, aj := absInt(candidates[i].X)+absInt(candidates[i].Y), absInt(candidates[j].X)+absInt(candidates[j].Y)
+		ai, aj := absInt(
+			candidates[i].X,
+		)+absInt(
+			candidates[i].Y,
+		), absInt(
+			candidates[j].X,
+		)+absInt(
+			candidates[j].Y,
+		)
 		if ai != aj {
 			return ai < aj
 		}
@@ -51,7 +63,14 @@ func (images *DecodedImages) SuggestOffset(radius int, region *Bounds, ignored [
 	best := SuggestedOffset{RMSE: math.Inf(1)}
 	baselineRMSE := math.Inf(1)
 	for _, candidate := range candidates {
-		candidate.RMSE = offsetRMSE(reference, actual, area, ignoredPixels, candidate.X, candidate.Y)
+		candidate.RMSE = offsetRMSE(
+			reference,
+			actual,
+			area,
+			ignoredPixels,
+			candidate.X,
+			candidate.Y,
+		)
 		if candidate.X == 0 && candidate.Y == 0 {
 			baselineRMSE = candidate.RMSE
 		}
@@ -62,7 +81,11 @@ func (images *DecodedImages) SuggestOffset(radius int, region *Bounds, ignored [
 	return interpretSuggestedOffset(best, baselineRMSE, area)
 }
 
-func interpretSuggestedOffset(best SuggestedOffset, baselineRMSE float64, area Bounds) SuggestedOffset {
+func interpretSuggestedOffset(
+	best SuggestedOffset,
+	baselineRMSE float64,
+	area Bounds,
+) SuggestedOffset {
 	best.BaselineRMSE = baselineRMSE
 	best.Interpretation = offsetInterpretationInconclusive
 	if baselineRMSE <= 0 || math.IsInf(baselineRMSE, 0) || math.IsNaN(baselineRMSE) {
@@ -81,14 +104,21 @@ func interpretSuggestedOffset(best SuggestedOffset, baselineRMSE float64, area B
 	return best
 }
 
-func offsetRMSE(reference, actual interface{ At(int, int) color.Color }, area Bounds, ignored ignoredPixelMap, offsetX, offsetY int) float64 {
+func offsetRMSE(
+	reference, actual interface{ At(int, int) color.Color },
+	area Bounds,
+	ignored ignoredPixelMap,
+	offsetX, offsetY int,
+) float64 {
 	var rgbError, alphaError float64
 	compared := 0
 	transparent := false
 	for y := area.Y; y < area.Y+area.Height; y++ {
 		for x := area.X; x < area.X+area.Width; x++ {
 			actualX, actualY := x-offsetX, y-offsetY
-			if actualX < area.X || actualX >= area.X+area.Width || actualY < area.Y || actualY >= area.Y+area.Height || ignored.Contains(x, y) {
+			if actualX < area.X || actualX >= area.X+area.Width || actualY < area.Y ||
+				actualY >= area.Y+area.Height ||
+				ignored.Contains(x, y) {
 				continue
 			}
 			r := color.NRGBAModel.Convert(reference.At(x, y)).(color.NRGBA)

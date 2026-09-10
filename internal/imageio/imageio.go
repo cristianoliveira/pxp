@@ -44,7 +44,13 @@ func LoadDecodedImages(referencePath, actualPath string) (*imagediff.DecodedImag
 		return nil, actual.err
 	}
 	if reference.image.Bounds().Size() != actual.image.Bounds().Size() {
-		return nil, fmt.Errorf("image dimensions differ: reference is %dx%d, actual is %dx%d", reference.image.Bounds().Dx(), reference.image.Bounds().Dy(), actual.image.Bounds().Dx(), actual.image.Bounds().Dy())
+		return nil, fmt.Errorf(
+			"image dimensions differ: reference is %dx%d, actual is %dx%d",
+			reference.image.Bounds().Dx(),
+			reference.image.Bounds().Dy(),
+			actual.image.Bounds().Dx(),
+			actual.image.Bounds().Dy(),
+		)
 	}
 	return &imagediff.DecodedImages{Reference: reference.image, Actual: actual.image}, nil
 }
@@ -74,8 +80,18 @@ func WriteCroppedPNG(inputPath, outputPath string, crop imagediff.Bounds) error 
 	if err != nil {
 		return err
 	}
-	if crop.X < 0 || crop.Y < 0 || crop.Width <= 0 || crop.Height <= 0 || crop.X+crop.Width > img.Bounds().Dx() || crop.Y+crop.Height > img.Bounds().Dy() {
-		return fmt.Errorf("crop %d,%d,%d,%d is outside image bounds %dx%d", crop.X, crop.Y, crop.Width, crop.Height, img.Bounds().Dx(), img.Bounds().Dy())
+	if crop.X < 0 || crop.Y < 0 || crop.Width <= 0 || crop.Height <= 0 ||
+		crop.X+crop.Width > img.Bounds().Dx() ||
+		crop.Y+crop.Height > img.Bounds().Dy() {
+		return fmt.Errorf(
+			"crop %d,%d,%d,%d is outside image bounds %dx%d",
+			crop.X,
+			crop.Y,
+			crop.Width,
+			crop.Height,
+			img.Bounds().Dx(),
+			img.Bounds().Dy(),
+		)
 	}
 	cropped := image.NewNRGBA(image.Rect(0, 0, crop.Width, crop.Height))
 	for y := 0; y < crop.Height; y++ {
@@ -86,19 +102,61 @@ func WriteCroppedPNG(inputPath, outputPath string, crop imagediff.Bounds) error 
 	return WritePNG(outputPath, cropped)
 }
 
-func CompareImages(referencePath, actualPath, maskPath string, threshold uint8) (imagediff.ImageComparison, error) {
-	return CompareImagesWithThresholds(referencePath, actualPath, maskPath, threshold, imagediff.DefaultPerceptualThreshold, nil, nil)
+func CompareImages(
+	referencePath, actualPath, maskPath string,
+	threshold uint8,
+) (imagediff.ImageComparison, error) {
+	return CompareImagesWithThresholds(
+		referencePath,
+		actualPath,
+		maskPath,
+		threshold,
+		imagediff.DefaultPerceptualThreshold,
+		nil,
+		nil,
+	)
 }
 
-func CompareImagesInRegion(referencePath, actualPath, maskPath string, threshold uint8, region *imagediff.Bounds) (imagediff.ImageComparison, error) {
-	return CompareImagesWithThresholds(referencePath, actualPath, maskPath, threshold, imagediff.DefaultPerceptualThreshold, region, nil)
+func CompareImagesInRegion(
+	referencePath, actualPath, maskPath string,
+	threshold uint8,
+	region *imagediff.Bounds,
+) (imagediff.ImageComparison, error) {
+	return CompareImagesWithThresholds(
+		referencePath,
+		actualPath,
+		maskPath,
+		threshold,
+		imagediff.DefaultPerceptualThreshold,
+		region,
+		nil,
+	)
 }
 
-func CompareImagesWithIgnoredRegions(referencePath, actualPath, maskPath string, threshold uint8, region *imagediff.Bounds, ignored []imagediff.Bounds) (imagediff.ImageComparison, error) {
-	return CompareImagesWithThresholds(referencePath, actualPath, maskPath, threshold, imagediff.DefaultPerceptualThreshold, region, ignored)
+func CompareImagesWithIgnoredRegions(
+	referencePath, actualPath, maskPath string,
+	threshold uint8,
+	region *imagediff.Bounds,
+	ignored []imagediff.Bounds,
+) (imagediff.ImageComparison, error) {
+	return CompareImagesWithThresholds(
+		referencePath,
+		actualPath,
+		maskPath,
+		threshold,
+		imagediff.DefaultPerceptualThreshold,
+		region,
+		ignored,
+	)
 }
 
-func CompareImagesWithThresholds(referencePath, actualPath, maskPath string, threshold uint8, perceptualThreshold float64, region *imagediff.Bounds, ignored []imagediff.Bounds) (imagediff.ImageComparison, error) {
+func CompareImagesWithThresholds(
+	referencePath, actualPath, maskPath string,
+	threshold uint8,
+	perceptualThreshold float64,
+	region *imagediff.Bounds,
+	ignored []imagediff.Bounds,
+) (imagediff.ImageComparison, error) {
 	images, err := LoadDecodedImages(referencePath, actualPath)
 	if err != nil {
 		return imagediff.ImageComparison{}, err
@@ -116,23 +174,52 @@ func CompareImagesWithThresholds(referencePath, actualPath, maskPath string, thr
 	return result, nil
 }
 
-func MeasureImageRegion(referencePath, actualPath string, bounds imagediff.Bounds, threshold uint8, ignored []imagediff.Bounds) (imagediff.RegionMetrics, error) {
-	return MeasureImageRegionWithThresholds(referencePath, actualPath, bounds, threshold, imagediff.DefaultPerceptualThreshold, ignored)
+func MeasureImageRegion(
+	referencePath, actualPath string,
+	bounds imagediff.Bounds,
+	threshold uint8,
+	ignored []imagediff.Bounds,
+) (imagediff.RegionMetrics, error) {
+	return MeasureImageRegionWithThresholds(
+		referencePath,
+		actualPath,
+		bounds,
+		threshold,
+		imagediff.DefaultPerceptualThreshold,
+		ignored,
+	)
 }
 
-func MeasureImageRegionWithThresholds(referencePath, actualPath string, bounds imagediff.Bounds, threshold uint8, perceptualThreshold float64, ignored []imagediff.Bounds) (imagediff.RegionMetrics, error) {
+func MeasureImageRegionWithThresholds(
+	referencePath, actualPath string,
+	bounds imagediff.Bounds,
+	threshold uint8,
+	perceptualThreshold float64,
+	ignored []imagediff.Bounds,
+) (imagediff.RegionMetrics, error) {
 	images, err := LoadDecodedImages(referencePath, actualPath)
 	if err != nil {
 		return imagediff.RegionMetrics{}, err
 	}
-	metrics, err := images.MeasureRegions([]imagediff.Bounds{bounds}, threshold, perceptualThreshold, ignored)
+	metrics, err := images.MeasureRegions(
+		[]imagediff.Bounds{bounds},
+		threshold,
+		perceptualThreshold,
+		ignored,
+	)
 	if err != nil {
 		return imagediff.RegionMetrics{}, err
 	}
 	return metrics[0], nil
 }
 
-func MeasureImageRegionsWithThresholds(referencePath, actualPath string, regions []imagediff.Bounds, threshold uint8, perceptualThreshold float64, ignored []imagediff.Bounds) ([]imagediff.RegionMetrics, error) {
+func MeasureImageRegionsWithThresholds(
+	referencePath, actualPath string,
+	regions []imagediff.Bounds,
+	threshold uint8,
+	perceptualThreshold float64,
+	ignored []imagediff.Bounds,
+) ([]imagediff.RegionMetrics, error) {
 	images, err := LoadDecodedImages(referencePath, actualPath)
 	if err != nil {
 		return nil, err
@@ -140,7 +227,12 @@ func MeasureImageRegionsWithThresholds(referencePath, actualPath string, regions
 	return images.MeasureRegions(regions, threshold, perceptualThreshold, ignored)
 }
 
-func SuggestImageOffset(referencePath, actualPath string, radius int, region *imagediff.Bounds, ignored []imagediff.Bounds) (imagediff.SuggestedOffset, error) {
+func SuggestImageOffset(
+	referencePath, actualPath string,
+	radius int,
+	region *imagediff.Bounds,
+	ignored []imagediff.Bounds,
+) (imagediff.SuggestedOffset, error) {
 	images, err := LoadDecodedImages(referencePath, actualPath)
 	if err != nil {
 		return imagediff.SuggestedOffset{}, err
@@ -148,7 +240,11 @@ func SuggestImageOffset(referencePath, actualPath string, radius int, region *im
 	return images.SuggestOffset(radius, region, ignored), nil
 }
 
-func WriteImageOverlay(referencePath, actualPath, outputPath string, region *imagediff.Bounds, ignored []imagediff.Bounds) error {
+func WriteImageOverlay(
+	referencePath, actualPath, outputPath string,
+	region *imagediff.Bounds,
+	ignored []imagediff.Bounds,
+) error {
 	images, err := LoadDecodedImages(referencePath, actualPath)
 	if err != nil {
 		return err
@@ -170,7 +266,13 @@ func IgnoredRegionsFromMask(maskPath, referencePath string) ([]imagediff.Bounds,
 		return nil, fmt.Errorf("decode reference: %w", err)
 	}
 	if mask.Bounds().Size() != reference.Bounds().Size() {
-		return nil, fmt.Errorf("comparison mask dimensions differ: mask is %dx%d, reference is %dx%d", mask.Bounds().Dx(), mask.Bounds().Dy(), reference.Bounds().Dx(), reference.Bounds().Dy())
+		return nil, fmt.Errorf(
+			"comparison mask dimensions differ: mask is %dx%d, reference is %dx%d",
+			mask.Bounds().Dx(),
+			mask.Bounds().Dy(),
+			reference.Bounds().Dx(),
+			reference.Bounds().Dy(),
+		)
 	}
 	regions := make([]imagediff.Bounds, 0)
 	for y := 0; y < mask.Bounds().Dy(); y++ {
@@ -178,6 +280,7 @@ func IgnoredRegionsFromMask(maskPath, referencePath string) ([]imagediff.Bounds,
 		for x := 0; x <= mask.Bounds().Dx(); x++ {
 			excluded := false
 			if x < mask.Bounds().Dx() {
+				//nolint:lll // keep this expression together
 				pixel := color.NRGBAModel.Convert(mask.At(mask.Bounds().Min.X+x, mask.Bounds().Min.Y+y)).(color.NRGBA)
 				excluded = pixel.A == 0 || pixel.R == 0 && pixel.G == 0 && pixel.B == 0
 			}
@@ -185,7 +288,10 @@ func IgnoredRegionsFromMask(maskPath, referencePath string) ([]imagediff.Bounds,
 				runStart = x
 			}
 			if !excluded && runStart >= 0 {
-				regions = append(regions, imagediff.Bounds{X: runStart, Y: y, Width: x - runStart, Height: 1})
+				regions = append(
+					regions,
+					imagediff.Bounds{X: runStart, Y: y, Width: x - runStart, Height: 1},
+				)
 				runStart = -1
 			}
 		}

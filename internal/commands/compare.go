@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+//nolint:lll // keep this expression together
 type imageComparer func(referencePath, actualPath, maskPath string, threshold uint8, perceptualThreshold float64, region *diff.Bounds, ignored []diff.Bounds) (diff.ImageComparison, error)
 
 func runComparisonCommand(cmd *cobra.Command, args []string, compare imageComparer) error {
@@ -47,6 +48,7 @@ func runComparisonCommand(cmd *cobra.Command, args []string, compare imageCompar
 	regionGap, _ := cmd.Flags().GetInt("region-gap")
 	minRegionPixels, _ := cmd.Flags().GetInt("min-region-pixels")
 	maxRegions, _ := cmd.Flags().GetInt("max-regions")
+	//nolint:lll // keep this expression together
 	if err := validateRegionControls(offsetRadius, movementRadius, regionGap, minRegionPixels, maxRegions); err != nil {
 		return cli.NewUsageError(err)
 	}
@@ -55,6 +57,7 @@ func runComparisonCommand(cmd *cobra.Command, args []string, compare imageCompar
 	maxRMSE, _ := cmd.Flags().GetFloat64("max-rmse")
 	maxChangedRatio, _ := cmd.Flags().GetFloat64("max-changed-ratio")
 	maxPerceptualChangedRatio, _ := cmd.Flags().GetFloat64("max-perceptual-changed-ratio")
+	//nolint:lll // keep this expression together
 	if err := validateComparisonThresholds(perceptualThreshold, maxRMSE, maxChangedRatio, maxPerceptualChangedRatio); err != nil {
 		return cli.NewUsageError(err)
 	}
@@ -72,7 +75,15 @@ func runComparisonCommand(cmd *cobra.Command, args []string, compare imageCompar
 		return err
 	}
 	defer inputs.cleanup()
-	result, decoded, err := comparePreparedImages(compare, inputs, output, threshold, perceptualThreshold, region, ignored)
+	result, decoded, err := comparePreparedImages(
+		compare,
+		inputs,
+		output,
+		threshold,
+		perceptualThreshold,
+		region,
+		ignored,
+	)
 	if err != nil {
 		return err
 	}
@@ -124,7 +135,11 @@ func runComparisonCommand(cmd *cobra.Command, args []string, compare imageCompar
 	result.Regions = filterImageRegions(result.Regions, minRegionPixels)
 	var regionCount int
 	var regionsTruncated bool
-	result.Regions, regionCount, regionsTruncated = limitImageRegions(result.Regions, maxRegions, full)
+	result.Regions, regionCount, regionsTruncated = limitImageRegions(
+		result.Regions,
+		maxRegions,
+		full,
+	)
 	regionMetrics := make([]diff.RegionMetrics, len(result.Regions))
 	if len(result.Regions) > 0 {
 		regionBounds := make([]diff.Bounds, len(result.Regions))
@@ -137,16 +152,31 @@ func runComparisonCommand(cmd *cobra.Command, args []string, compare imageCompar
 				return err
 			}
 		}
-		regionMetrics, err = decoded.MeasureRegions(regionBounds, threshold, perceptualThreshold, ignored)
+		regionMetrics, err = decoded.MeasureRegions(
+			regionBounds,
+			threshold,
+			perceptualThreshold,
+			ignored,
+		)
 		if err != nil {
 			return err
 		}
 	}
 	for index := range result.Regions {
-		result.Regions[index].InputBounds = inputBounds(result.Regions[index].Bounds, inputs.metadata)
+		result.Regions[index].InputBounds = inputBounds(
+			result.Regions[index].Bounds,
+			inputs.metadata,
+		)
 		if annotationDocument != nil {
 			bounds := result.Regions[index].Bounds
-			result.Regions[index].Annotations = annotationDocument.Intersections(annotations.Bounds{X: bounds.X, Y: bounds.Y, Width: bounds.Width, Height: bounds.Height})
+			result.Regions[index].Annotations = annotationDocument.Intersections(
+				annotations.Bounds{
+					X:      bounds.X,
+					Y:      bounds.Y,
+					Width:  bounds.Width,
+					Height: bounds.Height,
+				},
+			)
 		}
 		metrics := regionMetrics[index]
 		result.Regions[index].ChangedPixels = metrics.ChangedPixels
@@ -167,7 +197,12 @@ func runComparisonCommand(cmd *cobra.Command, args []string, compare imageCompar
 		}
 		result.MovedRegions = decoded.SuggestRegionMovements(regionBounds, movementRadius, ignored)
 	}
-	validation, validationErr := evaluateComparisonValidation(result, maxRMSE, maxChangedRatio, maxPerceptualChangedRatio)
+	validation, validationErr := evaluateComparisonValidation(
+		result,
+		maxRMSE,
+		maxChangedRatio,
+		maxPerceptualChangedRatio,
+	)
 	outputResult := outputEnvelope{
 		ImageComparison:  result,
 		RegionCount:      regionCount,
@@ -185,20 +220,38 @@ func runComparisonCommand(cmd *cobra.Command, args []string, compare imageCompar
 		}
 		return cli.NewResultError(validationErr)
 	}
+	//nolint:lll // keep this expression together
 	if err := writeComparisonReport(report, inputs, output, overlay, threshold, perceptualThreshold, region, result); err != nil {
 		return err
 	}
 	model, _ := cmd.Flags().GetString("visual-context-model")
 	visualContextPrompt, _ := cmd.Flags().GetString("visual-context-prompt")
+	//nolint:lll // keep this expression together
 	if err := addVisualContext(visualContextEnabled, provider, model, visualContextPrompt, inputs, result, &outputResult); err != nil {
 		return err
 	}
 	return writeStructured(cmd, outputResult)
 }
 
-func comparePreparedImages(compare imageComparer, inputs preparedImageInputs, output string, threshold uint8, perceptualThreshold float64, region *diff.Bounds, ignored []diff.Bounds) (diff.ImageComparison, *diff.DecodedImages, error) {
+func comparePreparedImages(
+	compare imageComparer,
+	inputs preparedImageInputs,
+	output string,
+	threshold uint8,
+	perceptualThreshold float64,
+	region *diff.Bounds,
+	ignored []diff.Bounds,
+) (diff.ImageComparison, *diff.DecodedImages, error) {
 	if compare != nil {
-		result, err := compare(inputs.referencePath, inputs.actualPath, output, threshold, perceptualThreshold, region, ignored)
+		result, err := compare(
+			inputs.referencePath,
+			inputs.actualPath,
+			output,
+			threshold,
+			perceptualThreshold,
+			region,
+			ignored,
+		)
 		return result, nil, err
 	}
 	decoded, err := imageio.LoadDecodedImages(inputs.referencePath, inputs.actualPath)
@@ -233,7 +286,9 @@ func parseIgnoredRegions(values []string) ([]diff.Bounds, error) {
 	return ignored, nil
 }
 
-func validateRegionControls(offsetRadius, movementRadius, regionGap, minRegionPixels, maxRegions int) error {
+func validateRegionControls(
+	offsetRadius, movementRadius, regionGap, minRegionPixels, maxRegions int,
+) error {
 	if offsetRadius < 0 {
 		return fmt.Errorf("--suggest-offset must be non-negative")
 	}
@@ -252,17 +307,24 @@ func validateRegionControls(offsetRadius, movementRadius, regionGap, minRegionPi
 	return nil
 }
 
-func validateComparisonThresholds(perceptualThreshold, maxRMSE, maxChangedRatio, maxPerceptualChangedRatio float64) error {
-	if perceptualThreshold < 0 || math.IsNaN(perceptualThreshold) || math.IsInf(perceptualThreshold, 0) {
+func validateComparisonThresholds(
+	perceptualThreshold, maxRMSE, maxChangedRatio, maxPerceptualChangedRatio float64,
+) error {
+	if perceptualThreshold < 0 || math.IsNaN(perceptualThreshold) ||
+		math.IsInf(perceptualThreshold, 0) {
 		return fmt.Errorf("--perceptual-threshold must be a finite non-negative number")
 	}
 	if maxRMSE != -1 && (maxRMSE < 0 || math.IsNaN(maxRMSE) || math.IsInf(maxRMSE, 0)) {
 		return fmt.Errorf("--max-rmse must be -1 or a finite non-negative number")
 	}
-	if maxChangedRatio != -1 && (maxChangedRatio < 0 || maxChangedRatio > 1 || math.IsNaN(maxChangedRatio) || math.IsInf(maxChangedRatio, 0)) {
+	if maxChangedRatio != -1 &&
+		//nolint:lll // keep this expression together
+		(maxChangedRatio < 0 || maxChangedRatio > 1 || math.IsNaN(maxChangedRatio) || math.IsInf(maxChangedRatio, 0)) {
 		return fmt.Errorf("--max-changed-ratio must be -1 or between 0 and 1")
 	}
-	if maxPerceptualChangedRatio != -1 && (maxPerceptualChangedRatio < 0 || maxPerceptualChangedRatio > 1 || math.IsNaN(maxPerceptualChangedRatio) || math.IsInf(maxPerceptualChangedRatio, 0)) {
+	if maxPerceptualChangedRatio != -1 &&
+		//nolint:lll // keep this expression together
+		(maxPerceptualChangedRatio < 0 || maxPerceptualChangedRatio > 1 || math.IsNaN(maxPerceptualChangedRatio) || math.IsInf(maxPerceptualChangedRatio, 0)) {
 		return fmt.Errorf("--max-perceptual-changed-ratio must be -1 or between 0 and 1")
 	}
 	return nil
@@ -275,23 +337,37 @@ func validateVisualContextProvider(enabled bool, provider string) error {
 	return fmt.Errorf("unsupported visual context provider %q", provider)
 }
 
-func validateComparisonArtifactPaths(referencePath, actualPath, outputPath, overlayPath, reportPath string) error {
-	if outputPath != "" && (samePath(outputPath, referencePath) || samePath(outputPath, actualPath)) {
+func validateComparisonArtifactPaths(
+	referencePath, actualPath, outputPath, overlayPath, reportPath string,
+) error {
+	if outputPath != "" &&
+		(samePath(outputPath, referencePath) || samePath(outputPath, actualPath)) {
 		return fmt.Errorf("--output must not overwrite an input image")
 	}
-	if overlayPath != "" && (samePath(overlayPath, referencePath) || samePath(overlayPath, actualPath)) {
+	if overlayPath != "" &&
+		(samePath(overlayPath, referencePath) || samePath(overlayPath, actualPath)) {
 		return fmt.Errorf("--overlay must not overwrite an input image")
 	}
 	if overlayPath != "" && outputPath != "" && samePath(overlayPath, outputPath) {
 		return fmt.Errorf("--overlay must differ from --output")
 	}
-	if reportPath != "" && (samePath(reportPath, referencePath) || samePath(reportPath, actualPath) || (outputPath != "" && samePath(reportPath, outputPath)) || samePath(reportPath, overlayPath)) {
+	if reportPath != "" &&
+		//nolint:lll // keep this expression together
+		(samePath(reportPath, referencePath) || samePath(reportPath, actualPath) || (outputPath != "" && samePath(reportPath, outputPath)) || samePath(reportPath, overlayPath)) {
 		return fmt.Errorf("--report must not overwrite an input, mask, or overlay")
 	}
 	return nil
 }
 
-func writeComparisonReport(report string, inputs preparedImageInputs, maskPath, overlayPath string, threshold uint8, perceptualThreshold float64, region *diff.Bounds, result diff.ImageComparison) error {
+func writeComparisonReport(
+	report string,
+	inputs preparedImageInputs,
+	maskPath, overlayPath string,
+	threshold uint8,
+	perceptualThreshold float64,
+	region *diff.Bounds,
+	result diff.ImageComparison,
+) error {
 	if report == "" {
 		return nil
 	}
@@ -307,13 +383,27 @@ func writeComparisonReport(report string, inputs preparedImageInputs, maskPath, 
 	})
 }
 
-func addVisualContext(enabled bool, provider, model, prompt string, inputs preparedImageInputs, result diff.ImageComparison, output *outputEnvelope) error {
+func addVisualContext(
+	enabled bool,
+	provider, model, prompt string,
+	inputs preparedImageInputs,
+	result diff.ImageComparison,
+	output *outputEnvelope,
+) error {
 	if !enabled {
 		return nil
 	}
 	config, err := imagecontext.LoadProviderConfig(provider, model)
 	if errors.Is(err, imagecontext.ErrNotConfigured) {
-		output.VisualContext = &imagecontext.Result{Provider: provider, Advisory: true, Disclaimer: fmt.Sprintf("Visual context unavailable: configure %s credentials in the Pi Spectacles config or environment.", provider)}
+		output.VisualContext = &imagecontext.Result{
+			Provider: provider,
+			Advisory: true,
+			Disclaimer: fmt.Sprintf(
+				//nolint:lll // keep this expression together
+				"Visual context unavailable: configure %s credentials in the Pi Spectacles config or environment.",
+				provider,
+			),
+		}
 		return nil
 	}
 	if err != nil {
@@ -321,13 +411,29 @@ func addVisualContext(enabled bool, provider, model, prompt string, inputs prepa
 	}
 	regions := make([]imagecontext.Region, len(result.Regions))
 	for index, region := range result.Regions {
-		regions[index] = imagecontext.Region{ID: fmt.Sprintf("r%d", index+1), Bounds: imagecontext.Bounds{X: region.Bounds.X, Y: region.Bounds.Y, Width: region.Bounds.Width, Height: region.Bounds.Height}}
+		regions[index] = imagecontext.Region{
+			ID: fmt.Sprintf("r%d", index+1),
+			Bounds: imagecontext.Bounds{
+				X:      region.Bounds.X,
+				Y:      region.Bounds.Y,
+				Width:  region.Bounds.Width,
+				Height: region.Bounds.Height,
+			},
+		}
 	}
 	client, err := imagecontext.NewClient(provider, config)
 	if err != nil {
 		return err
 	}
-	visualContext, err := client.Describe(context.Background(), imagecontext.Input{ReferencePath: inputs.referencePath, ActualPath: inputs.actualPath, Regions: regions, Prompt: prompt})
+	visualContext, err := client.Describe(
+		context.Background(),
+		imagecontext.Input{
+			ReferencePath: inputs.referencePath,
+			ActualPath:    inputs.actualPath,
+			Regions:       regions,
+			Prompt:        prompt,
+		},
+	)
 	if err != nil {
 		return err
 	}
@@ -359,7 +465,10 @@ func groupImageRegions(regions []diff.Region, gap int) []diff.Region {
 			}
 		}
 	}
-	sort.SliceStable(grouped, func(i, j int) bool { return grouped[i].ChangedPixels > grouped[j].ChangedPixels })
+	sort.SliceStable(
+		grouped,
+		func(i, j int) bool { return grouped[i].ChangedPixels > grouped[j].ChangedPixels },
+	)
 	return grouped
 }
 
@@ -372,7 +481,10 @@ func mergeImageRegions(first, second diff.Region) diff.Region {
 	left, top := min(first.Bounds.X, second.Bounds.X), min(first.Bounds.Y, second.Bounds.Y)
 	right := max(first.Bounds.X+first.Bounds.Width, second.Bounds.X+second.Bounds.Width)
 	bottom := max(first.Bounds.Y+first.Bounds.Height, second.Bounds.Y+second.Bounds.Height)
-	return diff.Region{Bounds: diff.Bounds{X: left, Y: top, Width: right - left, Height: bottom - top}, ChangedPixels: first.ChangedPixels + second.ChangedPixels}
+	return diff.Region{
+		Bounds:        diff.Bounds{X: left, Y: top, Width: right - left, Height: bottom - top},
+		ChangedPixels: first.ChangedPixels + second.ChangedPixels,
+	}
 }
 
 func filterImageRegions(regions []diff.Region, minimumPixels int) []diff.Region {
@@ -443,7 +555,10 @@ type outputEnvelope struct {
 	Validation       *comparisonValidation    `json:"validation,omitempty"`
 }
 
-func evaluateComparisonValidation(result diff.ImageComparison, maxRMSE, maxChangedRatio, maxPerceptualChangedRatio float64) (*comparisonValidation, error) {
+func evaluateComparisonValidation(
+	result diff.ImageComparison,
+	maxRMSE, maxChangedRatio, maxPerceptualChangedRatio float64,
+) (*comparisonValidation, error) {
 	configured := maxRMSE >= 0 || maxChangedRatio >= 0 || maxPerceptualChangedRatio >= 0
 	if !configured {
 		return nil, nil
@@ -451,13 +566,30 @@ func evaluateComparisonValidation(result diff.ImageComparison, maxRMSE, maxChang
 
 	failed := make([]comparisonValidationFailure, 0, 3)
 	if maxRMSE >= 0 && result.RMSE > maxRMSE {
-		failed = append(failed, comparisonValidationFailure{Metric: "rmse", Actual: result.RMSE, Maximum: maxRMSE})
+		failed = append(
+			failed,
+			comparisonValidationFailure{Metric: "rmse", Actual: result.RMSE, Maximum: maxRMSE},
+		)
 	}
 	if maxChangedRatio >= 0 && result.ChangedRatio > maxChangedRatio {
-		failed = append(failed, comparisonValidationFailure{Metric: "changedRatio", Actual: result.ChangedRatio, Maximum: maxChangedRatio})
+		failed = append(
+			failed,
+			comparisonValidationFailure{
+				Metric:  "changedRatio",
+				Actual:  result.ChangedRatio,
+				Maximum: maxChangedRatio,
+			},
+		)
 	}
 	if maxPerceptualChangedRatio >= 0 && result.PerceptualChangedRatio > maxPerceptualChangedRatio {
-		failed = append(failed, comparisonValidationFailure{Metric: "perceptualChangedRatio", Actual: result.PerceptualChangedRatio, Maximum: maxPerceptualChangedRatio})
+		failed = append(
+			failed,
+			comparisonValidationFailure{
+				Metric:  "perceptualChangedRatio",
+				Actual:  result.PerceptualChangedRatio,
+				Maximum: maxPerceptualChangedRatio,
+			},
+		)
 	}
 
 	validation := &comparisonValidation{Passed: len(failed) == 0, Failed: failed}
@@ -471,9 +603,19 @@ func evaluateComparisonValidation(result diff.ImageComparison, maxRMSE, maxChang
 		"changedRatio":           "changed ratio",
 		"perceptualChangedRatio": "perceptual changed ratio",
 	}[failure.Metric]
-	return validation, fmt.Errorf("image diff validation failed: %s %.6f exceeds maximum %.6f", label, failure.Actual, failure.Maximum)
+	return validation, fmt.Errorf(
+		"image diff validation failed: %s %.6f exceeds maximum %.6f",
+		label,
+		failure.Actual,
+		failure.Maximum,
+	)
 }
-func prepareComparisonInputs(command *cobra.Command, args []string, ignored []diff.Bounds) (preparedImageInputs, []diff.Bounds, error) {
+
+func prepareComparisonInputs(
+	command *cobra.Command,
+	args []string,
+	ignored []diff.Bounds,
+) (preparedImageInputs, []diff.Bounds, error) {
 	referenceCrop, err := parseOptionalCrop(command, "reference-crop")
 	if err != nil {
 		return preparedImageInputs{}, nil, cli.NewUsageError(err)
@@ -484,13 +626,21 @@ func prepareComparisonInputs(command *cobra.Command, args []string, ignored []di
 	}
 	referenceMetadataPath, _ := command.Flags().GetString("reference-metadata")
 	if referenceCrop != nil && referenceMetadataPath != "" {
-		return preparedImageInputs{}, nil, cli.NewUsageError(fmt.Errorf("--reference-crop and --reference-metadata cannot be used together"))
+		return preparedImageInputs{}, nil, cli.NewUsageError(
+			fmt.Errorf("--reference-crop and --reference-metadata cannot be used together"),
+		)
 	}
 	referenceMetadata, err := loadExportMetadata(referenceMetadataPath)
 	if err != nil {
 		return preparedImageInputs{}, nil, err
 	}
-	inputs, err := prepareImageInputs(args[0], args[1], referenceCrop, actualCrop, referenceMetadata)
+	inputs, err := prepareImageInputs(
+		args[0],
+		args[1],
+		referenceCrop,
+		actualCrop,
+		referenceMetadata,
+	)
 	if err != nil {
 		return preparedImageInputs{}, nil, err
 	}

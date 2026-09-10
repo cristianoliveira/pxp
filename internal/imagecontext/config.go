@@ -63,7 +63,11 @@ func LoadProviderConfig(provider, modelOverride string) (Config, error) {
 			config.BaseURL = DefaultOpenAIBaseURL
 		}
 		if config.APIKey == "" {
-			return Config{}, fmt.Errorf("%w: configure openai in %s or OPENAI_API_KEY", ErrNotConfigured, path)
+			return Config{}, fmt.Errorf(
+				"%w: configure openai in %s or OPENAI_API_KEY",
+				ErrNotConfigured,
+				path,
+			)
 		}
 		return config, nil
 	}
@@ -89,7 +93,11 @@ func LoadProviderConfig(provider, modelOverride string) (Config, error) {
 		config.BaseURL = DefaultBaseURL
 	}
 	if config.APIKey == "" {
-		return Config{}, fmt.Errorf("%w: configure %s or OPENROUTER_API_KEY", ErrNotConfigured, path)
+		return Config{}, fmt.Errorf(
+			"%w: configure %s or OPENROUTER_API_KEY",
+			ErrNotConfigured,
+			path,
+		)
 	}
 	return config, nil
 }

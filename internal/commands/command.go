@@ -19,32 +19,59 @@ func newCommand(compare imageComparer) *cobra.Command {
 		},
 	}
 	command.PersistentFlags().Bool("json", false, "emit structured results as compatibility JSON")
-	command.Flags().String("profile", "", "load comparison options from a versioned JSON profile; explicit flags override profile values")
-	command.Flags().String("annotations", "", "enrich mismatch regions from a generic coordinate annotation JSON file")
-	command.Flags().StringP("output", "o", "", "path for transparent PNG difference mask; defaults to <actual>.diff.png")
-	command.Flags().Uint8("threshold", 0, "ignore per-channel differences at or below this value (0-255)")
-	command.Flags().Float64("perceptual-threshold", diff.DefaultPerceptualThreshold, "OKLab HyAB distance above which a pixel is perceptually changed (non-negative)")
+	command.Flags().
+		//nolint:lll // keep this expression together
+		String("profile", "", "load comparison options from a versioned JSON profile; explicit flags override profile values")
+	command.Flags().
+		//nolint:lll // keep this expression together
+		String("annotations", "", "enrich mismatch regions from a generic coordinate annotation JSON file")
+	command.Flags().
+		//nolint:lll // keep this expression together
+		StringP("output", "o", "", "path for transparent PNG difference mask; defaults to <actual>.diff.png")
+	command.Flags().
+		Uint8("threshold", 0, "ignore per-channel differences at or below this value (0-255)")
+	command.Flags().
+		//nolint:lll // keep this expression together
+		Float64("perceptual-threshold", diff.DefaultPerceptualThreshold, "OKLab HyAB distance above which a pixel is perceptually changed (non-negative)")
 	command.Flags().String("region", "", "compare only x,y,width,height")
-	command.Flags().String("reference-crop", "", "crop reference before comparing: x,y,width,height")
-	command.Flags().String("reference-metadata", "", "apply logical crop from image export metadata JSON")
+	command.Flags().
+		String("reference-crop", "", "crop reference before comparing: x,y,width,height")
+	command.Flags().
+		String("reference-metadata", "", "apply logical crop from image export metadata JSON")
 	command.Flags().String("actual-crop", "", "crop actual before comparing: x,y,width,height")
-	command.Flags().StringArray("ignore-region", nil, "exclude x,y,width,height; repeat for multiple areas")
-	command.Flags().String("mask", "", "full-size PNG selecting compared pixels (visible non-black includes)")
-	command.Flags().String("overlay", "", "path for directional overlay (reference red, actual green)")
+	command.Flags().
+		StringArray("ignore-region", nil, "exclude x,y,width,height; repeat for multiple areas")
+	command.Flags().
+		String("mask", "", "full-size PNG selecting compared pixels (visible non-black includes)")
+	command.Flags().
+		String("overlay", "", "path for directional overlay (reference red, actual green)")
 	command.Flags().String("report", "", "write a self-contained HTML report to this path")
-	command.Flags().Int("suggest-offset", 0, "report best whole-image translation within this pixel radius without applying it")
-	command.Flags().Int("suggest-movement", 0, "report advisory per-region translations within this pixel radius without applying them")
-	command.Flags().Int("region-gap", 0, "group mismatch regions separated by at most this many pixels")
-	command.Flags().Int("min-region-pixels", 1, "omit disconnected regions smaller than this many changed pixels")
+	command.Flags().
+		//nolint:lll // keep this expression together
+		Int("suggest-offset", 0, "report best whole-image translation within this pixel radius without applying it")
+	command.Flags().
+		//nolint:lll // keep this expression together
+		Int("suggest-movement", 0, "report advisory per-region translations within this pixel radius without applying them")
+	command.Flags().
+		Int("region-gap", 0, "group mismatch regions separated by at most this many pixels")
+	command.Flags().
+		Int("min-region-pixels", 1, "omit disconnected regions smaller than this many changed pixels")
 	command.Flags().Int("max-regions", 20, "maximum mismatch regions included in output")
 	command.Flags().Bool("full", false, "include every mismatch region")
 	command.Flags().Float64("max-rmse", -1, "fail when normalized RMSE exceeds this value")
-	command.Flags().Float64("max-changed-ratio", -1, "fail when changed-pixel ratio exceeds this value")
-	command.Flags().Float64("max-perceptual-changed-ratio", -1, "fail when perceptual changed-pixel ratio exceeds this value")
-	command.Flags().Bool("visual-context", false, "add advisory visual descriptions using the configured multimodal model")
-	command.Flags().String("visual-context-provider", "openrouter", "visual context provider: openrouter or openai")
+	command.Flags().
+		Float64("max-changed-ratio", -1, "fail when changed-pixel ratio exceeds this value")
+	command.Flags().
+		//nolint:lll // keep this expression together
+		Float64("max-perceptual-changed-ratio", -1, "fail when perceptual changed-pixel ratio exceeds this value")
+	command.Flags().
+		//nolint:lll // keep this expression together
+		Bool("visual-context", false, "add advisory visual descriptions using the configured multimodal model")
+	command.Flags().
+		String("visual-context-provider", "openrouter", "visual context provider: openrouter or openai")
 	command.Flags().String("visual-context-model", "", "override the visual context model")
-	command.Flags().String("visual-context-prompt", "", "extra advisory focus for visual context analysis")
+	command.Flags().
+		String("visual-context-prompt", "", "extra advisory focus for visual context analysis")
 	command.AddCommand(newProbeCommand())
 	command.AddCommand(newScanCommand())
 	return command
@@ -129,6 +156,11 @@ func requireImagePair(action, example string) cobra.PositionalArgs {
 		if len(args) == 2 {
 			return nil
 		}
-		return fmt.Errorf("%s requires <reference.png> and <actual.png>; received %d argument(s)\n\nExample: %s", action, len(args), example)
+		return fmt.Errorf(
+			"%s requires <reference.png> and <actual.png>; received %d argument(s)\n\nExample: %s",
+			action,
+			len(args),
+			example,
+		)
 	}
 }

@@ -16,17 +16,25 @@ type RegionMovement struct {
 	Confidence float64 `json:"confidence"`
 }
 
-func (images *DecodedImages) SuggestRegionMovements(regions []Bounds, radius int, ignored []Bounds) []RegionMovement {
+func (images *DecodedImages) SuggestRegionMovements(
+	regions []Bounds,
+	radius int,
+	ignored []Bounds,
+) []RegionMovement {
 	if radius <= 0 || len(regions) == 0 {
 		return nil
 	}
 
-	imageBounds := Bounds{Width: images.Reference.Bounds().Dx(), Height: images.Reference.Bounds().Dy()}
+	imageBounds := Bounds{
+		Width:  images.Reference.Bounds().Dx(),
+		Height: images.Reference.Bounds().Dy(),
+	}
 	movements := make([]RegionMovement, 0, len(regions))
 	for _, region := range regions {
 		searchBounds := expandAndClipBounds(region, radius, imageBounds)
 		offset := images.SuggestOffset(radius, &searchBounds, ignored)
-		if offset.Interpretation != offsetInterpretationCandidateTranslation || offset.ImprovementRatio < candidateRegionMovementMinimumConfidence {
+		if offset.Interpretation != offsetInterpretationCandidateTranslation ||
+			offset.ImprovementRatio < candidateRegionMovementMinimumConfidence {
 			continue
 		}
 
@@ -64,7 +72,8 @@ func expandAndClipBounds(bounds Bounds, padding int, limit Bounds) Bounds {
 
 func appendMovementEvidence(movements []RegionMovement, candidate RegionMovement) []RegionMovement {
 	for index, movement := range movements {
-		if movement.DX != candidate.DX || movement.DY != candidate.DY || !boundsOverlap(movement.Bounds, candidate.Bounds) {
+		if movement.DX != candidate.DX || movement.DY != candidate.DY ||
+			!boundsOverlap(movement.Bounds, candidate.Bounds) {
 			continue
 		}
 		if candidate.Confidence > movement.Confidence {

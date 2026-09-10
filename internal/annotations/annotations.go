@@ -35,7 +35,13 @@ type Match struct {
 
 func (document Document) ValidateDimensions(width, height int) error {
 	if document.CoordinateSpace.Width != width || document.CoordinateSpace.Height != height {
-		return fmt.Errorf("annotation coordinate space %dx%d does not match comparison image %dx%d", document.CoordinateSpace.Width, document.CoordinateSpace.Height, width, height)
+		return fmt.Errorf(
+			"annotation coordinate space %dx%d does not match comparison image %dx%d",
+			document.CoordinateSpace.Width,
+			document.CoordinateSpace.Height,
+			width,
+			height,
+		)
 	}
 	return nil
 }
@@ -48,17 +54,38 @@ func (document Document) Intersections(region Bounds) []Match {
 		if area == 0 {
 			continue
 		}
-		matches = append(matches, Match{ID: annotation.ID, Label: annotation.Label, Metadata: annotation.Metadata, RegionIntersectionRatio: float64(area) / float64(region.Width*region.Height), AnnotationIntersectionRatio: float64(area) / float64(annotation.Bounds.Width*annotation.Bounds.Height)})
+		matches = append(
+			matches,
+			Match{
+				ID:                      annotation.ID,
+				Label:                   annotation.Label,
+				Metadata:                annotation.Metadata,
+				RegionIntersectionRatio: float64(area) / float64(region.Width*region.Height),
+				AnnotationIntersectionRatio: float64(
+					area,
+				) / float64(
+					annotation.Bounds.Width*annotation.Bounds.Height,
+				),
+			},
+		)
 	}
 	return matches
 }
 
 func within(bounds Bounds, size Size) bool {
-	return bounds.X >= 0 && bounds.Y >= 0 && bounds.Width > 0 && bounds.Height > 0 && bounds.X+bounds.Width <= size.Width && bounds.Y+bounds.Height <= size.Height
+	return bounds.X >= 0 && bounds.Y >= 0 && bounds.Width > 0 && bounds.Height > 0 &&
+		bounds.X+bounds.Width <= size.Width &&
+		bounds.Y+bounds.Height <= size.Height
 }
 
 func intersect(first, second Bounds) Bounds {
 	x, y := max(first.X, second.X), max(first.Y, second.Y)
-	endX, endY := min(first.X+first.Width, second.X+second.Width), min(first.Y+first.Height, second.Y+second.Height)
+	endX, endY := min(
+		first.X+first.Width,
+		second.X+second.Width,
+	), min(
+		first.Y+first.Height,
+		second.Y+second.Height,
+	)
 	return Bounds{X: x, Y: y, Width: max(0, endX-x), Height: max(0, endY-y)}
 }

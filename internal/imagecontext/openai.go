@@ -18,7 +18,12 @@ type OpenAI struct {
 }
 
 func NewOpenAI(apiKey, model, baseURL string) *OpenAI {
-	return &OpenAI{apiKey: apiKey, model: model, baseURL: strings.TrimRight(baseURL, "/"), client: http.DefaultClient}
+	return &OpenAI{
+		apiKey:  apiKey,
+		model:   model,
+		baseURL: strings.TrimRight(baseURL, "/"),
+		client:  http.DefaultClient,
+	}
 }
 func (o *OpenAI) Describe(ctx context.Context, input Input) (Result, error) {
 	ref, err := imageDataURL(input.ReferencePath)
@@ -30,9 +35,26 @@ func (o *OpenAI) Describe(ctx context.Context, input Input) (Result, error) {
 		return Result{}, fmt.Errorf("read actual for visual context: %w", err)
 	}
 	prompt := visualContextPrompt(input.Regions, input.Prompt)
-	payload := map[string]any{"model": o.model, "input": []any{map[string]any{"role": "user", "content": []any{map[string]any{"type": "input_text", "text": prompt}, map[string]any{"type": "input_image", "image_url": ref}, map[string]any{"type": "input_image", "image_url": actual}}}}}
+	payload := map[string]any{
+		"model": o.model,
+		"input": []any{
+			map[string]any{
+				"role": "user",
+				"content": []any{
+					map[string]any{"type": "input_text", "text": prompt},
+					map[string]any{"type": "input_image", "image_url": ref},
+					map[string]any{"type": "input_image", "image_url": actual},
+				},
+			},
+		},
+	}
 	body, _ := json.Marshal(payload)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, o.baseURL+"/responses", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		o.baseURL+"/responses",
+		bytes.NewReader(body),
+	)
 	if err != nil {
 		return Result{}, err
 	}

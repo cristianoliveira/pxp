@@ -42,7 +42,8 @@ func newIgnoredPixelMap(width, height int, regions []Bounds) ignoredPixelMap {
 }
 
 func (m ignoredPixelMap) Contains(x, y int) bool {
-	return len(m.pixels) > 0 && x >= 0 && x < m.width && y >= 0 && y < m.height && m.pixels[y*m.width+x]
+	return len(m.pixels) > 0 && x >= 0 && x < m.width && y >= 0 && y < m.height &&
+		m.pixels[y*m.width+x]
 }
 
 type InputBounds struct {
@@ -112,15 +113,32 @@ type ImageComparison struct {
 }
 
 // Compare computes deterministic evidence from already-decoded images. It has no file-system side effects.
-func (images *DecodedImages) Compare(threshold uint8, perceptualThreshold float64, region *Bounds, ignored []Bounds) (ImageComparison, *image.NRGBA, error) {
+//
+//nolint:lll // keep this expression together
+func (images *DecodedImages) Compare(
+	threshold uint8,
+	perceptualThreshold float64,
+	region *Bounds,
+	ignored []Bounds,
+) (ImageComparison, *image.NRGBA, error) {
 	reference, actual := images.Reference, images.Actual
 
 	imageWidth, imageHeight := reference.Bounds().Dx(), reference.Bounds().Dy()
 	area := Bounds{Width: imageWidth, Height: imageHeight}
 	if region != nil {
 		area = *region
-		if area.X < 0 || area.Y < 0 || area.Width <= 0 || area.Height <= 0 || area.X+area.Width > imageWidth || area.Y+area.Height > imageHeight {
-			return ImageComparison{}, nil, fmt.Errorf("region %d,%d,%d,%d is outside image bounds %dx%d", area.X, area.Y, area.Width, area.Height, imageWidth, imageHeight)
+		if area.X < 0 || area.Y < 0 || area.Width <= 0 || area.Height <= 0 ||
+			area.X+area.Width > imageWidth ||
+			area.Y+area.Height > imageHeight {
+			return ImageComparison{}, nil, fmt.Errorf(
+				"region %d,%d,%d,%d is outside image bounds %dx%d",
+				area.X,
+				area.Y,
+				area.Width,
+				area.Height,
+				imageWidth,
+				imageHeight,
+			)
 		}
 	}
 	width, height := area.Width, area.Height
@@ -129,6 +147,7 @@ func (images *DecodedImages) Compare(threshold uint8, perceptualThreshold float6
 	mask := image.NewNRGBA(image.Rect(0, 0, width, height))
 	changedPixels := make([]bool, width*height)
 	changedRows := make([]bool, height)
+	//nolint:lll // keep this expression together
 	changed, perceptualChanged, antialiased, rawOnly, perceptualOnly, both, compared, minX, minY, maxX, maxY := 0, 0, 0, 0, 0, 0, 0, width, height, -1, -1
 	var rgbSquaredError, luminanceSquaredError, alphaSquaredError, perceptualSquaredError float64
 	hasTransparency, hasPixelDifference := false, false
@@ -146,7 +165,12 @@ func (images *DecodedImages) Compare(threshold uint8, perceptualThreshold float6
 				continue
 			}
 			hasPixelDifference = true
-			delta := [4]uint8{absDiff(r.R, a.R), absDiff(r.G, a.G), absDiff(r.B, a.B), absDiff(r.A, a.A)}
+			delta := [4]uint8{
+				absDiff(r.R, a.R),
+				absDiff(r.G, a.G),
+				absDiff(r.B, a.B),
+				absDiff(r.A, a.A),
+			}
 			maxDelta := max(delta[0], delta[1], delta[2], delta[3])
 			for _, value := range delta[:3] {
 				rgbSquaredError += float64(value) * float64(value)
@@ -173,7 +197,14 @@ func (images *DecodedImages) Compare(threshold uint8, perceptualThreshold float6
 				continue
 			}
 			changed++
-			if likelyAntialiased(reference, actual, absoluteX, absoluteY, fullImage, ignoredPixels) {
+			if likelyAntialiased(
+				reference,
+				actual,
+				absoluteX,
+				absoluteY,
+				fullImage,
+				ignoredPixels,
+			) {
 				antialiased++
 			}
 			changedPixels[y*width+x] = true
@@ -192,8 +223,13 @@ func (images *DecodedImages) Compare(threshold uint8, perceptualThreshold float6
 	}
 	result := ImageComparison{
 		Width: width, Height: height, ChangedPixels: changed, ComparedPixels: compared,
+		//nolint:lll // keep this expression together
 		PerceptualChangedPixels: perceptualChanged, PerceptualThreshold: perceptualThreshold, AntialiasedPixels: antialiased,
-		Evidence: EvidenceBreakdown{RawOnlyPixels: rawOnly, PerceptualOnlyPixels: perceptualOnly, RawAndPerceptualPixels: both},
+		Evidence: EvidenceBreakdown{
+			RawOnlyPixels:          rawOnly,
+			PerceptualOnlyPixels:   perceptualOnly,
+			RawAndPerceptualPixels: both,
+		},
 	}
 	if compared > 0 {
 		result.ChangedRatio = float64(changed) / float64(compared)
@@ -212,7 +248,12 @@ func (images *DecodedImages) Compare(threshold uint8, perceptualThreshold float6
 		result.ComparedRegion = &comparedRegion
 	}
 	if changed > 0 {
-		result.Bounds = &Bounds{X: area.X + minX, Y: area.Y + minY, Width: maxX - minX + 1, Height: maxY - minY + 1}
+		result.Bounds = &Bounds{
+			X:      area.X + minX,
+			Y:      area.Y + minY,
+			Width:  maxX - minX + 1,
+			Height: maxY - minY + 1,
+		}
 		for row, hasChanges := range changedRows {
 			if hasChanges {
 				result.ChangedRows = append(result.ChangedRows, area.Y+row)
@@ -238,11 +279,13 @@ func imageEdgeRMSE(reference, actual *image.NRGBA, area Bounds, ignored ignoredP
 			referencePixel := reference.NRGBAAt(x, y)
 			actualPixel := actual.NRGBAAt(x, y)
 			for _, previous := range [][2]int{{x - 1, y}, {x, y - 1}} {
-				if previous[0] < area.X || previous[1] < area.Y || ignored.Contains(previous[0], previous[1]) {
+				if previous[0] < area.X || previous[1] < area.Y ||
+					ignored.Contains(previous[0], previous[1]) {
 					continue
 				}
 				referencePrevious := reference.NRGBAAt(previous[0], previous[1])
 				actualPrevious := actual.NRGBAAt(previous[0], previous[1])
+				//nolint:lll // keep this expression together
 				delta := (visibleLuminance(referencePixel) - visibleLuminance(referencePrevious)) - (visibleLuminance(actualPixel) - visibleLuminance(actualPrevious))
 				squaredError += delta * delta
 				samples++
@@ -277,7 +320,19 @@ func findRegions(changed []bool, width, height int) []Region {
 			index := queue[0]
 			queue = queue[1:]
 			x, y := index%width, index/width
-			minX, maxX, minY, maxY, count = min(minX, x), max(maxX, x), min(minY, y), max(maxY, y), count+1
+			minX, maxX, minY, maxY, count = min(
+				minX,
+				x,
+			), max(
+				maxX,
+				x,
+			), min(
+				minY,
+				y,
+			), max(
+				maxY,
+				y,
+			), count+1
 			for _, point := range [][2]int{{x - 1, y}, {x + 1, y}, {x, y - 1}, {x, y + 1}} {
 				nx, ny := point[0], point[1]
 				if nx < 0 || nx >= width || ny < 0 || ny >= height {
@@ -290,9 +345,23 @@ func findRegions(changed []bool, width, height int) []Region {
 				}
 			}
 		}
-		regions = append(regions, Region{Bounds: Bounds{X: minX, Y: minY, Width: maxX - minX + 1, Height: maxY - minY + 1}, ChangedPixels: count})
+		regions = append(
+			regions,
+			Region{
+				Bounds: Bounds{
+					X:      minX,
+					Y:      minY,
+					Width:  maxX - minX + 1,
+					Height: maxY - minY + 1,
+				},
+				ChangedPixels: count,
+			},
+		)
 	}
-	sort.SliceStable(regions, func(i, j int) bool { return regions[i].ChangedPixels > regions[j].ChangedPixels })
+	sort.SliceStable(
+		regions,
+		func(i, j int) bool { return regions[i].ChangedPixels > regions[j].ChangedPixels },
+	)
 	return regions
 }
 
