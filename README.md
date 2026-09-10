@@ -1,30 +1,24 @@
 # pxp - Pixel Perfect
 
-**Stop guessing what changed. Measure it.**
+You give a coding agent a screenshot and ask it to build the UI. The result looks close, but the spacing is off, a color doesn't match, and now you need to explain what to fix.
 
-A UI can look close to a reference screenshot and still have the wrong spacing,
-colors, or alignment. Pixel Perfect (`pxp`) compares two PNGs and gives you—and
-your coding agent—evidence for the next fix.
+`pxp` compares the reference PNG with a screenshot of your implementation.
+It shows where they differ, gives you numbers to compare between changes, and generates an overlay and an HTML report you can inspect yourself.
 
-Get mismatch regions, image metrics, a diff overlay, and a self-contained HTML
-report from one command. Core comparison runs offline. No API key or vision
-model required.
+The idea is to give the agent something more useful than “it still looks wrong”.
+Comparison runs locally, without an API key or a vision model.
 
-## From “looks close” to a measured next step
+## What you get
 
-- **Find where to look.** Mismatch regions and overlays show where images differ.
-- **Inspect the details.** Probe exact pixel colors or scan rows and columns to
-  investigate spacing and edges.
-- **Measure progress.** Raw and perceptual metrics let you compare iterations
-  under the same settings.
-- **Share the evidence.** HTML reports put images, metrics, and provenance in one
-  file for review.
-- **Set your own gate.** Use explicit metric limits to enforce visual regression
-  checks in CI.
+- Regions where the images differ, so you can focus on a smaller area.
+- Raw and perceptual metrics to check what changed between iterations.
+- Pixel probes and row or column scans for questions about colors and spacing.
+- Masks, overlays, and an HTML report with the images and metrics in one file.
+- Optional metric limits when you want a comparison to fail in CI.
 
-Built for agent workflows: deterministic measurements, bounded results, TOON-first
-structured output, and JSON when you need it. Optional visual descriptions add
-context; they do not change the measurements.
+The output is meant for agents too. Comparison results use TOON by default, with JSON available through `--json`.
+Results are bounded so the agent doesn't need to read every mismatch at once.
+Optional visual descriptions can add context, but they don't change the measurements.
 
 ## Install
 
@@ -48,50 +42,50 @@ nix run .#pxp -- --help
 nix build .#pxp
 ```
 
-## Compare your first screenshots
+## Try it
 
-Capture your UI, then compare it with the reference:
+Capture your UI and compare it with the reference:
 
 ```bash
 pxp reference.png actual.png --overlay overlay.png --report visual-diff.html
 ```
 
-You get structured metrics in the terminal, a changed-pixel mask at
-`actual.diff.png`, an overlay, and an HTML report. Open `visual-diff.html` to
-review the evidence, fix one issue, capture again, and compare with the same
-settings.
+This prints the metrics and writes `actual.diff.png`, `overlay.png`, and `visual-diff.html`.
+Open the report, pick something to fix, then capture again and compare with the same settings.
+Keep the previous capture so you can check whether the change helped.
 
-Need a closer look?
+For a closer look:
 
 ```bash
-# Inspect exact colors at a point.
+# Check the colors at a point.
 pxp probe reference.png actual.png --at 20,20
 
-# Inspect color runs across a row.
+# Check color runs across a row.
 pxp scan reference.png actual.png --row 20
 
 # Save comparison metrics as JSON.
 pxp reference.png actual.png --json > metrics.json
 ```
 
-Use coordinates inside your images. See the [command guide](cmd/pxp/README.md)
-for crops, masks, profiles, annotations, validation gates, and exit codes.
+Use coordinates inside your images.
+The [command guide](cmd/pxp/README.md) covers crops, masks, profiles, annotations, validation gates, and exit codes.
 
-## Evidence, not a promise of perfection
+## A few constraints
 
-PXP compares screenshots; it does not capture them, resize them, or align them
-automatically. Prepared inputs must have equal dimensions. Use explicit crops
-when captures include different surrounding areas.
+PXP doesn't take screenshots, resize images, or align them automatically.
+You need to supply images with equal dimensions after any crops (use explicit crops when the captures include different surrounding areas).
+Keep the browser, scale, fonts, and capture state consistent between comparisons.
 
-A lower error is progress—not proof that a UI looks right or works correctly.
-Keep capture conditions fixed and review behavior separately. Differences alone
-do not fail the command; configure `--max-*` limits when you need a pass/fail gate.
+The thing is, a smaller error doesn't tell you whether a button works, or whether the UI actually looks right.
+You still need to check those things. The numbers help you investigate; they aren't an approval.
 
-## Use it with a coding agent
+Finding different pixels doesn't fail the command by itself.
+Set `--max-*` limits if you need a pass/fail check, using tolerances that make sense for your captures.
 
-The [PXP skill](skills/pxp/SKILL.md) guides screenshot-driven UI implementation:
-build a real component, capture a baseline, make bounded refinements, and report
-measured progress and remaining differences.
+## Using it with an agent
+
+The [PXP skill](skills/pxp/SKILL.md) describes the workflow: build the real component, capture a baseline, compare, and make a limited number of changes.
+It also asks the agent to report what still differs, rather than call it done just because the score improved.
 
 ## Development
 
