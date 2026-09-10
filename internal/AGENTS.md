@@ -19,4 +19,4 @@ The command package coordinates capabilities. Core image evidence may consume an
 
 # Placement
 
-Place a responsibility in the narrowest package that owns its decisions. Keep composition in `pixelperfectcmd`, infrastructure adapters at the edges, and deterministic analysis independent of external services.
+Place a responsibility in the narrowest package that owns its decisions. Keep composition in `commands`, infrastructure adapters at the edges, and deterministic analysis independent of external services.

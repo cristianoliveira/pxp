@@ -43,4 +43,4 @@ Composition is wired at the executable and command boundaries. Provider calls st
 
 # Placement
 
-Put reusable image evidence in `imagediff`, command policy in `pixelperfectcmd`, provider adapters in `imagecontext`, presentation in `pixelperfectreport`, and shared output/process behavior in their respective guides. Add a new top-level module only when a cohesive responsibility has an independent owner and boundary.
+Put reusable image evidence in `imagediff`, command policy in `commands`, provider adapters in `imagecontext`, presentation in `report`, and shared output/process behavior in their respective guides. Add a new top-level module only when a cohesive responsibility has an independent owner and boundary.
