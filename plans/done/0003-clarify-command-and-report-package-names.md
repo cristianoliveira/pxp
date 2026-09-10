@@ -1,7 +1,7 @@
 ---
 id: TASK-0003
 title: Clarify command and report package names
-status: doing
+status: done
 depends_on: []
 priority: low
 tags: []
