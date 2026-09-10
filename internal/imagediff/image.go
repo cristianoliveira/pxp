@@ -11,7 +11,7 @@ import (
 	"sort"
 
 	"github.com/cristianoliveira/pxp/internal/annotations"
-	"github.com/cristianoliveira/pxp/internal/output"
+	"github.com/cristianoliveira/pxp/internal/artifact"
 )
 
 type Bounds struct {
@@ -308,7 +308,7 @@ func decodeNRGBA(path string) (*image.NRGBA, error) {
 }
 
 func encodePNG(path string, img image.Image) error {
-	file, err := output.CreateFile(path)
+	file, err := artifact.CreateFile(path)
 	if err != nil {
 		return err
 	}

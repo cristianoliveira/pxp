@@ -1,4 +1,5 @@
-package output
+// Package artifact owns filesystem persistence for generated artifacts.
+package artifact
 
 import (
 	"io/fs"
