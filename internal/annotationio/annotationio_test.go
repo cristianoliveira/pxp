@@ -29,6 +29,15 @@ func TestWriteReportsArtifactCreationFailure(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestWritePreservesNilAnnotationsWireCompatibility(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "annotations.json")
+	document := annotations.Document{Version: 1, CoordinateSpace: annotations.Size{Width: 1, Height: 1}}
+	require.NoError(t, Write(path, document))
+	loaded, err := Load(path)
+	require.NoError(t, err)
+	assert.Nil(t, loaded.Annotations)
+}
+
 func TestWriteCreatesParentAndRoundTripsDocument(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "nested", "annotations.json")
 	document := annotations.Document{Version: 1, CoordinateSpace: annotations.Size{Width: 10, Height: 10}, Annotations: []annotations.Annotation{}}

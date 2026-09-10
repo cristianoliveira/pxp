@@ -35,7 +35,10 @@ type annotationDTO struct {
 
 func toDTO(document annotations.Document) documentDTO {
 	return documentDTO{Version: document.Version, CoordinateSpace: sizeDTO{Width: document.CoordinateSpace.Width, Height: document.CoordinateSpace.Height}, Annotations: func() []annotationDTO {
-		items := make([]annotationDTO, len(document.Annotations))
+		var items []annotationDTO
+		if document.Annotations != nil {
+			items = make([]annotationDTO, len(document.Annotations))
+		}
 		for index, annotation := range document.Annotations {
 			items[index] = annotationDTO{ID: annotation.ID, Label: annotation.Label, Bounds: boundsDTO{X: annotation.Bounds.X, Y: annotation.Bounds.Y, Width: annotation.Bounds.Width, Height: annotation.Bounds.Height}, Metadata: annotation.Metadata}
 		}
@@ -44,7 +47,10 @@ func toDTO(document annotations.Document) documentDTO {
 }
 
 func fromDTO(document documentDTO) annotations.Document {
-	result := annotations.Document{Version: document.Version, CoordinateSpace: annotations.Size{Width: document.CoordinateSpace.Width, Height: document.CoordinateSpace.Height}, Annotations: make([]annotations.Annotation, len(document.Annotations))}
+	result := annotations.Document{Version: document.Version, CoordinateSpace: annotations.Size{Width: document.CoordinateSpace.Width, Height: document.CoordinateSpace.Height}}
+	if document.Annotations != nil {
+		result.Annotations = make([]annotations.Annotation, len(document.Annotations))
+	}
 	for index, annotation := range document.Annotations {
 		result.Annotations[index] = annotations.Annotation{ID: annotation.ID, Label: annotation.Label, Bounds: annotations.Bounds{X: annotation.Bounds.X, Y: annotation.Bounds.Y, Width: annotation.Bounds.Width, Height: annotation.Bounds.Height}, Metadata: annotation.Metadata}
 	}
