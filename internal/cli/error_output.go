@@ -3,10 +3,11 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
 	"image/png"
 	"os"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 // ErrorOutput is the stable process-level failure envelope.
