@@ -19,6 +19,8 @@ The package is the source of truth for measurements. It does not parse Cobra fla
 - `internal/imagediff/region_metrics.go:MeasureImageRegionWithThresholds`: measures a bounded region.
 - `internal/imagediff/offset.go:SuggestImageOffset`: produces advisory translation evidence.
 - `internal/imagediff/overlay.go:WriteImageOverlay`: writes a comparison overlay.
+- `internal/imagediff/probe.go:DecodedImages.Probe`: measures normalized RGBA values at a point.
+- `internal/imagediff/scan.go:DecodedImages.Scan`: produces deterministic horizontal or vertical color runs.
 
 # Boundary flows
 

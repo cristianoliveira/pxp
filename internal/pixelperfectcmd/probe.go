@@ -3,8 +3,6 @@ package pixelperfectcmd
 import (
 	"fmt"
 	"image"
-	"image/png"
-	"os"
 	"strconv"
 	"strings"
 
@@ -255,30 +253,21 @@ func parseProbePoint(value string) (probePoint, error) {
 }
 
 func probeImages(referencePath, actualPath string, points []probePoint) (probeOutput, error) {
-	referenceWidth, referenceHeight, err := diff.PNGDimensions(referencePath)
+	images, err := diff.LoadDecodedImages(referencePath, actualPath)
 	if err != nil {
-		return probeOutput{}, fmt.Errorf("decode reference: %w", err)
-	}
-	actualWidth, actualHeight, err := diff.PNGDimensions(actualPath)
-	if err != nil {
-		return probeOutput{}, fmt.Errorf("decode actual: %w", err)
-	}
-	if referenceWidth != actualWidth || referenceHeight != actualHeight {
-		return probeOutput{}, fmt.Errorf("image dimensions differ: reference is %dx%d, actual is %dx%d", referenceWidth, referenceHeight, actualWidth, actualHeight)
+		return probeOutput{}, err
 	}
 	output := probeOutput{Points: make([]probePointOutput, 0, len(points))}
 	for _, point := range points {
-		if point.X >= referenceWidth || point.Y >= referenceHeight {
-			return probeOutput{}, cli.NewUsageError(fmt.Errorf("--at point %d,%d is outside image bounds %dx%d", point.X, point.Y, referenceWidth, referenceHeight))
-		}
-		referenceColor, err := probePNGColor(referencePath, point)
+		measurement, err := images.Probe(image.Point{X: point.X, Y: point.Y})
 		if err != nil {
-			return probeOutput{}, fmt.Errorf("decode reference: %w", err)
+			if boundsErr, ok := err.(*diff.MeasurementBoundsError); ok {
+				return probeOutput{}, cli.NewUsageError(fmt.Errorf("--at point %d,%d is outside image bounds %dx%d", boundsErr.Point.X, boundsErr.Point.Y, boundsErr.Size.X, boundsErr.Size.Y))
+			}
+			return probeOutput{}, err
 		}
-		actualColor, err := probePNGColor(actualPath, point)
-		if err != nil {
-			return probeOutput{}, fmt.Errorf("decode actual: %w", err)
-		}
+		referenceColor := probeColorFromRGBA(measurement.Reference)
+		actualColor := probeColorFromRGBA(measurement.Actual)
 		output.Points = append(output.Points, probePointOutput{
 			Point:     point,
 			Reference: referenceColor,
@@ -294,22 +283,6 @@ func probeImages(referencePath, actualPath string, points []probePoint) (probeOu
 	return output, nil
 }
 
-func probePNGColor(path string, point probePoint) (probeColor, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return probeColor{}, err
-	}
-	defer func() { _ = file.Close() }()
-	image, err := png.Decode(file)
-	if err != nil {
-		return probeColor{}, err
-	}
-	return colorFromImage(image, point), nil
-}
-
-func colorFromImage(image image.Image, point probePoint) probeColor {
-	r, g, b, a := image.At(point.X, point.Y).RGBA()
-	color := probeColor{RGBA: [4]uint8{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), uint8(a >> 8)}}
-	color.Hex = fmt.Sprintf("#%02X%02X%02X", color.RGBA[0], color.RGBA[1], color.RGBA[2])
-	return color
+func probeColorFromRGBA(rgba [4]uint8) probeColor {
+	return probeColor{RGBA: rgba, Hex: formatColorHex(rgba)}
 }

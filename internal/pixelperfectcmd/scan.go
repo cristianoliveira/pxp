@@ -2,8 +2,7 @@ package pixelperfectcmd
 
 import (
 	"fmt"
-	"image/png"
-	"os"
+	"image"
 
 	"github.com/cristianoliveira/pxp/internal/cli"
 	diff "github.com/cristianoliveira/pxp/internal/imagediff"
@@ -144,60 +143,45 @@ func lineWithCropOrigin(axis string, index int, crop *diff.Bounds) scanLinePosit
 }
 
 func scanImages(referencePath, actualPath string, axis string, index int) (scanOutput, error) {
-	referenceWidth, referenceHeight, err := diff.PNGDimensions(referencePath)
+	images, err := diff.LoadDecodedImages(referencePath, actualPath)
 	if err != nil {
-		return scanOutput{}, fmt.Errorf("decode reference: %w", err)
+		return scanOutput{}, err
 	}
-	actualWidth, actualHeight, err := diff.PNGDimensions(actualPath)
-	if err != nil {
-		return scanOutput{}, fmt.Errorf("decode actual: %w", err)
-	}
-	if referenceWidth != actualWidth || referenceHeight != actualHeight {
-		return scanOutput{}, fmt.Errorf("image dimensions differ: reference is %dx%d, actual is %dx%d", referenceWidth, referenceHeight, actualWidth, actualHeight)
-	}
-	length := referenceWidth
+	scanAxis := diff.ScanHorizontal
 	if axis == "y" {
-		length = referenceHeight
+		scanAxis = diff.ScanVertical
 	}
-	if index >= map[string]int{"x": referenceHeight, "y": referenceWidth}[axis] {
-		flag := map[string]string{"x": "--y", "y": "--x"}[axis]
-		limit := map[string]int{"x": referenceHeight, "y": referenceWidth}[axis]
-		return scanOutput{}, cli.NewUsageError(fmt.Errorf("%s index %d is outside image bounds %dx%d (valid 0-%d)", flag, index, referenceWidth, referenceHeight, limit-1))
-	}
-	referenceRuns, err := scanPNGRuns(referencePath, axis, index, length)
+	referenceRuns, actualRuns, err := images.Scan(scanAxis, index)
 	if err != nil {
-		return scanOutput{}, fmt.Errorf("decode reference: %w", err)
+		if boundsErr, ok := err.(*diff.MeasurementBoundsError); ok {
+			flag := map[string]string{"x": "--y", "y": "--x"}[axis]
+			limit := boundsErr.Size.Y
+			if axis == "y" {
+				limit = boundsErr.Size.X
+			}
+			return scanOutput{}, cli.NewUsageError(fmt.Errorf("%s index %d is outside image bounds %dx%d (valid 0-%d)", flag, index, boundsErr.Size.X, boundsErr.Size.Y, limit-1))
+		}
+		return scanOutput{}, err
 	}
-	actualRuns, err := scanPNGRuns(actualPath, axis, index, length)
-	if err != nil {
-		return scanOutput{}, fmt.Errorf("decode actual: %w", err)
-	}
-	return scanOutput{Axis: axis, Index: index, Length: length, Reference: referenceRuns, Actual: actualRuns}, nil
+	length := boundsLength(images.Reference.Bounds(), scanAxis)
+	return scanOutput{Axis: axis, Index: index, Length: length, Reference: scanRunsFromDiff(referenceRuns), Actual: scanRunsFromDiff(actualRuns)}, nil
 }
 
-func scanPNGRuns(path string, axis string, index int, length int) ([]scanRun, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
+func boundsLength(bounds image.Rectangle, axis diff.ScanAxis) int {
+	if axis == diff.ScanVertical {
+		return bounds.Dy()
 	}
-	defer func() { _ = file.Close() }()
-	image, err := png.Decode(file)
-	if err != nil {
-		return nil, err
+	return bounds.Dx()
+}
+
+func scanRunsFromDiff(runs []diff.ColorRun) []scanRun {
+	output := make([]scanRun, len(runs))
+	for index, run := range runs {
+		output[index] = scanRun{Start: run.Start, End: run.End, Length: run.Length, RGBA: run.RGBA, Hex: formatColorHex(run.RGBA)}
 	}
-	runs := make([]scanRun, 0)
-	for position := 0; position < length; position++ {
-		point := probePoint{X: position, Y: index}
-		if axis == "y" {
-			point = probePoint{X: index, Y: position}
-		}
-		color := colorFromImage(image, point)
-		if len(runs) > 0 && runs[len(runs)-1].RGBA == color.RGBA {
-			runs[len(runs)-1].End = position
-			runs[len(runs)-1].Length++
-			continue
-		}
-		runs = append(runs, scanRun{Start: position, End: position, Length: 1, RGBA: color.RGBA, Hex: color.Hex})
-	}
-	return runs, nil
+	return output
+}
+
+func formatColorHex(rgba [4]uint8) string {
+	return fmt.Sprintf("#%02X%02X%02X", rgba[0], rgba[1], rgba[2])
 }
