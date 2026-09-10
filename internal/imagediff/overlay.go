@@ -6,23 +6,25 @@ import (
 	"image/color"
 )
 
-// WriteImageOverlay writes a transparent directional difference image.
+// Overlay computes a transparent directional difference image in memory.
 // Red pixels are stronger in the reference; green pixels are stronger in the actual image.
-func WriteImageOverlay(referencePath, actualPath, outputPath string, region *Bounds, ignored []Bounds) error {
-	images, err := LoadDecodedImages(referencePath, actualPath)
-	if err != nil {
-		return err
-	}
-	return images.WriteOverlay(outputPath, region, ignored)
-}
-
-func (images *DecodedImages) WriteOverlay(outputPath string, region *Bounds, ignored []Bounds) error {
+func (images *DecodedImages) Overlay(region *Bounds, ignored []Bounds) (*image.NRGBA, error) {
 	reference, actual := images.Reference, images.Actual
 	area := Bounds{Width: reference.Bounds().Dx(), Height: reference.Bounds().Dy()}
 	if region != nil {
 		area = *region
-		if area.X < 0 || area.Y < 0 || area.Width <= 0 || area.Height <= 0 || area.X+area.Width > reference.Bounds().Dx() || area.Y+area.Height > reference.Bounds().Dy() {
-			return fmt.Errorf("region %d,%d,%d,%d is outside image bounds %dx%d", area.X, area.Y, area.Width, area.Height, reference.Bounds().Dx(), reference.Bounds().Dy())
+		if area.X < 0 || area.Y < 0 || area.Width <= 0 || area.Height <= 0 ||
+			area.X+area.Width > reference.Bounds().Dx() ||
+			area.Y+area.Height > reference.Bounds().Dy() {
+			return nil, fmt.Errorf(
+				"region %d,%d,%d,%d is outside image bounds %dx%d",
+				area.X,
+				area.Y,
+				area.Width,
+				area.Height,
+				reference.Bounds().Dx(),
+				reference.Bounds().Dy(),
+			)
 		}
 	}
 	ignoredPixels := newIgnoredPixelMap(reference.Bounds().Dx(), reference.Bounds().Dy(), ignored)
@@ -32,21 +34,33 @@ func (images *DecodedImages) WriteOverlay(outputPath string, region *Bounds, ign
 			if ignoredPixels.Contains(area.X+x, area.Y+y) {
 				continue
 			}
+			//nolint:lll // keep this expression together
 			referencePixel := color.NRGBAModel.Convert(reference.At(reference.Bounds().Min.X+area.X+x, reference.Bounds().Min.Y+area.Y+y)).(color.NRGBA)
+			//nolint:lll // keep this expression together
 			actualPixel := color.NRGBAModel.Convert(actual.At(actual.Bounds().Min.X+area.X+x, actual.Bounds().Min.Y+area.Y+y)).(color.NRGBA)
 			referenceStrength := directionalDifference(referencePixel, actualPixel)
 			actualStrength := directionalDifference(actualPixel, referencePixel)
-			overlay.SetNRGBA(x, y, color.NRGBA{R: referenceStrength, G: actualStrength, A: max(referenceStrength, actualStrength)})
+			overlay.SetNRGBA(
+				x,
+				y,
+				color.NRGBA{
+					R: referenceStrength,
+					G: actualStrength,
+					A: max(referenceStrength, actualStrength),
+				},
+			)
 		}
 	}
-	if err := encodePNG(outputPath, overlay); err != nil {
-		return fmt.Errorf("write overlay: %w", err)
-	}
-	return nil
+	return overlay, nil
 }
 
 func directionalDifference(first, second color.NRGBA) uint8 {
-	return max(positiveDifference(first.R, second.R), positiveDifference(first.G, second.G), positiveDifference(first.B, second.B), positiveDifference(first.A, second.A))
+	return max(
+		positiveDifference(first.R, second.R),
+		positiveDifference(first.G, second.G),
+		positiveDifference(first.B, second.B),
+		positiveDifference(first.A, second.A),
+	)
 }
 
 func positiveDifference(first, second uint8) uint8 {

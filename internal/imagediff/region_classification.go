@@ -4,7 +4,8 @@ func ClassifyImageRegion(metrics RegionMetrics) string {
 	if metrics.ChangedPixels == 0 {
 		return "none"
 	}
-	if metrics.ChangedRatio >= 0.6 && dominantPairRatio(metrics) >= 0.7 && metrics.EdgeRMSE < metrics.RMSE*0.5 {
+	if metrics.ChangedRatio >= 0.6 && dominantPairRatio(metrics) >= 0.7 &&
+		metrics.EdgeRMSE < metrics.RMSE*0.5 {
 		return "solid-fill"
 	}
 	if metrics.EdgeRMSE >= metrics.RMSE*0.7 {

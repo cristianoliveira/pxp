@@ -4,14 +4,10 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"image/draw"
-	"image/png"
 	"math"
-	"os"
 	"sort"
 
 	"github.com/cristianoliveira/pxp/internal/annotations"
-	"github.com/cristianoliveira/pxp/internal/artifact"
 )
 
 type Bounds struct {
@@ -46,7 +42,8 @@ func newIgnoredPixelMap(width, height int, regions []Bounds) ignoredPixelMap {
 }
 
 func (m ignoredPixelMap) Contains(x, y int) bool {
-	return len(m.pixels) > 0 && x >= 0 && x < m.width && y >= 0 && y < m.height && m.pixels[y*m.width+x]
+	return len(m.pixels) > 0 && x >= 0 && x < m.width && y >= 0 && y < m.height &&
+		m.pixels[y*m.width+x]
 }
 
 type InputBounds struct {
@@ -115,46 +112,42 @@ type ImageComparison struct {
 	Inputs                  *ImageInputs      `json:"inputs,omitempty"`
 }
 
-func CompareImages(referencePath, actualPath, maskPath string, threshold uint8) (ImageComparison, error) {
-	return CompareImagesInRegion(referencePath, actualPath, maskPath, threshold, nil)
-}
-
-func CompareImagesInRegion(referencePath, actualPath, maskPath string, threshold uint8, region *Bounds) (ImageComparison, error) {
-	return CompareImagesWithIgnoredRegions(referencePath, actualPath, maskPath, threshold, region, nil)
-}
-
-func CompareImagesWithIgnoredRegions(referencePath, actualPath, maskPath string, threshold uint8, region *Bounds, ignored []Bounds) (ImageComparison, error) {
-	return CompareImagesWithThresholds(referencePath, actualPath, maskPath, threshold, DefaultPerceptualThreshold, region, ignored)
-}
-
-func CompareImagesWithThresholds(referencePath, actualPath, maskPath string, threshold uint8, perceptualThreshold float64, region *Bounds, ignored []Bounds) (ImageComparison, error) {
-	images, err := LoadDecodedImages(referencePath, actualPath)
-	if err != nil {
-		return ImageComparison{}, err
-	}
-	return images.Compare(maskPath, threshold, perceptualThreshold, region, ignored)
-}
-
-func (images *DecodedImages) Compare(maskPath string, threshold uint8, perceptualThreshold float64, region *Bounds, ignored []Bounds) (ImageComparison, error) {
+// Compare computes deterministic evidence from already-decoded images. It has no file-system side effects.
+//
+//nolint:lll // keep this expression together
+func (images *DecodedImages) Compare(
+	threshold uint8,
+	perceptualThreshold float64,
+	region *Bounds,
+	ignored []Bounds,
+) (ImageComparison, *image.NRGBA, error) {
 	reference, actual := images.Reference, images.Actual
 
 	imageWidth, imageHeight := reference.Bounds().Dx(), reference.Bounds().Dy()
 	area := Bounds{Width: imageWidth, Height: imageHeight}
 	if region != nil {
 		area = *region
-		if area.X < 0 || area.Y < 0 || area.Width <= 0 || area.Height <= 0 || area.X+area.Width > imageWidth || area.Y+area.Height > imageHeight {
-			return ImageComparison{}, fmt.Errorf("region %d,%d,%d,%d is outside image bounds %dx%d", area.X, area.Y, area.Width, area.Height, imageWidth, imageHeight)
+		if area.X < 0 || area.Y < 0 || area.Width <= 0 || area.Height <= 0 ||
+			area.X+area.Width > imageWidth ||
+			area.Y+area.Height > imageHeight {
+			return ImageComparison{}, nil, fmt.Errorf(
+				"region %d,%d,%d,%d is outside image bounds %dx%d",
+				area.X,
+				area.Y,
+				area.Width,
+				area.Height,
+				imageWidth,
+				imageHeight,
+			)
 		}
 	}
 	width, height := area.Width, area.Height
 	fullImage := Bounds{Width: imageWidth, Height: imageHeight}
 	ignoredPixels := newIgnoredPixelMap(imageWidth, imageHeight, ignored)
-	var mask *image.NRGBA
-	if maskPath != "" {
-		mask = image.NewNRGBA(image.Rect(0, 0, width, height))
-	}
+	mask := image.NewNRGBA(image.Rect(0, 0, width, height))
 	changedPixels := make([]bool, width*height)
 	changedRows := make([]bool, height)
+	//nolint:lll // keep this expression together
 	changed, perceptualChanged, antialiased, rawOnly, perceptualOnly, both, compared, minX, minY, maxX, maxY := 0, 0, 0, 0, 0, 0, 0, width, height, -1, -1
 	var rgbSquaredError, luminanceSquaredError, alphaSquaredError, perceptualSquaredError float64
 	hasTransparency, hasPixelDifference := false, false
@@ -172,7 +165,12 @@ func (images *DecodedImages) Compare(maskPath string, threshold uint8, perceptua
 				continue
 			}
 			hasPixelDifference = true
-			delta := [4]uint8{absDiff(r.R, a.R), absDiff(r.G, a.G), absDiff(r.B, a.B), absDiff(r.A, a.A)}
+			delta := [4]uint8{
+				absDiff(r.R, a.R),
+				absDiff(r.G, a.G),
+				absDiff(r.B, a.B),
+				absDiff(r.A, a.A),
+			}
 			maxDelta := max(delta[0], delta[1], delta[2], delta[3])
 			for _, value := range delta[:3] {
 				rgbSquaredError += float64(value) * float64(value)
@@ -199,7 +197,14 @@ func (images *DecodedImages) Compare(maskPath string, threshold uint8, perceptua
 				continue
 			}
 			changed++
-			if likelyAntialiased(reference, actual, absoluteX, absoluteY, fullImage, ignoredPixels) {
+			if likelyAntialiased(
+				reference,
+				actual,
+				absoluteX,
+				absoluteY,
+				fullImage,
+				ignoredPixels,
+			) {
 				antialiased++
 			}
 			changedPixels[y*width+x] = true
@@ -210,11 +215,6 @@ func (images *DecodedImages) Compare(maskPath string, threshold uint8, perceptua
 			}
 		}
 	}
-	if maskPath != "" {
-		if err := encodePNG(maskPath, mask); err != nil {
-			return ImageComparison{}, fmt.Errorf("write mask: %w", err)
-		}
-	}
 	channelCount := 3
 	squaredError := rgbSquaredError
 	if hasTransparency {
@@ -222,9 +222,14 @@ func (images *DecodedImages) Compare(maskPath string, threshold uint8, perceptua
 		squaredError += alphaSquaredError
 	}
 	result := ImageComparison{
-		Width: width, Height: height, ChangedPixels: changed, ComparedPixels: compared, Mask: maskPath,
+		Width: width, Height: height, ChangedPixels: changed, ComparedPixels: compared,
+		//nolint:lll // keep this expression together
 		PerceptualChangedPixels: perceptualChanged, PerceptualThreshold: perceptualThreshold, AntialiasedPixels: antialiased,
-		Evidence: EvidenceBreakdown{RawOnlyPixels: rawOnly, PerceptualOnlyPixels: perceptualOnly, RawAndPerceptualPixels: both},
+		Evidence: EvidenceBreakdown{
+			RawOnlyPixels:          rawOnly,
+			PerceptualOnlyPixels:   perceptualOnly,
+			RawAndPerceptualPixels: both,
+		},
 	}
 	if compared > 0 {
 		result.ChangedRatio = float64(changed) / float64(compared)
@@ -243,7 +248,12 @@ func (images *DecodedImages) Compare(maskPath string, threshold uint8, perceptua
 		result.ComparedRegion = &comparedRegion
 	}
 	if changed > 0 {
-		result.Bounds = &Bounds{X: area.X + minX, Y: area.Y + minY, Width: maxX - minX + 1, Height: maxY - minY + 1}
+		result.Bounds = &Bounds{
+			X:      area.X + minX,
+			Y:      area.Y + minY,
+			Width:  maxX - minX + 1,
+			Height: maxY - minY + 1,
+		}
 		for row, hasChanges := range changedRows {
 			if hasChanges {
 				result.ChangedRows = append(result.ChangedRows, area.Y+row)
@@ -255,68 +265,7 @@ func (images *DecodedImages) Compare(maskPath string, threshold uint8, perceptua
 			result.Regions[index].Bounds.Y += area.Y
 		}
 	}
-	return result, nil
-}
-
-func PNGDimensions(path string) (int, int, error) {
-	img, err := decodePNG(path)
-	if err != nil {
-		return 0, 0, err
-	}
-	return img.Bounds().Dx(), img.Bounds().Dy(), nil
-}
-
-func WriteCroppedPNG(inputPath, outputPath string, crop Bounds) error {
-	img, err := decodePNG(inputPath)
-	if err != nil {
-		return err
-	}
-	if crop.X < 0 || crop.Y < 0 || crop.Width <= 0 || crop.Height <= 0 || crop.X+crop.Width > img.Bounds().Dx() || crop.Y+crop.Height > img.Bounds().Dy() {
-		return fmt.Errorf("crop %d,%d,%d,%d is outside image bounds %dx%d", crop.X, crop.Y, crop.Width, crop.Height, img.Bounds().Dx(), img.Bounds().Dy())
-	}
-	cropped := image.NewNRGBA(image.Rect(0, 0, crop.Width, crop.Height))
-	for y := 0; y < crop.Height; y++ {
-		for x := 0; x < crop.Width; x++ {
-			cropped.Set(x, y, img.At(img.Bounds().Min.X+crop.X+x, img.Bounds().Min.Y+crop.Y+y))
-		}
-	}
-	return encodePNG(outputPath, cropped)
-}
-
-func decodePNG(path string) (image.Image, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	img, decodeErr := png.Decode(file)
-	closeErr := file.Close()
-	if decodeErr != nil {
-		return nil, decodeErr
-	}
-	return img, closeErr
-}
-
-func decodeNRGBA(path string) (*image.NRGBA, error) {
-	decoded, err := decodePNG(path)
-	if err != nil {
-		return nil, err
-	}
-	bounds := decoded.Bounds()
-	normalized := image.NewNRGBA(image.Rect(0, 0, bounds.Dx(), bounds.Dy()))
-	draw.Draw(normalized, normalized.Bounds(), decoded, bounds.Min, draw.Src)
-	return normalized, nil
-}
-
-func encodePNG(path string, img image.Image) error {
-	file, err := artifact.CreateFile(path)
-	if err != nil {
-		return err
-	}
-	if err := png.Encode(file, img); err != nil {
-		_ = file.Close()
-		return err
-	}
-	return file.Close()
+	return result, mask, nil
 }
 
 func imageEdgeRMSE(reference, actual *image.NRGBA, area Bounds, ignored ignoredPixelMap) float64 {
@@ -330,11 +279,13 @@ func imageEdgeRMSE(reference, actual *image.NRGBA, area Bounds, ignored ignoredP
 			referencePixel := reference.NRGBAAt(x, y)
 			actualPixel := actual.NRGBAAt(x, y)
 			for _, previous := range [][2]int{{x - 1, y}, {x, y - 1}} {
-				if previous[0] < area.X || previous[1] < area.Y || ignored.Contains(previous[0], previous[1]) {
+				if previous[0] < area.X || previous[1] < area.Y ||
+					ignored.Contains(previous[0], previous[1]) {
 					continue
 				}
 				referencePrevious := reference.NRGBAAt(previous[0], previous[1])
 				actualPrevious := actual.NRGBAAt(previous[0], previous[1])
+				//nolint:lll // keep this expression together
 				delta := (visibleLuminance(referencePixel) - visibleLuminance(referencePrevious)) - (visibleLuminance(actualPixel) - visibleLuminance(actualPrevious))
 				squaredError += delta * delta
 				samples++
@@ -369,7 +320,19 @@ func findRegions(changed []bool, width, height int) []Region {
 			index := queue[0]
 			queue = queue[1:]
 			x, y := index%width, index/width
-			minX, maxX, minY, maxY, count = min(minX, x), max(maxX, x), min(minY, y), max(maxY, y), count+1
+			minX, maxX, minY, maxY, count = min(
+				minX,
+				x,
+			), max(
+				maxX,
+				x,
+			), min(
+				minY,
+				y,
+			), max(
+				maxY,
+				y,
+			), count+1
 			for _, point := range [][2]int{{x - 1, y}, {x + 1, y}, {x, y - 1}, {x, y + 1}} {
 				nx, ny := point[0], point[1]
 				if nx < 0 || nx >= width || ny < 0 || ny >= height {
@@ -382,9 +345,23 @@ func findRegions(changed []bool, width, height int) []Region {
 				}
 			}
 		}
-		regions = append(regions, Region{Bounds: Bounds{X: minX, Y: minY, Width: maxX - minX + 1, Height: maxY - minY + 1}, ChangedPixels: count})
+		regions = append(
+			regions,
+			Region{
+				Bounds: Bounds{
+					X:      minX,
+					Y:      minY,
+					Width:  maxX - minX + 1,
+					Height: maxY - minY + 1,
+				},
+				ChangedPixels: count,
+			},
+		)
 	}
-	sort.SliceStable(regions, func(i, j int) bool { return regions[i].ChangedPixels > regions[j].ChangedPixels })
+	sort.SliceStable(
+		regions,
+		func(i, j int) bool { return regions[i].ChangedPixels > regions[j].ChangedPixels },
+	)
 	return regions
 }
 

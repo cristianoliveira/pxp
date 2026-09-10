@@ -21,6 +21,7 @@ func writeProbeCSV(command *cobra.Command, output probeOutput) error {
 			inputReference = formatProbePoint(point.InputPoint.Reference)
 			inputActual = formatProbePoint(point.InputPoint.Actual)
 		}
+		//nolint:lll // keep this expression together
 		if _, err := fmt.Fprintf(writer, "%d,%d,%s,%s,%d,%s,%s\n", point.Point.X, point.Point.Y, point.Reference.Hex, point.Actual.Hex, maxAbsDelta(point.Delta), inputReference, inputActual); err != nil {
 			return err
 		}
@@ -30,12 +31,15 @@ func writeProbeCSV(command *cobra.Command, output probeOutput) error {
 
 func writeScanCSV(command *cobra.Command, output scanOutput) error {
 	writer := command.OutOrStdout()
+	//nolint:lll // keep this expression together
 	if _, err := fmt.Fprintln(writer, "image,axis,index,start,end,length,hex,input_axis,input_index"); err != nil {
 		return err
 	}
+	//nolint:lll // keep this expression together
 	if err := writeScanRunsCSV(writer, "ref", output.Axis, output.Index, output.Reference, output.InputLine, true); err != nil {
 		return err
 	}
+	//nolint:lll // keep this expression together
 	if err := writeScanRunsCSV(writer, "act", output.Axis, output.Index, output.Actual, output.InputLine, false); err != nil {
 		return err
 	}
@@ -46,11 +50,25 @@ func writeTruncationCSV(writer io.Writer, total, returned int, truncated bool, h
 	if !truncated {
 		return nil
 	}
-	_, err := fmt.Fprintf(writer, "# total=%d returned=%d truncated=true hint=%q\n", total, returned, hint)
+	_, err := fmt.Fprintf(
+		writer,
+		"# total=%d returned=%d truncated=true hint=%q\n",
+		total,
+		returned,
+		hint,
+	)
 	return err
 }
 
-func writeScanRunsCSV(writer io.Writer, imageName string, axis string, index int, runs []scanRun, inputLine *scanInputLine, reference bool) error {
+func writeScanRunsCSV(
+	writer io.Writer,
+	imageName string,
+	axis string,
+	index int,
+	runs []scanRun,
+	inputLine *scanInputLine,
+	reference bool,
+) error {
 	inputAxis, inputIndex := "", ""
 	if inputLine != nil {
 		line := inputLine.Actual
@@ -61,6 +79,7 @@ func writeScanRunsCSV(writer io.Writer, imageName string, axis string, index int
 		inputIndex = strconv.Itoa(line.Index)
 	}
 	for _, run := range runs {
+		//nolint:lll // keep this expression together
 		if _, err := fmt.Fprintf(writer, "%s,%s,%d,%d,%d,%d,%s,%s,%s\n", imageName, axis, index, run.Start, run.End, run.Length, run.Hex, inputAxis, inputIndex); err != nil {
 			return err
 		}

@@ -88,7 +88,10 @@ func MarkUsageErrors(command *cobra.Command) {
 	if command.Args != nil {
 		validateArgs := command.Args
 		command.Args = func(cmd *cobra.Command, args []string) error {
-			return NewUsageErrorWithRecovery(validateArgs(cmd, args), "Run `"+cmd.CommandPath()+" --help` for valid usage.")
+			return NewUsageErrorWithRecovery(
+				validateArgs(cmd, args),
+				"Run `"+cmd.CommandPath()+" --help` for valid usage.",
+			)
 		}
 	}
 	for _, child := range command.Commands() {

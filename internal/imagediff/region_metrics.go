@@ -25,38 +25,23 @@ type RegionMetrics struct {
 	DominantColorPairs      []ColorPair `json:"dominantColorPairs,omitempty"`
 }
 
-func MeasureImageRegion(referencePath, actualPath string, bounds Bounds, threshold uint8, ignored []Bounds) (RegionMetrics, error) {
-	return MeasureImageRegionWithThresholds(referencePath, actualPath, bounds, threshold, DefaultPerceptualThreshold, ignored)
-}
-
-func MeasureImageRegionWithThresholds(referencePath, actualPath string, bounds Bounds, threshold uint8, perceptualThreshold float64, ignored []Bounds) (RegionMetrics, error) {
-	reference, err := decodeNRGBA(referencePath)
-	if err != nil {
-		return RegionMetrics{}, fmt.Errorf("decode reference: %w", err)
-	}
-	actual, err := decodeNRGBA(actualPath)
-	if err != nil {
-		return RegionMetrics{}, fmt.Errorf("decode actual: %w", err)
-	}
-	if reference.Bounds().Dx() != actual.Bounds().Dx() || reference.Bounds().Dy() != actual.Bounds().Dy() {
-		return RegionMetrics{}, fmt.Errorf("image dimensions differ: reference is %dx%d, actual is %dx%d", reference.Bounds().Dx(), reference.Bounds().Dy(), actual.Bounds().Dx(), actual.Bounds().Dy())
-	}
-	return measureImageRegion(reference, actual, bounds, threshold, perceptualThreshold, ignored)
-}
-
-func MeasureImageRegionsWithThresholds(referencePath, actualPath string, regions []Bounds, threshold uint8, perceptualThreshold float64, ignored []Bounds) ([]RegionMetrics, error) {
-	images, err := LoadDecodedImages(referencePath, actualPath)
-	if err != nil {
-		return nil, err
-	}
-	return images.MeasureRegions(regions, threshold, perceptualThreshold, ignored)
-}
-
-func (images *DecodedImages) MeasureRegions(regions []Bounds, threshold uint8, perceptualThreshold float64, ignored []Bounds) ([]RegionMetrics, error) {
+func (images *DecodedImages) MeasureRegions(
+	regions []Bounds,
+	threshold uint8,
+	perceptualThreshold float64,
+	ignored []Bounds,
+) ([]RegionMetrics, error) {
 	metrics := make([]RegionMetrics, len(regions))
 	var err error
 	for index, bounds := range regions {
-		metrics[index], err = measureImageRegion(images.Reference, images.Actual, bounds, threshold, perceptualThreshold, ignored)
+		metrics[index], err = measureImageRegion(
+			images.Reference,
+			images.Actual,
+			bounds,
+			threshold,
+			perceptualThreshold,
+			ignored,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -64,9 +49,25 @@ func (images *DecodedImages) MeasureRegions(regions []Bounds, threshold uint8, p
 	return metrics, nil
 }
 
-func measureImageRegion(reference, actual *image.NRGBA, bounds Bounds, threshold uint8, perceptualThreshold float64, ignored []Bounds) (RegionMetrics, error) {
-	if bounds.X < 0 || bounds.Y < 0 || bounds.Width <= 0 || bounds.Height <= 0 || bounds.X+bounds.Width > reference.Bounds().Dx() || bounds.Y+bounds.Height > reference.Bounds().Dy() {
-		return RegionMetrics{}, fmt.Errorf("region %d,%d,%d,%d is outside image bounds %dx%d", bounds.X, bounds.Y, bounds.Width, bounds.Height, reference.Bounds().Dx(), reference.Bounds().Dy())
+func measureImageRegion(
+	reference, actual *image.NRGBA,
+	bounds Bounds,
+	threshold uint8,
+	perceptualThreshold float64,
+	ignored []Bounds,
+) (RegionMetrics, error) {
+	if bounds.X < 0 || bounds.Y < 0 || bounds.Width <= 0 || bounds.Height <= 0 ||
+		bounds.X+bounds.Width > reference.Bounds().Dx() ||
+		bounds.Y+bounds.Height > reference.Bounds().Dy() {
+		return RegionMetrics{}, fmt.Errorf(
+			"region %d,%d,%d,%d is outside image bounds %dx%d",
+			bounds.X,
+			bounds.Y,
+			bounds.Width,
+			bounds.Height,
+			reference.Bounds().Dx(),
+			reference.Bounds().Dy(),
+		)
 	}
 	fullImage := Bounds{Width: reference.Bounds().Dx(), Height: reference.Bounds().Dy()}
 	ignoredPixels := newIgnoredPixelMap(fullImage.Width, fullImage.Height, ignored)
@@ -87,7 +88,12 @@ func measureImageRegion(reference, actual *image.NRGBA, bounds Bounds, threshold
 				continue
 			}
 			hasPixelDifference = true
-			deltas := []uint8{absDiff(r.R, a.R), absDiff(r.G, a.G), absDiff(r.B, a.B), absDiff(r.A, a.A)}
+			deltas := []uint8{
+				absDiff(r.R, a.R),
+				absDiff(r.G, a.G),
+				absDiff(r.B, a.B),
+				absDiff(r.A, a.A),
+			}
 			if max(deltas[0], deltas[1], deltas[2], deltas[3]) > threshold {
 				changed++
 				if likelyAntialiased(reference, actual, x, y, fullImage, ignoredPixels) {
@@ -121,8 +127,14 @@ func measureImageRegion(reference, actual *image.NRGBA, bounds Bounds, threshold
 	return RegionMetrics{
 		ChangedPixels: changed, ChangedRatio: float64(changed) / float64(compared),
 		RMSE: math.Sqrt(total/float64(compared*channels)) / 255, EdgeRMSE: edgeRMSE,
-		PerceptualRMSE: math.Sqrt(perceptualError / float64(compared)), PerceptualChangedPixels: perceptualChanged,
-		PerceptualChangedRatio: float64(perceptualChanged) / float64(compared), AntialiasedPixels: antialiased,
+		PerceptualRMSE: math.Sqrt(
+			perceptualError / float64(compared),
+		), PerceptualChangedPixels: perceptualChanged,
+		PerceptualChangedRatio: float64(
+			perceptualChanged,
+		) / float64(
+			compared,
+		), AntialiasedPixels: antialiased,
 		DominantColorPairs: dominantColorPairs(colorPairs),
 	}, nil
 }
@@ -130,7 +142,14 @@ func measureImageRegion(reference, actual *image.NRGBA, bounds Bounds, threshold
 func dominantColorPairs(counts map[[8]uint8]int) []ColorPair {
 	pairs := make([]ColorPair, 0, len(counts))
 	for colors, pixels := range counts {
-		pairs = append(pairs, ColorPair{Reference: formatPixelColor(colors[0:4]), Actual: formatPixelColor(colors[4:8]), Pixels: pixels})
+		pairs = append(
+			pairs,
+			ColorPair{
+				Reference: formatPixelColor(colors[0:4]),
+				Actual:    formatPixelColor(colors[4:8]),
+				Pixels:    pixels,
+			},
+		)
 	}
 	sort.Slice(pairs, func(i, j int) bool {
 		if pairs[i].Pixels != pairs[j].Pixels {

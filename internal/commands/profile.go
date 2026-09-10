@@ -50,7 +50,9 @@ func applyComparisonProfile(command *cobra.Command) (*comparisonConfiguration, e
 		return nil, cli.NewUsageError(fmt.Errorf("decode --profile: %w", err))
 	}
 	if profile.Version != 1 {
-		return nil, cli.NewUsageError(fmt.Errorf("unsupported --profile version %d", profile.Version))
+		return nil, cli.NewUsageError(
+			fmt.Errorf("unsupported --profile version %d", profile.Version),
+		)
 	}
 
 	sources := map[string]string{}
@@ -82,9 +84,15 @@ func applyComparisonProfile(command *cobra.Command) (*comparisonConfiguration, e
 	return &comparisonConfiguration{
 		Profile: path,
 		Resolved: resolvedComparisonOptions{
-			SuggestOffset:   resolvedValue[int]{Value: suggestOffset, Source: sources["suggest-offset"]},
-			RegionGap:       resolvedValue[int]{Value: regionGap, Source: sources["region-gap"]},
-			MinRegionPixels: resolvedValue[int]{Value: minRegionPixels, Source: sources["min-region-pixels"]},
+			SuggestOffset: resolvedValue[int]{
+				Value:  suggestOffset,
+				Source: sources["suggest-offset"],
+			},
+			RegionGap: resolvedValue[int]{Value: regionGap, Source: sources["region-gap"]},
+			MinRegionPixels: resolvedValue[int]{
+				Value:  minRegionPixels,
+				Source: sources["min-region-pixels"],
+			},
 		},
 	}, nil
 }

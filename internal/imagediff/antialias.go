@@ -9,11 +9,22 @@ import (
 // (ISC, https://github.com/mapbox/pixelmatch):
 // a ramp pixel has both darker and brighter neighbors, with one endpoint
 // belonging to a stable area in both images.
-func likelyAntialiased(reference, actual image.Image, x, y int, area Bounds, ignored ignoredPixelMap) bool {
-	return antialiasedIn(reference, actual, x, y, area, ignored) || antialiasedIn(actual, reference, x, y, area, ignored)
+func likelyAntialiased(
+	reference, actual image.Image,
+	x, y int,
+	area Bounds,
+	ignored ignoredPixelMap,
+) bool {
+	return antialiasedIn(reference, actual, x, y, area, ignored) ||
+		antialiasedIn(actual, reference, x, y, area, ignored)
 }
 
-func antialiasedIn(candidate, other image.Image, x, y int, area Bounds, ignored ignoredPixelMap) bool {
+func antialiasedIn(
+	candidate, other image.Image,
+	x, y int,
+	area Bounds,
+	ignored ignoredPixelMap,
+) bool {
 	center := color.NRGBAModel.Convert(candidate.At(x, y)).(color.NRGBA)
 	equal, darkest, brightest := 0, [2]int{}, [2]int{}
 	minDelta, maxDelta := 0.0, 0.0
@@ -39,7 +50,9 @@ func antialiasedIn(candidate, other image.Image, x, y int, area Bounds, ignored 
 	if minDelta == 0 || maxDelta == 0 {
 		return false
 	}
-	return hasStableSiblings(candidate, darkest[0], darkest[1], area, ignored) && hasStableSiblings(other, darkest[0], darkest[1], area, ignored) ||
+	return hasStableSiblings(candidate, darkest[0], darkest[1], area, ignored) &&
+		hasStableSiblings(other, darkest[0], darkest[1], area, ignored) ||
+		//nolint:lll // keep this expression together
 		hasStableSiblings(candidate, brightest[0], brightest[1], area, ignored) && hasStableSiblings(other, brightest[0], brightest[1], area, ignored)
 }
 

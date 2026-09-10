@@ -95,15 +95,30 @@ func usageErrorContract(err error) ErrorOutput {
 func operationalErrorContract(err error) ErrorOutput {
 	var path *os.PathError
 	if errors.As(err, &path) {
-		return newErrorOutput("operational", "Could not access a required file.", 1, "Check the file path and permissions, then retry.")
+		return newErrorOutput(
+			"operational",
+			"Could not access a required file.",
+			1,
+			"Check the file path and permissions, then retry.",
+		)
 	}
 
 	var pngFormat png.FormatError
 	if errors.As(err, &pngFormat) {
-		return newErrorOutput("operational", "Could not decode an input image.", 1, "Provide valid PNG files and retry.")
+		return newErrorOutput(
+			"operational",
+			"Could not decode an input image.",
+			1,
+			"Provide valid PNG files and retry.",
+		)
 	}
 
-	return newErrorOutput("operational", "Command could not complete.", 1, "Check inputs and dependencies, then retry.")
+	return newErrorOutput(
+		"operational",
+		"Command could not complete.",
+		1,
+		"Check inputs and dependencies, then retry.",
+	)
 }
 
 func newErrorOutput(category, message string, exitCode int, recovery string) ErrorOutput {

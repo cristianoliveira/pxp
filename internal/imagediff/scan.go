@@ -45,7 +45,17 @@ func (images *DecodedImages) Scan(axis ScanAxis, index int) ([]ColorRun, []Color
 		}
 		return nil, nil, &MeasurementBoundsError{Point: point, Size: bounds.Size()}
 	}
-	return scanRuns(images.Reference, axis, index, length), scanRuns(images.Actual, axis, index, length), nil
+	return scanRuns(
+			images.Reference,
+			axis,
+			index,
+			length,
+		), scanRuns(
+			images.Actual,
+			axis,
+			index,
+			length,
+		), nil
 }
 
 func scanRuns(img image.Image, axis ScanAxis, index, length int) []ColorRun {

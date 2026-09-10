@@ -8,6 +8,7 @@ import (
 
 	"github.com/cristianoliveira/pxp/internal/cli"
 	diff "github.com/cristianoliveira/pxp/internal/imagediff"
+	"github.com/cristianoliveira/pxp/internal/imageio"
 	outputpkg "github.com/cristianoliveira/pxp/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -90,7 +91,10 @@ func newProbeCommand() *cobra.Command {
 			}
 			output.Returned = len(output.Points)
 			for index := range output.Points {
-				output.Points[index].InputPoint = inputPoint(output.Points[index].Point, inputs.metadata)
+				output.Points[index].InputPoint = inputPoint(
+					output.Points[index].Point,
+					inputs.metadata,
+				)
 			}
 			if format == outputpkg.FormatJSON {
 				return writeJSON(cmd, output)
@@ -98,11 +102,15 @@ func newProbeCommand() *cobra.Command {
 			return writeProbeCSV(cmd, output)
 		},
 	}
-	command.Flags().StringArray("at", nil, "pixel coordinate to inspect: x,y in comparison/cropped coordinates; repeat for multiple points")
-	command.Flags().String("from", "", "inclusive line start: x,y in comparison/cropped coordinates")
+	command.Flags().
+		//nolint:lll // keep this expression together
+		StringArray("at", nil, "pixel coordinate to inspect: x,y in comparison/cropped coordinates; repeat for multiple points")
+	command.Flags().
+		String("from", "", "inclusive line start: x,y in comparison/cropped coordinates")
 	command.Flags().String("to", "", "inclusive line end: x,y in comparison/cropped coordinates")
 	command.Flags().Int("step", 1, "sample every Nth point along --from/--to line")
-	command.Flags().Int("radius", 0, "include square pixel neighborhood around every selected point")
+	command.Flags().
+		Int("radius", 0, "include square pixel neighborhood around every selected point")
 	addInspectionLimitFlags(command, "points")
 	addTabularFormatFlag(command)
 	addInputPreparationFlags(command)
@@ -253,7 +261,7 @@ func parseProbePoint(value string) (probePoint, error) {
 }
 
 func probeImages(referencePath, actualPath string, points []probePoint) (probeOutput, error) {
-	images, err := diff.LoadDecodedImages(referencePath, actualPath)
+	images, err := imageio.LoadDecodedImages(referencePath, actualPath)
 	if err != nil {
 		return probeOutput{}, err
 	}
@@ -262,7 +270,15 @@ func probeImages(referencePath, actualPath string, points []probePoint) (probeOu
 		measurement, err := images.Probe(image.Point{X: point.X, Y: point.Y})
 		if err != nil {
 			if boundsErr, ok := err.(*diff.MeasurementBoundsError); ok {
-				return probeOutput{}, cli.NewUsageError(fmt.Errorf("--at point %d,%d is outside image bounds %dx%d", boundsErr.Point.X, boundsErr.Point.Y, boundsErr.Size.X, boundsErr.Size.Y))
+				return probeOutput{}, cli.NewUsageError(
+					fmt.Errorf(
+						"--at point %d,%d is outside image bounds %dx%d",
+						boundsErr.Point.X,
+						boundsErr.Point.Y,
+						boundsErr.Size.X,
+						boundsErr.Size.Y,
+					),
+				)
 			}
 			return probeOutput{}, err
 		}

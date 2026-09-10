@@ -19,8 +19,12 @@ linters:
 
     # Style & best practices
     - misspell       # Spell checking
+    - lll            # Enforce maximum line length
 
   settings:
+    lll:
+      line-length: 100
+
     # Duplication settings
     dupl:
       threshold: 150  # Minimum tokens to consider as duplicate (default: 100)
@@ -28,10 +32,15 @@ linters:
 
   exclusions:
     rules:
-      # Repeated string literals are normal in test fixtures.
+      # Test fixtures and assertions contain intentionally long serialized values.
       - path: _test\.go$
         linters:
           - goconst
+          - lll
+      # The self-contained HTML template is kept readable as a single template.
+      - path: internal/report/report\.go$
+        linters:
+          - lll
 
 formatters:
   enable:

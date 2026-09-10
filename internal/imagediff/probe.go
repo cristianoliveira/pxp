@@ -12,7 +12,13 @@ type MeasurementBoundsError struct {
 }
 
 func (err *MeasurementBoundsError) Error() string {
-	return fmt.Sprintf("point %d,%d is outside image bounds %dx%d", err.Point.X, err.Point.Y, err.Size.X, err.Size.Y)
+	return fmt.Sprintf(
+		"point %d,%d is outside image bounds %dx%d",
+		err.Point.X,
+		err.Point.Y,
+		err.Size.X,
+		err.Size.Y,
+	)
 }
 
 // PixelProbe contains the normalized RGBA values at one point in both images.
@@ -48,7 +54,13 @@ func validateMeasurementImages(images *DecodedImages) error {
 	if images.Reference.Bounds().Size() != images.Actual.Bounds().Size() {
 		reference := images.Reference.Bounds().Size()
 		actual := images.Actual.Bounds().Size()
-		return fmt.Errorf("image dimensions differ: reference is %dx%d, actual is %dx%d", reference.X, reference.Y, actual.X, actual.Y)
+		return fmt.Errorf(
+			"image dimensions differ: reference is %dx%d, actual is %dx%d",
+			reference.X,
+			reference.Y,
+			actual.X,
+			actual.Y,
+		)
 	}
 	return nil
 }
