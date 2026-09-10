@@ -9,7 +9,7 @@ This package is runtime glue, not an image-analysis capability. It may depend on
 # Connections
 
 - [Output](internal/output/AGENTS.md): supplies the `output.Printer` used for structured diagnostics and results.
-- [Command orchestration](internal/pixelperfectcmd/AGENTS.md): supplies command errors and receives shared CLI behavior.
+- [Command orchestration](internal/commands/AGENTS.md): supplies command errors and receives shared CLI behavior.
 - [Executable composition](cmd/AGENTS.md): uses `RenderError` and `ExitCode` at process exit.
 
 # Landmarks
@@ -20,7 +20,7 @@ This package is runtime glue, not an image-analysis capability. It may depend on
 
 # Boundary flows
 
-- Information flow: `internal/pixelperfectcmd/command.go:NewCommand` -> `internal/cli/error_output.go:RenderError` via `cmd/pxp/main.go:main`; value: `error`.
+- Information flow: `internal/commands/command.go:NewCommand` -> `internal/cli/error_output.go:RenderError` via `cmd/pxp/main.go:main`; value: `error`.
 
 # Placement
 

@@ -5,11 +5,11 @@ import (
 	"os"
 
 	"github.com/cristianoliveira/pxp/internal/cli"
-	"github.com/cristianoliveira/pxp/internal/pixelperfectcmd"
+	"github.com/cristianoliveira/pxp/internal/commands"
 )
 
 func main() {
-	command := pixelperfectcmd.NewCommand()
+	command := commands.NewCommand()
 	command.SilenceErrors = true
 	command.SilenceUsage = true
 	if err := command.Execute(); err != nil {

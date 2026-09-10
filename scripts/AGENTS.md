@@ -4,7 +4,7 @@
 
 # Boundaries
 
-Scripts are not runtime CLI capabilities. They may inspect or package repository inputs, but must preserve deterministic behavior and must not become a hidden replacement for [command orchestration](internal/pixelperfectcmd/AGENTS.md).
+Scripts are not runtime CLI capabilities. They may inspect or package repository inputs, but must preserve deterministic behavior and must not become a hidden replacement for [command orchestration](internal/commands/AGENTS.md).
 
 # Connections
 
