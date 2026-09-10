@@ -44,7 +44,12 @@ type OpenRouter struct {
 }
 
 func NewOpenRouter(apiKey, model, baseURL string) *OpenRouter {
-	return &OpenRouter{apiKey: apiKey, model: model, baseURL: strings.TrimRight(baseURL, "/"), client: http.DefaultClient}
+	return &OpenRouter{
+		apiKey:  apiKey,
+		model:   model,
+		baseURL: strings.TrimRight(baseURL, "/"),
+		client:  http.DefaultClient,
+	}
 }
 
 func (o *OpenRouter) Describe(ctx context.Context, input Input) (Result, error) {
@@ -57,9 +62,27 @@ func (o *OpenRouter) Describe(ctx context.Context, input Input) (Result, error) 
 		return Result{}, fmt.Errorf("read actual for visual context: %w", err)
 	}
 	prompt := visualContextPrompt(input.Regions, input.Prompt)
-	payload := map[string]any{"model": o.model, "stream": false, "messages": []any{map[string]any{"role": "user", "content": []any{map[string]any{"type": "text", "text": prompt}, map[string]any{"type": "image_url", "image_url": map[string]any{"url": ref}}, map[string]any{"type": "image_url", "image_url": map[string]any{"url": actual}}}}}}
+	payload := map[string]any{
+		"model":  o.model,
+		"stream": false,
+		"messages": []any{
+			map[string]any{
+				"role": "user",
+				"content": []any{
+					map[string]any{"type": "text", "text": prompt},
+					map[string]any{"type": "image_url", "image_url": map[string]any{"url": ref}},
+					map[string]any{"type": "image_url", "image_url": map[string]any{"url": actual}},
+				},
+			},
+		},
+	}
 	body, _ := json.Marshal(payload)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, o.baseURL+"/chat/completions", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		o.baseURL+"/chat/completions",
+		bytes.NewReader(body),
+	)
 	if err != nil {
 		return Result{}, err
 	}
@@ -97,11 +120,24 @@ func (o *OpenRouter) Describe(ctx context.Context, input Input) (Result, error) 
 	if err != nil {
 		return Result{}, err
 	}
-	return Result{Provider: "openrouter", Model: o.model, Advisory: true, Prompt: input.Prompt, Regions: regions}, nil
+	return Result{
+		Provider: "openrouter",
+		Model:    o.model,
+		Advisory: true,
+		Prompt:   input.Prompt,
+		Regions:  regions,
+	}, nil
 }
 func visualContextPrompt(regions []Region, customPrompt string) string {
 	encoded, _ := json.Marshal(regions)
-	prompt := `The first image is reference and second is implementation. For each supplied region ID, name the visible object and briefly describe its appearance in each image. Mention only differences clearly visible inside that region. Use at most 15 words per field. Do not describe causes, measure, diagnose geometry, suggest fixes, infer DOM/domain semantics, or alter metrics. Do not mention anything outside the supplied region. Preserve region IDs exactly. Return JSON only: {"regions":[{"region":"r1","referenceAppearance":"","actualAppearance":"","visualContext":""}]}.`
+	prompt := `The first image is reference and second is implementation. For each ` +
+		`supplied region ID, name the visible object and briefly describe its appearance ` +
+		`in each image. Mention only differences clearly visible inside that region. Use ` +
+		`at most 15 words per field. Do not describe causes, measure, diagnose geometry, ` +
+		`suggest fixes, infer DOM/domain semantics, or alter metrics. Do not mention ` +
+		`anything outside the supplied region. Preserve region IDs exactly. Return JSON ` +
+		`only: {"regions":[{"region":"r1","referenceAppearance":"","actualAppearance":"",` +
+		`"visualContext":""}]}.`
 	if strings.TrimSpace(customPrompt) != "" {
 		prompt += " User focus: " + strings.TrimSpace(customPrompt)
 	}
@@ -109,7 +145,12 @@ func visualContextPrompt(regions []Region, customPrompt string) string {
 }
 
 func parseRegionContexts(content string, expected []Region) ([]RegionContext, error) {
-	content = strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(strings.TrimSpace(content), "```json"), "```"), "```"))
+	content = strings.TrimSpace(
+		strings.TrimSuffix(
+			strings.TrimPrefix(strings.TrimPrefix(strings.TrimSpace(content), "```json"), "```"),
+			"```",
+		),
+	)
 	var parsed struct {
 		Regions []RegionContext `json:"regions"`
 	}

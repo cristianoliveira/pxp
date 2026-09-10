@@ -6,6 +6,7 @@ import (
 
 	"github.com/cristianoliveira/pxp/internal/cli"
 	diff "github.com/cristianoliveira/pxp/internal/imagediff"
+	"github.com/cristianoliveira/pxp/internal/imageio"
 	outputpkg "github.com/cristianoliveira/pxp/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -57,7 +58,9 @@ func newScanCommand() *cobra.Command {
 			xChanged := cmd.Flags().Changed("x") || cmd.Flags().Changed("column")
 			yChanged := cmd.Flags().Changed("y") || cmd.Flags().Changed("row")
 			if xChanged == yChanged {
-				return cli.NewUsageError(fmt.Errorf("provide exactly one of --x/--column or --y/--row"))
+				return cli.NewUsageError(
+					fmt.Errorf("provide exactly one of --x/--column or --y/--row"),
+				)
 			}
 			axis := "y"
 			index, _ := cmd.Flags().GetInt("x")
@@ -72,7 +75,12 @@ func newScanCommand() *cobra.Command {
 				}
 			}
 			if index < 0 {
-				return cli.NewUsageError(fmt.Errorf("--%s must be non-negative", map[string]string{"x": "y", "y": "x"}[axis]))
+				return cli.NewUsageError(
+					fmt.Errorf(
+						"--%s must be non-negative",
+						map[string]string{"x": "y", "y": "x"}[axis],
+					),
+				)
 			}
 			format, err := tabularFormat(cmd)
 			if err != nil {
@@ -143,7 +151,7 @@ func lineWithCropOrigin(axis string, index int, crop *diff.Bounds) scanLinePosit
 }
 
 func scanImages(referencePath, actualPath string, axis string, index int) (scanOutput, error) {
-	images, err := diff.LoadDecodedImages(referencePath, actualPath)
+	images, err := imageio.LoadDecodedImages(referencePath, actualPath)
 	if err != nil {
 		return scanOutput{}, err
 	}
@@ -159,12 +167,27 @@ func scanImages(referencePath, actualPath string, axis string, index int) (scanO
 			if axis == "y" {
 				limit = boundsErr.Size.X
 			}
-			return scanOutput{}, cli.NewUsageError(fmt.Errorf("%s index %d is outside image bounds %dx%d (valid 0-%d)", flag, index, boundsErr.Size.X, boundsErr.Size.Y, limit-1))
+			return scanOutput{}, cli.NewUsageError(
+				fmt.Errorf(
+					"%s index %d is outside image bounds %dx%d (valid 0-%d)",
+					flag,
+					index,
+					boundsErr.Size.X,
+					boundsErr.Size.Y,
+					limit-1,
+				),
+			)
 		}
 		return scanOutput{}, err
 	}
 	length := boundsLength(images.Reference.Bounds(), scanAxis)
-	return scanOutput{Axis: axis, Index: index, Length: length, Reference: scanRunsFromDiff(referenceRuns), Actual: scanRunsFromDiff(actualRuns)}, nil
+	return scanOutput{
+		Axis:      axis,
+		Index:     index,
+		Length:    length,
+		Reference: scanRunsFromDiff(referenceRuns),
+		Actual:    scanRunsFromDiff(actualRuns),
+	}, nil
 }
 
 func boundsLength(bounds image.Rectangle, axis diff.ScanAxis) int {
@@ -177,7 +200,13 @@ func boundsLength(bounds image.Rectangle, axis diff.ScanAxis) int {
 func scanRunsFromDiff(runs []diff.ColorRun) []scanRun {
 	output := make([]scanRun, len(runs))
 	for index, run := range runs {
-		output[index] = scanRun{Start: run.Start, End: run.End, Length: run.Length, RGBA: run.RGBA, Hex: formatColorHex(run.RGBA)}
+		output[index] = scanRun{
+			Start:  run.Start,
+			End:    run.End,
+			Length: run.Length,
+			RGBA:   run.RGBA,
+			Hex:    formatColorHex(run.RGBA),
+		}
 	}
 	return output
 }

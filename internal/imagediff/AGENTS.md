@@ -1,31 +1,27 @@
 # Purpose
 
-`internal/imagediff` owns deterministic PNG evidence: decoding, dimension checks, threshold and perceptual metrics, masks, mismatch regions, classifications, overlays, and movement/offset suggestions.
+`internal/imagediff` owns deterministic image evidence over already-decoded images: threshold and perceptual metrics, masks, mismatch regions, classifications, overlays, probes, scans, and movement/offset suggestions.
 
 # Boundaries
 
-The package is the source of truth for measurements. It does not parse Cobra flags, call visual providers, render HTML, or decide command exit policy. It may use annotation geometry and shared file creation for enrichment and artifacts.
+The package is the source of truth for measurements. It does not open files, encode PNGs, parse Cobra flags, call visual providers, render HTML, or decide command exit policy. File/path adapters live in [imageio](internal/imageio/AGENTS.md). JSON tags remain on result structs as the existing structured-output contract; removing them requires a coordinated output DTO migration and is explicitly deferred from TASK-0005.
 
 # Connections
 
 - [Annotations](internal/annotations/AGENTS.md): provides semantic intersections for region enrichment.
-- [Artifact persistence](internal/artifact/AGENTS.md): provides file creation used by image artifacts.
+- [Image I/O](internal/imageio/AGENTS.md): decodes image files and persists masks/overlays at the edge.
 - [Command orchestration](internal/commands/AGENTS.md): validates inputs and coordinates analysis.
 - [Visual context](internal/imagecontext/AGENTS.md): consumes region evidence as an advisory input, never as a metrics authority.
 
 # Landmarks
 
-- `internal/imagediff/image.go:CompareImagesWithThresholds`: performs a complete deterministic comparison.
-- `internal/imagediff/region_metrics.go:MeasureImageRegionWithThresholds`: measures a bounded region.
-- `internal/imagediff/offset.go:SuggestImageOffset`: produces advisory translation evidence.
-- `internal/imagediff/overlay.go:WriteImageOverlay`: writes a comparison overlay.
+- `internal/imagediff/image.go:DecodedImages.Compare`: performs a complete deterministic in-memory comparison and returns mask pixels.
+- `internal/imagediff/region_metrics.go:DecodedImages.MeasureRegions`: measures bounded regions.
+- `internal/imagediff/offset.go:DecodedImages.SuggestOffset`: produces advisory translation evidence.
+- `internal/imagediff/overlay.go:DecodedImages.Overlay`: produces an in-memory comparison overlay.
 - `internal/imagediff/probe.go:DecodedImages.Probe`: measures normalized RGBA values at a point.
 - `internal/imagediff/scan.go:DecodedImages.Scan`: produces deterministic horizontal or vertical color runs.
 
-# Boundary flows
-
-- Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/imagecontext/openrouter.go:OpenRouter.Describe` via `internal/commands/command.go:NewCommand`; value: `[]imagecontext.Region`.
-
 # Placement
 
-Put new image-data evidence here when it remains deterministic and provider-independent. Keep option semantics and adapters at their boundaries.
+Put new image-data evidence here when it remains deterministic, in-memory, and provider-independent. Put path/codec work in `imageio`; keep option semantics and adapters at their boundaries.
