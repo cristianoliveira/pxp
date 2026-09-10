@@ -459,7 +459,7 @@ func TestPixelPerfectNoArgsShowsCompactNextSteps(t *testing.T) {
 	output, err := exec.Command(binary).CombinedOutput()
 
 	require.NoError(t, err, string(output))
-	assert.Contains(t, string(output), "pxp compares PNG screenshots")
+	assert.Contains(t, string(output), "pxp harnesses image comparison")
 	resolvedBinary, resolveErr := filepath.EvalSymlinks(binary)
 	require.NoError(t, resolveErr)
 	assert.Contains(t, string(output), "Executable: "+resolvedBinary)
