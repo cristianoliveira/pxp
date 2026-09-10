@@ -8,7 +8,7 @@ This layer creates the command, configures process-level behavior, renders termi
 
 # Connections
 
-- [Command orchestration](internal/pixelperfectcmd/AGENTS.md): provides the Cobra command tree consumed by `main`.
+- [Command orchestration](internal/commands/AGENTS.md): provides the Cobra command tree consumed by `main`.
 - [CLI runtime](internal/cli/AGENTS.md): provides error rendering and exit-code mapping used at process exit.
 
 # Landmarks
@@ -17,7 +17,7 @@ This layer creates the command, configures process-level behavior, renders termi
 
 # Boundary flows
 
-- Information flow: `internal/pixelperfectcmd/command.go:NewCommand` -> `internal/cli/error_output.go:RenderError` via `cmd/pxp/main.go:main`; value: `error`.
+- Information flow: `internal/commands/command.go:NewCommand` -> `internal/cli/error_output.go:RenderError` via `cmd/pxp/main.go:main`; value: `error`.
 
 # Placement
 

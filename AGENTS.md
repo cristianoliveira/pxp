@@ -5,11 +5,11 @@
 # Architecture
 
 - [Executable composition](cmd/AGENTS.md) owns process startup.
-- [Command orchestration](internal/pixelperfectcmd/AGENTS.md) owns Cobra policy and workflow sequencing.
+- [Command orchestration](internal/commands/AGENTS.md) owns Cobra policy and workflow sequencing.
 - [Image comparison](internal/imagediff/AGENTS.md) owns deterministic image evidence.
 - [Visual context](internal/imagecontext/AGENTS.md) owns optional provider-backed descriptions.
 - [Annotations](internal/annotations/AGENTS.md) owns annotation contracts and geometry.
-- [Reports](internal/pixelperfectreport/AGENTS.md) owns HTML presentation.
+- [Reports](internal/report/AGENTS.md) owns HTML presentation.
 - [Output](internal/output/AGENTS.md) owns structured rendering and serialization.
 - [Artifact persistence](internal/artifact/AGENTS.md) owns filesystem artifact creation and writing.
 - [CLI runtime](internal/cli/AGENTS.md) owns shared process and error behavior.
@@ -29,17 +29,17 @@ Composition is wired at the executable and command boundaries. Provider calls st
 # Landmarks
 
 - `cmd/pxp/main.go:main`: process entrypoint; executes the composed Cobra command.
-- `internal/pixelperfectcmd/command.go:NewCommand`: creates the CLI command tree.
+- `internal/commands/command.go:NewCommand`: creates the CLI command tree.
 - `internal/imagediff/image.go:CompareImagesWithThresholds`: starts deterministic comparison.
 - `internal/output/printer.go:Printer.Structured`: emits the default structured result.
-- `internal/pixelperfectreport/report.go:Render`: creates self-contained report bytes.
+- `internal/report/report.go:Render`: creates self-contained report bytes.
 
 # Boundary flows
 
-- Information flow: `internal/pixelperfectcmd/command.go:NewCommand` -> `internal/cli/error_output.go:RenderError` via `cmd/pxp/main.go:main`; value: `error`.
-- Information flow: `internal/annotations/annotations.go:Load` -> `internal/imagediff/image.go:CompareImagesWithThresholds` via `internal/pixelperfectcmd/command.go:NewCommand`; value: `annotations.Document`.
-- Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/pixelperfectreport/report.go:Render` via `internal/pixelperfectcmd/command.go:NewCommand`; value: `imagediff.ImageComparison`.
-- Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/output/printer.go:Printer.Structured` via `internal/pixelperfectcmd/command.go:NewCommand`; value: `imagediff.ImageComparison`.
+- Information flow: `internal/commands/command.go:NewCommand` -> `internal/cli/error_output.go:RenderError` via `cmd/pxp/main.go:main`; value: `error`.
+- Information flow: `internal/annotations/annotations.go:Load` -> `internal/imagediff/image.go:CompareImagesWithThresholds` via `internal/commands/command.go:NewCommand`; value: `annotations.Document`.
+- Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/report/report.go:Render` via `internal/commands/command.go:NewCommand`; value: `imagediff.ImageComparison`.
+- Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/output/printer.go:Printer.Structured` via `internal/commands/command.go:NewCommand`; value: `imagediff.ImageComparison`.
 
 # Placement
 

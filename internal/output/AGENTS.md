@@ -9,8 +9,8 @@ Callers provide domain values and choose a format. This package does not know im
 # Connections
 
 - [CLI runtime](internal/cli/AGENTS.md): selects and binds the printer to command streams.
-- [Command orchestration](internal/pixelperfectcmd/AGENTS.md): supplies comparison and diagnostic values for rendering.
-- [Annotations](internal/annotations/AGENTS.md) and [reports](internal/pixelperfectreport/AGENTS.md): consume [artifact](internal/artifact/AGENTS.md) for filesystem persistence.
+- [Command orchestration](internal/commands/AGENTS.md): supplies comparison and diagnostic values for rendering.
+- [Annotations](internal/annotations/AGENTS.md) and [reports](internal/report/AGENTS.md): consume [artifact](internal/artifact/AGENTS.md) for filesystem persistence.
 
 # Landmarks
 
@@ -20,7 +20,7 @@ Callers provide domain values and choose a format. This package does not know im
 
 # Boundary flows
 
-- Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/output/printer.go:Printer.Structured` via `internal/pixelperfectcmd/command.go:NewCommand`; value: `imagediff.ImageComparison`.
+- Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/output/printer.go:Printer.Structured` via `internal/commands/command.go:NewCommand`; value: `imagediff.ImageComparison`.
 
 # Placement
 

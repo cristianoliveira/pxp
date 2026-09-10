@@ -1,4 +1,4 @@
-package pixelperfectreport
+package report
 
 import (
 	"bytes"

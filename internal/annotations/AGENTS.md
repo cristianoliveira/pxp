@@ -8,7 +8,7 @@ It validates annotation documents and computes geometric matches. It does not ow
 
 # Connections
 
-- [Command orchestration](internal/pixelperfectcmd/AGENTS.md): loads and dimension-checks annotation documents at the command boundary.
+- [Command orchestration](internal/commands/AGENTS.md): loads and dimension-checks annotation documents at the command boundary.
 - [Image comparison](internal/imagediff/AGENTS.md): consumes intersection matches to enrich comparison regions.
 - [Artifact persistence](internal/artifact/AGENTS.md): provides safe file creation used when writing the JSON contract.
 
@@ -20,8 +20,8 @@ It validates annotation documents and computes geometric matches. It does not ow
 
 # Boundary flows
 
-- Information flow: `internal/annotations/annotations.go:Load` -> `internal/imagediff/image.go:CompareImagesWithThresholds` via `internal/pixelperfectcmd/command.go:NewCommand`; value: `annotations.Document`.
+- Information flow: `internal/annotations/annotations.go:Load` -> `internal/imagediff/image.go:CompareImagesWithThresholds` via `internal/commands/command.go:NewCommand`; value: `annotations.Document`.
 
 # Placement
 
-Keep coordinate-space rules and intersection math here. Put image-derived metrics in `imagediff` and command input policy in `pixelperfectcmd`.
+Keep coordinate-space rules and intersection math here. Put image-derived metrics in `imagediff` and command input policy in `commands`.

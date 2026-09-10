@@ -10,7 +10,7 @@ The package is the source of truth for measurements. It does not parse Cobra fla
 
 - [Annotations](internal/annotations/AGENTS.md): provides semantic intersections for region enrichment.
 - [Artifact persistence](internal/artifact/AGENTS.md): provides file creation used by image artifacts.
-- [Command orchestration](internal/pixelperfectcmd/AGENTS.md): validates inputs and coordinates analysis.
+- [Command orchestration](internal/commands/AGENTS.md): validates inputs and coordinates analysis.
 - [Visual context](internal/imagecontext/AGENTS.md): consumes region evidence as an advisory input, never as a metrics authority.
 
 # Landmarks
@@ -24,7 +24,7 @@ The package is the source of truth for measurements. It does not parse Cobra fla
 
 # Boundary flows
 
-- Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/imagecontext/openrouter.go:OpenRouter.Describe` via `internal/pixelperfectcmd/command.go:NewCommand`; value: `[]imagecontext.Region`.
+- Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/imagecontext/openrouter.go:OpenRouter.Describe` via `internal/commands/command.go:NewCommand`; value: `[]imagecontext.Region`.
 
 # Placement
 

@@ -8,7 +8,7 @@ It owns provider configuration, request/response serialization, selection, and t
 
 # Connections
 
-- [Command orchestration](internal/pixelperfectcmd/AGENTS.md): enables and configures advisory descriptions after comparison.
+- [Command orchestration](internal/commands/AGENTS.md): enables and configures advisory descriptions after comparison.
 - [Image comparison](internal/imagediff/AGENTS.md): supplies region identity and bounds that providers describe.
 
 # Landmarks
@@ -20,8 +20,8 @@ It owns provider configuration, request/response serialization, selection, and t
 
 # Boundary flows
 
-- Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/imagecontext/openrouter.go:OpenRouter.Describe` via `internal/pixelperfectcmd/command.go:NewCommand`; value: `[]imagecontext.Region`.
+- Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/imagecontext/openrouter.go:OpenRouter.Describe` via `internal/commands/command.go:NewCommand`; value: `[]imagecontext.Region`.
 
 # Placement
 
-Keep each provider behind the shared client contract. Put deterministic analysis in `imagediff` and command flags in `pixelperfectcmd`.
+Keep each provider behind the shared client contract. Put deterministic analysis in `imagediff` and command flags in `commands`.

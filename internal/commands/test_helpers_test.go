@@ -1,4 +1,4 @@
-package pixelperfectcmd
+package commands
 
 import (
 	"bytes"
