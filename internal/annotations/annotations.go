@@ -1,13 +1,6 @@
 package annotations
 
-import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"os"
-
-	"github.com/cristianoliveira/pxp/internal/artifact"
-)
+import "fmt"
 
 type Size struct {
 	Width  int `json:"width"`
@@ -42,68 +35,26 @@ type Match struct {
 	Metadata                    map[string]any `json:"metadata,omitempty"`
 }
 
-func Write(path string, document Document) error {
-	file, err := artifact.CreateFile(path)
-	if err != nil {
-		return fmt.Errorf("write annotations: %w", err)
-	}
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ")
-	encodeErr := encoder.Encode(document)
-	closeErr := file.Close()
-	if encodeErr != nil {
-		return fmt.Errorf("write annotations: %w", encodeErr)
-	}
-	if closeErr != nil {
-		return fmt.Errorf("write annotations: %w", closeErr)
-	}
-	return nil
-}
-
-func Load(path string) (*Document, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("read annotations: %w", err)
-	}
-	defer func() { _ = file.Close() }()
-	decoder := json.NewDecoder(file)
-	decoder.DisallowUnknownFields()
-	var document Document
-	if err := decoder.Decode(&document); err != nil {
-		return nil, fmt.Errorf("decode annotations: %w", err)
-	}
-	if err := rejectTrailingJSON(decoder); err != nil {
-		return nil, err
-	}
+// Validate checks the domain invariants without reading or writing external data.
+func (document Document) Validate() error {
 	if document.Version != 1 {
-		return nil, fmt.Errorf("unsupported annotations version %d", document.Version)
+		return fmt.Errorf("unsupported annotations version %d", document.Version)
 	}
 	if document.CoordinateSpace.Width < 1 || document.CoordinateSpace.Height < 1 {
-		return nil, fmt.Errorf("annotation coordinate space dimensions must be positive")
+		return fmt.Errorf("annotation coordinate space dimensions must be positive")
 	}
 	seen := map[string]bool{}
 	for _, annotation := range document.Annotations {
 		if annotation.ID == "" {
-			return nil, fmt.Errorf("annotation id must not be empty")
+			return fmt.Errorf("annotation id must not be empty")
 		}
 		if seen[annotation.ID] {
-			return nil, fmt.Errorf("duplicate annotation id %q", annotation.ID)
+			return fmt.Errorf("duplicate annotation id %q", annotation.ID)
 		}
 		seen[annotation.ID] = true
 		if !within(annotation.Bounds, document.CoordinateSpace) {
-			return nil, fmt.Errorf("annotation %q bounds are outside coordinate space", annotation.ID)
+			return fmt.Errorf("annotation %q bounds are outside coordinate space", annotation.ID)
 		}
-	}
-	return &document, nil
-}
-
-func rejectTrailingJSON(decoder *json.Decoder) error {
-	var extra any
-	if err := decoder.Decode(&extra); err != io.EOF {
-		if err == nil {
-			return fmt.Errorf("decode annotations: multiple JSON values")
-		}
-		return fmt.Errorf("decode annotations: %w", err)
 	}
 	return nil
 }

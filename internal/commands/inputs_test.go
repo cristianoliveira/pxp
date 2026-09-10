@@ -8,6 +8,7 @@ import (
 
 	clipkg "github.com/cristianoliveira/pxp/internal/cli"
 	diff "github.com/cristianoliveira/pxp/internal/imagediff"
+	"github.com/cristianoliveira/pxp/internal/imageio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,7 +46,7 @@ func TestDiffImageCommandAppliesReferenceMetadataCrop(t *testing.T) {
 	writeTestPNG(t, actual, image.NewRGBA(image.Rect(0, 0, 2, 2)))
 	require.NoError(t, os.WriteFile(metadata, []byte(`{"version":1,"nodeBounds":{"width":2,"height":2},"exportBounds":{"width":4,"height":2},"logicalCrop":{"x":1,"y":0,"width":2,"height":2}}`), 0o600))
 
-	result := executeCommand(newCommand(diff.CompareImagesWithThresholds), reference, actual, "--reference-metadata", metadata, "--output", mask)
+	result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), reference, actual, "--reference-metadata", metadata, "--output", mask)
 
 	require.NoError(t, result.Err)
 	assert.JSONEq(t, `{"width":2,"height":2,"changedPixels":0,"comparedPixels":4,"changedRatio":0,"rmse":0,"rgbRmse":0,"luminanceRmse":0,"alphaRmse":0,"edgeRmse":0,"perceptualRmse":0,"perceptualChangedPixels":0,"perceptualChangedRatio":0,"perceptualThreshold":0.1,"antialiasedPixels":0,"evidence":{"rawOnlyPixels":0,"perceptualOnlyPixels":0,"rawAndPerceptualPixels":0},"inputs":{"reference":{"width":4,"height":2,"crop":{"x":1,"y":0,"width":2,"height":2}},"actual":{"width":2,"height":2}},"mask":"`+mask+`"}`, result.Stdout)
@@ -60,7 +61,7 @@ func TestDiffImageCommandRejectsUnsupportedReferenceMetadataVersion(t *testing.T
 	writeTestPNG(t, actual, image.NewRGBA(image.Rect(0, 0, 2, 2)))
 	require.NoError(t, os.WriteFile(metadata, []byte(`{"version":2}`), 0o600))
 
-	result := executeCommand(newCommand(diff.CompareImagesWithThresholds), reference, actual, "--reference-metadata", metadata, "--output", filepath.Join(dir, "mask.png"))
+	result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), reference, actual, "--reference-metadata", metadata, "--output", filepath.Join(dir, "mask.png"))
 
 	assert.EqualError(t, result.Err, "unsupported --reference-metadata version 2")
 }
@@ -74,7 +75,7 @@ func TestDiffImageCommandRejectsReferenceMetadataDimensionMismatch(t *testing.T)
 	writeTestPNG(t, actual, image.NewRGBA(image.Rect(0, 0, 2, 2)))
 	require.NoError(t, os.WriteFile(metadata, []byte(`{"version":1,"nodeBounds":{"width":2,"height":2},"exportBounds":{"width":5,"height":2}}`), 0o600))
 
-	result := executeCommand(newCommand(diff.CompareImagesWithThresholds), reference, actual, "--reference-metadata", metadata, "--output", filepath.Join(dir, "mask.png"))
+	result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), reference, actual, "--reference-metadata", metadata, "--output", filepath.Join(dir, "mask.png"))
 
 	assert.EqualError(t, result.Err, "--reference-metadata export bounds 5x2 do not match reference image 4x2")
 }
@@ -87,7 +88,7 @@ func TestDiffImageCommandAppliesIndependentInputCrops(t *testing.T) {
 	writeTestPNG(t, reference, image.NewRGBA(image.Rect(0, 0, 4, 2)))
 	writeTestPNG(t, actual, image.NewRGBA(image.Rect(0, 0, 2, 2)))
 
-	result := executeCommand(newCommand(diff.CompareImagesWithThresholds), reference, actual, "--reference-crop", "1,0,2,2", "--actual-crop", "0,0,2,2", "--output", mask)
+	result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), reference, actual, "--reference-crop", "1,0,2,2", "--actual-crop", "0,0,2,2", "--output", mask)
 
 	require.NoError(t, result.Err)
 	assert.JSONEq(t, `{"width":2,"height":2,"changedPixels":0,"comparedPixels":4,"changedRatio":0,"rmse":0,"rgbRmse":0,"luminanceRmse":0,"alphaRmse":0,"edgeRmse":0,"perceptualRmse":0,"perceptualChangedPixels":0,"perceptualChangedRatio":0,"perceptualThreshold":0.1,"antialiasedPixels":0,"evidence":{"rawOnlyPixels":0,"perceptualOnlyPixels":0,"rawAndPerceptualPixels":0},"inputs":{"reference":{"width":4,"height":2,"crop":{"x":1,"y":0,"width":2,"height":2}},"actual":{"width":2,"height":2,"crop":{"x":0,"y":0,"width":2,"height":2}}},"mask":"`+mask+`"}`, result.Stdout)
@@ -104,7 +105,7 @@ func TestDiffImageCommandAddsInputBoundsToRegionsWhenCropped(t *testing.T) {
 	writeTestPNG(t, reference, referenceImage)
 	writeTestPNG(t, actual, actualImage)
 
-	result := executeCommand(newCommand(diff.CompareImagesWithThresholds), reference, actual, "--reference-crop", "1,0,2,2", "--actual-crop", "0,0,2,2", "--output", mask)
+	result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), reference, actual, "--reference-crop", "1,0,2,2", "--actual-crop", "0,0,2,2", "--output", mask)
 
 	require.NoError(t, result.Err)
 	region := extractFirstRegion(t, result.Stdout)
@@ -131,7 +132,7 @@ func TestDiffImageCommandRejectsInvalidCrops(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := executeCommand(newCommand(diff.CompareImagesWithThresholds), reference, actual, test.flag, test.crop, "--output", filepath.Join(dir, test.name+".png"))
+			result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), reference, actual, test.flag, test.crop, "--output", filepath.Join(dir, test.name+".png"))
 
 			assert.EqualError(t, result.Err, test.expected)
 		})
@@ -145,7 +146,7 @@ func TestDiffImageCommandRejectsCroppedDimensionMismatch(t *testing.T) {
 	writeTestPNG(t, reference, image.NewRGBA(image.Rect(0, 0, 4, 2)))
 	writeTestPNG(t, actual, image.NewRGBA(image.Rect(0, 0, 4, 2)))
 
-	result := executeCommand(newCommand(diff.CompareImagesWithThresholds), reference, actual, "--reference-crop", "0,0,2,2", "--actual-crop", "0,0,3,2", "--output", filepath.Join(dir, "mask.png"))
+	result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), reference, actual, "--reference-crop", "0,0,2,2", "--actual-crop", "0,0,3,2", "--output", filepath.Join(dir, "mask.png"))
 
 	assert.EqualError(t, result.Err, "cropped image dimensions differ: reference is 2x2, actual is 3x2")
 }

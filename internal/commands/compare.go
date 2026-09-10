@@ -10,10 +10,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cristianoliveira/pxp/internal/annotationio"
 	"github.com/cristianoliveira/pxp/internal/annotations"
 	"github.com/cristianoliveira/pxp/internal/cli"
 	"github.com/cristianoliveira/pxp/internal/imagecontext"
 	diff "github.com/cristianoliveira/pxp/internal/imagediff"
+	"github.com/cristianoliveira/pxp/internal/imageio"
 	reportpkg "github.com/cristianoliveira/pxp/internal/report"
 	"github.com/spf13/cobra"
 )
@@ -78,11 +80,11 @@ func runComparisonCommand(cmd *cobra.Command, args []string, compare imageCompar
 	annotationsPath, _ := cmd.Flags().GetString("annotations")
 	var annotationDocument *annotations.Document
 	if annotationsPath != "" {
-		annotationDocument, err = annotations.Load(annotationsPath)
+		annotationDocument, err = annotationio.Load(annotationsPath)
 		if err != nil {
 			return err
 		}
-		imageWidth, imageHeight, dimensionsErr := diff.PNGDimensions(inputs.referencePath)
+		imageWidth, imageHeight, dimensionsErr := imageio.PNGDimensions(inputs.referencePath)
 		if dimensionsErr != nil {
 			return dimensionsErr
 		}
@@ -92,19 +94,23 @@ func runComparisonCommand(cmd *cobra.Command, args []string, compare imageCompar
 	}
 	if overlay != "" {
 		if decoded == nil {
-			decoded, err = diff.LoadDecodedImages(inputs.referencePath, inputs.actualPath)
+			decoded, err = imageio.LoadDecodedImages(inputs.referencePath, inputs.actualPath)
 			if err != nil {
 				return err
 			}
 		}
-		if err := decoded.WriteOverlay(overlay, region, ignored); err != nil {
+		overlayImage, overlayErr := decoded.Overlay(region, ignored)
+		if overlayErr != nil {
+			return overlayErr
+		}
+		if err := imageio.WritePNG(overlay, overlayImage); err != nil {
 			return err
 		}
 		result.Overlay = overlay
 	}
 	if offsetRadius > 0 {
 		if decoded == nil {
-			decoded, err = diff.LoadDecodedImages(inputs.referencePath, inputs.actualPath)
+			decoded, err = imageio.LoadDecodedImages(inputs.referencePath, inputs.actualPath)
 			if err != nil {
 				return err
 			}
@@ -126,7 +132,7 @@ func runComparisonCommand(cmd *cobra.Command, args []string, compare imageCompar
 			regionBounds[index] = result.Regions[index].Bounds
 		}
 		if decoded == nil {
-			decoded, err = diff.LoadDecodedImages(inputs.referencePath, inputs.actualPath)
+			decoded, err = imageio.LoadDecodedImages(inputs.referencePath, inputs.actualPath)
 			if err != nil {
 				return err
 			}
@@ -195,12 +201,21 @@ func comparePreparedImages(compare imageComparer, inputs preparedImageInputs, ou
 		result, err := compare(inputs.referencePath, inputs.actualPath, output, threshold, perceptualThreshold, region, ignored)
 		return result, nil, err
 	}
-	decoded, err := diff.LoadDecodedImages(inputs.referencePath, inputs.actualPath)
+	decoded, err := imageio.LoadDecodedImages(inputs.referencePath, inputs.actualPath)
 	if err != nil {
 		return diff.ImageComparison{}, nil, err
 	}
-	result, err := decoded.Compare(output, threshold, perceptualThreshold, region, ignored)
-	return result, decoded, err
+	result, mask, err := decoded.Compare(threshold, perceptualThreshold, region, ignored)
+	if err != nil {
+		return diff.ImageComparison{}, nil, err
+	}
+	if output != "" {
+		if err := imageio.WritePNG(output, mask); err != nil {
+			return diff.ImageComparison{}, nil, err
+		}
+		result.Mask = output
+	}
+	return result, decoded, nil
 }
 
 func parseIgnoredRegions(values []string) ([]diff.Bounds, error) {
@@ -483,7 +498,7 @@ func prepareComparisonInputs(command *cobra.Command, args []string, ignored []di
 	if comparisonMask == "" {
 		return inputs, ignored, nil
 	}
-	maskedRegions, err := diff.IgnoredRegionsFromMask(comparisonMask, inputs.referencePath)
+	maskedRegions, err := imageio.IgnoredRegionsFromMask(comparisonMask, inputs.referencePath)
 	if err != nil {
 		inputs.cleanup()
 		return preparedImageInputs{}, nil, err

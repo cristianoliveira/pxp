@@ -10,6 +10,7 @@ import (
 
 	clipkg "github.com/cristianoliveira/pxp/internal/cli"
 	diff "github.com/cristianoliveira/pxp/internal/imagediff"
+	"github.com/cristianoliveira/pxp/internal/imageio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -104,7 +105,7 @@ func TestDiffImageCommandProducesMaskAndJSONMetrics(t *testing.T) {
 	writeTestPNG(t, reference, image.NewRGBA(image.Rect(0, 0, 2, 2)))
 	writeTestPNG(t, actual, image.NewRGBA(image.Rect(0, 0, 2, 2)))
 
-	result := executeCommand(newCommand(diff.CompareImagesWithThresholds), reference, actual, "--output", mask)
+	result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), reference, actual, "--output", mask)
 
 	require.NoError(t, result.Err)
 	assert.JSONEq(t, `{"width":2,"height":2,"changedPixels":0,"comparedPixels":4,"changedRatio":0,"rmse":0,"rgbRmse":0,"luminanceRmse":0,"alphaRmse":0,"edgeRmse":0,"perceptualRmse":0,"perceptualChangedPixels":0,"perceptualChangedRatio":0,"perceptualThreshold":0.1,"antialiasedPixels":0,"evidence":{"rawOnlyPixels":0,"perceptualOnlyPixels":0,"rawAndPerceptualPixels":0},"mask":"`+mask+`"}`, result.Stdout)
@@ -118,7 +119,7 @@ func TestDiffImageCommandWritesDefaultMaskOutput(t *testing.T) {
 	writeTestPNG(t, reference, image.NewRGBA(image.Rect(0, 0, 2, 2)))
 	writeTestPNG(t, actual, image.NewRGBA(image.Rect(0, 0, 2, 2)))
 
-	result := executeCommand(newCommand(diff.CompareImagesWithThresholds), reference, actual, "--threshold", "8")
+	result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), reference, actual, "--threshold", "8")
 
 	require.NoError(t, result.Err)
 	assert.JSONEq(t, `{"width":2,"height":2,"changedPixels":0,"comparedPixels":4,"changedRatio":0,"rmse":0,"rgbRmse":0,"luminanceRmse":0,"alphaRmse":0,"edgeRmse":0,"perceptualRmse":0,"perceptualChangedPixels":0,"perceptualChangedRatio":0,"perceptualThreshold":0.1,"antialiasedPixels":0,"evidence":{"rawOnlyPixels":0,"perceptualOnlyPixels":0,"rawAndPerceptualPixels":0},"mask":"`+defaultMask+`"}`, result.Stdout)
@@ -135,7 +136,7 @@ func TestDiffImageCommandWritesReportWithoutExplicitMaskOutput(t *testing.T) {
 	writeTestPNG(t, actual, image.NewRGBA(image.Rect(0, 0, 2, 2)))
 
 	defaultMask := filepath.Join(dir, "actual.diff.png")
-	result := executeCommand(newCommand(diff.CompareImagesWithThresholds), reference, actual, "--report", report)
+	result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), reference, actual, "--report", report)
 
 	require.NoError(t, result.Err)
 	assert.Contains(t, result.Stdout, defaultMask)
@@ -156,7 +157,7 @@ func TestDiffImageCommandPrefersMetadataLogicalCrop(t *testing.T) {
 	writeTestPNG(t, actual, image.NewRGBA(image.Rect(0, 0, 2, 2)))
 	require.NoError(t, os.WriteFile(metadata, []byte(`{"version":1,"nodeBounds":{"width":2,"height":2},"exportBounds":{"width":4,"height":4},"logicalCrop":{"x":1,"y":0,"width":2,"height":2}}`), 0o600))
 
-	result := executeCommand(newCommand(diff.CompareImagesWithThresholds), reference, actual, "--reference-metadata", metadata, "--output", filepath.Join(dir, "mask.png"))
+	result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), reference, actual, "--reference-metadata", metadata, "--output", filepath.Join(dir, "mask.png"))
 
 	require.NoError(t, result.Err)
 	var comparison diff.ImageComparison
@@ -174,7 +175,7 @@ func TestDiffImageCommandWritesHTMLReport(t *testing.T) {
 	writeTestPNG(t, reference, image.NewRGBA(image.Rect(0, 0, 2, 2)))
 	writeTestPNG(t, actual, image.NewRGBA(image.Rect(0, 0, 2, 2)))
 
-	result := executeCommand(newCommand(diff.CompareImagesWithThresholds), reference, actual, "--output", mask, "--report", report)
+	result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), reference, actual, "--output", mask, "--report", report)
 
 	require.NoError(t, result.Err)
 	content, err := os.ReadFile(report)
@@ -202,7 +203,7 @@ func TestDiffImageCommandHTMLReportIncludesCropAndRegionProvenance(t *testing.T)
 	writeTestPNG(t, reference, referenceImage)
 	writeTestPNG(t, actual, actualImage)
 
-	result := executeCommand(newCommand(diff.CompareImagesWithThresholds), reference, actual, "--reference-crop", "1,0,2,2", "--actual-crop", "0,0,2,2", "--region", "0,0,2,2", "--output", mask, "--report", report)
+	result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), reference, actual, "--reference-crop", "1,0,2,2", "--actual-crop", "0,0,2,2", "--region", "0,0,2,2", "--output", mask, "--report", report)
 
 	require.NoError(t, result.Err)
 	content, err := os.ReadFile(report)
@@ -216,7 +217,7 @@ func TestDiffImageCommandHTMLReportIncludesCropAndRegionProvenance(t *testing.T)
 }
 
 func TestDiffImageCommandHelpDocumentsVisualContextPrompt(t *testing.T) {
-	command := newCommand(diff.CompareImagesWithThresholds)
+	command := newCommand(imageio.CompareImagesWithThresholds)
 	result := executeCommand(command, "--help")
 
 	require.NoError(t, result.Err)
@@ -224,7 +225,7 @@ func TestDiffImageCommandHelpDocumentsVisualContextPrompt(t *testing.T) {
 }
 
 func TestDiffImageCommandRejectsReportPathCollisions(t *testing.T) {
-	result := executeCommand(newCommand(diff.CompareImagesWithThresholds), "reference.png", "actual.png", "--output", "mask.png", "--report", "mask.png")
+	result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), "reference.png", "actual.png", "--output", "mask.png", "--report", "mask.png")
 
 	assert.EqualError(t, result.Err, "--report must not overwrite an input, mask, or overlay")
 }
@@ -248,7 +249,7 @@ func TestDiffImageCommandAddsDisclaimerWhenVisualContextIsNotConfigured(t *testi
 	writeTestPNG(t, reference, image.NewRGBA(image.Rect(0, 0, 2, 2)))
 	writeTestPNG(t, actual, image.NewRGBA(image.Rect(0, 0, 2, 2)))
 
-	result := executeCommand(newCommand(diff.CompareImagesWithThresholds), reference, actual, "--output", mask, "--visual-context")
+	result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), reference, actual, "--output", mask, "--visual-context")
 
 	require.NoError(t, result.Err)
 	assert.JSONEq(t, `{"width":2,"height":2,"changedPixels":0,"comparedPixels":4,"changedRatio":0,"rmse":0,"rgbRmse":0,"luminanceRmse":0,"alphaRmse":0,"edgeRmse":0,"perceptualRmse":0,"perceptualChangedPixels":0,"perceptualChangedRatio":0,"perceptualThreshold":0.1,"antialiasedPixels":0,"evidence":{"rawOnlyPixels":0,"perceptualOnlyPixels":0,"rawAndPerceptualPixels":0},"mask":"`+mask+`","visualContext":{"provider":"openrouter","advisory":true,"disclaimer":"Visual context unavailable: configure openrouter credentials in the Pi Spectacles config or environment."}}`, result.Stdout)
@@ -345,7 +346,7 @@ func TestDiffImageCommandRejectsArtifactPathCollisions(t *testing.T) {
 			if test.overlay != "" {
 				args = append(args, "--overlay", test.overlay)
 			}
-			result := executeCommand(newCommand(diff.CompareImagesWithThresholds), args...)
+			result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), args...)
 
 			assert.EqualError(t, result.Err, test.expected)
 		})
@@ -355,7 +356,7 @@ func TestDiffImageCommandRejectsArtifactPathCollisions(t *testing.T) {
 func TestDiffImageCommandRejectsEmptyIgnoredRegions(t *testing.T) {
 	for _, region := range []string{"0,0,0,1", "0,0,1,0", "0,0,-1,1", "0,0,1,-1"} {
 		t.Run(region, func(t *testing.T) {
-			result := executeCommand(newCommand(diff.CompareImagesWithThresholds), "reference.png", "actual.png", "--output", "mask.png", "--ignore-region", region)
+			result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), "reference.png", "actual.png", "--output", "mask.png", "--ignore-region", region)
 
 			assert.EqualError(t, result.Err, "invalid --ignore-region: width and height must be positive")
 		})
@@ -381,7 +382,7 @@ func TestDiffImageCommandRejectsInvalidAnalysisLimits(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := executeCommand(newCommand(diff.CompareImagesWithThresholds), "reference.png", "actual.png", "--output", "mask.png", test.flag, test.value)
+			result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), "reference.png", "actual.png", "--output", "mask.png", test.flag, test.value)
 
 			assert.EqualError(t, result.Err, test.expected)
 		})
@@ -398,7 +399,7 @@ func TestDiffImageCommandFailsValidationThresholdWithStructuredEvidence(t *testi
 	changed.Set(0, 0, image.White)
 	writeTestPNG(t, actual, changed)
 
-	result := executeCommand(newCommand(diff.CompareImagesWithThresholds), reference, actual, "--output", mask, "--max-changed-ratio", "0.1", "--max-perceptual-changed-ratio", "0")
+	result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), reference, actual, "--output", mask, "--max-changed-ratio", "0.1", "--max-perceptual-changed-ratio", "0")
 
 	assert.EqualError(t, result.Err, "image diff validation failed: changed ratio 0.250000 exceeds maximum 0.100000")
 	var output outputEnvelope

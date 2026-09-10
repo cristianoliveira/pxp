@@ -6,6 +6,7 @@ import (
 
 	"github.com/cristianoliveira/pxp/internal/cli"
 	diff "github.com/cristianoliveira/pxp/internal/imagediff"
+	"github.com/cristianoliveira/pxp/internal/imageio"
 	outputpkg "github.com/cristianoliveira/pxp/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -143,7 +144,7 @@ func lineWithCropOrigin(axis string, index int, crop *diff.Bounds) scanLinePosit
 }
 
 func scanImages(referencePath, actualPath string, axis string, index int) (scanOutput, error) {
-	images, err := diff.LoadDecodedImages(referencePath, actualPath)
+	images, err := imageio.LoadDecodedImages(referencePath, actualPath)
 	if err != nil {
 		return scanOutput{}, err
 	}

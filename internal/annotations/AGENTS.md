@@ -1,6 +1,6 @@
 # Purpose
 
-`internal/annotations` owns the versioned JSON contract for semantic screenshot annotations, coordinate validation, persistence, and region intersections.
+`internal/annotations` owns the semantic screenshot annotation domain: coordinate validation and region intersections. JSON/file persistence lives in [annotationio](internal/annotationio/AGENTS.md).
 
 # Boundaries
 
@@ -10,13 +10,13 @@ It validates annotation documents and computes geometric matches. It does not ow
 
 - [Command orchestration](internal/commands/AGENTS.md): loads and dimension-checks annotation documents at the command boundary.
 - [Image comparison](internal/imagediff/AGENTS.md): consumes intersection matches to enrich comparison regions.
-- [Artifact persistence](internal/artifact/AGENTS.md): provides safe file creation used when writing the JSON contract.
+- [Annotation persistence](internal/annotationio/AGENTS.md): decodes and serializes the JSON contract at the adapter boundary.
 
 # Landmarks
 
 - `internal/annotations/annotations.go:Load`: decodes and validates a versioned document.
 - `internal/annotations/annotations.go:Document.Intersections`: returns annotation matches for a comparison region.
-- `internal/annotations/annotations.go:Write`: persists a document.
+- `internal/annotations/annotations.go:Document.Validate`: checks domain invariants without I/O.
 
 # Boundary flows
 

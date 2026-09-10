@@ -25,33 +25,6 @@ type RegionMetrics struct {
 	DominantColorPairs      []ColorPair `json:"dominantColorPairs,omitempty"`
 }
 
-func MeasureImageRegion(referencePath, actualPath string, bounds Bounds, threshold uint8, ignored []Bounds) (RegionMetrics, error) {
-	return MeasureImageRegionWithThresholds(referencePath, actualPath, bounds, threshold, DefaultPerceptualThreshold, ignored)
-}
-
-func MeasureImageRegionWithThresholds(referencePath, actualPath string, bounds Bounds, threshold uint8, perceptualThreshold float64, ignored []Bounds) (RegionMetrics, error) {
-	reference, err := decodeNRGBA(referencePath)
-	if err != nil {
-		return RegionMetrics{}, fmt.Errorf("decode reference: %w", err)
-	}
-	actual, err := decodeNRGBA(actualPath)
-	if err != nil {
-		return RegionMetrics{}, fmt.Errorf("decode actual: %w", err)
-	}
-	if reference.Bounds().Dx() != actual.Bounds().Dx() || reference.Bounds().Dy() != actual.Bounds().Dy() {
-		return RegionMetrics{}, fmt.Errorf("image dimensions differ: reference is %dx%d, actual is %dx%d", reference.Bounds().Dx(), reference.Bounds().Dy(), actual.Bounds().Dx(), actual.Bounds().Dy())
-	}
-	return measureImageRegion(reference, actual, bounds, threshold, perceptualThreshold, ignored)
-}
-
-func MeasureImageRegionsWithThresholds(referencePath, actualPath string, regions []Bounds, threshold uint8, perceptualThreshold float64, ignored []Bounds) ([]RegionMetrics, error) {
-	images, err := LoadDecodedImages(referencePath, actualPath)
-	if err != nil {
-		return nil, err
-	}
-	return images.MeasureRegions(regions, threshold, perceptualThreshold, ignored)
-}
-
 func (images *DecodedImages) MeasureRegions(regions []Bounds, threshold uint8, perceptualThreshold float64, ignored []Bounds) ([]RegionMetrics, error) {
 	metrics := make([]RegionMetrics, len(regions))
 	var err error

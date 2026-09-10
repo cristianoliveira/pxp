@@ -9,6 +9,7 @@ import (
 
 	"github.com/cristianoliveira/pxp/internal/cli"
 	diff "github.com/cristianoliveira/pxp/internal/imagediff"
+	"github.com/cristianoliveira/pxp/internal/imageio"
 	"github.com/spf13/cobra"
 )
 
@@ -96,11 +97,11 @@ func prepareCommandImageInputs(cmd *cobra.Command, referencePath, actualPath str
 }
 
 func prepareImageInputs(referencePath, actualPath string, referenceCrop, actualCrop *diff.Bounds, referenceMetadata *exportMetadata) (preparedImageInputs, error) {
-	referenceWidth, referenceHeight, err := diff.PNGDimensions(referencePath)
+	referenceWidth, referenceHeight, err := imageio.PNGDimensions(referencePath)
 	if err != nil {
 		return preparedImageInputs{}, fmt.Errorf("decode reference: %w", err)
 	}
-	actualWidth, actualHeight, err := diff.PNGDimensions(actualPath)
+	actualWidth, actualHeight, err := imageio.PNGDimensions(actualPath)
 	if err != nil {
 		return preparedImageInputs{}, fmt.Errorf("decode actual: %w", err)
 	}
@@ -136,14 +137,14 @@ func prepareImageInputs(referencePath, actualPath string, referenceCrop, actualC
 	prepared := preparedImageInputs{referencePath: referencePath, actualPath: actualPath, metadata: metadata, cleanup: cleanup}
 	if referenceCrop != nil {
 		prepared.referencePath = filepath.Join(tempDir, "reference.png")
-		if err := diff.WriteCroppedPNG(referencePath, prepared.referencePath, *referenceCrop); err != nil {
+		if err := imageio.WriteCroppedPNG(referencePath, prepared.referencePath, *referenceCrop); err != nil {
 			cleanup()
 			return preparedImageInputs{}, fmt.Errorf("invalid --reference-crop: %w", err)
 		}
 	}
 	if actualCrop != nil {
 		prepared.actualPath = filepath.Join(tempDir, "actual.png")
-		if err := diff.WriteCroppedPNG(actualPath, prepared.actualPath, *actualCrop); err != nil {
+		if err := imageio.WriteCroppedPNG(actualPath, prepared.actualPath, *actualCrop); err != nil {
 			cleanup()
 			return preparedImageInputs{}, fmt.Errorf("invalid --actual-crop: %w", err)
 		}

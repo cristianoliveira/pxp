@@ -8,6 +8,7 @@ import (
 
 	"github.com/cristianoliveira/pxp/internal/cli"
 	diff "github.com/cristianoliveira/pxp/internal/imagediff"
+	"github.com/cristianoliveira/pxp/internal/imageio"
 	outputpkg "github.com/cristianoliveira/pxp/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -253,7 +254,7 @@ func parseProbePoint(value string) (probePoint, error) {
 }
 
 func probeImages(referencePath, actualPath string, points []probePoint) (probeOutput, error) {
-	images, err := diff.LoadDecodedImages(referencePath, actualPath)
+	images, err := imageio.LoadDecodedImages(referencePath, actualPath)
 	if err != nil {
 		return probeOutput{}, err
 	}

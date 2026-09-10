@@ -25,14 +25,6 @@ type SuggestedOffset struct {
 	Interpretation   string  `json:"interpretation"`
 }
 
-func SuggestImageOffset(referencePath, actualPath string, radius int, region *Bounds, ignored []Bounds) (SuggestedOffset, error) {
-	images, err := LoadDecodedImages(referencePath, actualPath)
-	if err != nil {
-		return SuggestedOffset{}, err
-	}
-	return images.SuggestOffset(radius, region, ignored), nil
-}
-
 func (images *DecodedImages) SuggestOffset(radius int, region *Bounds, ignored []Bounds) SuggestedOffset {
 	reference, actual := images.Reference, images.Actual
 	area := Bounds{Width: reference.Bounds().Dx(), Height: reference.Bounds().Dy()}
