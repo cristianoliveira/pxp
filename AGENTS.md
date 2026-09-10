@@ -10,7 +10,8 @@
 - [Visual context](internal/imagecontext/AGENTS.md) owns optional provider-backed descriptions.
 - [Annotations](internal/annotations/AGENTS.md) owns annotation contracts and geometry.
 - [Reports](internal/report/AGENTS.md) owns HTML presentation.
-- [Output](internal/output/AGENTS.md) owns structured rendering and artifact files.
+- [Output](internal/output/AGENTS.md) owns structured rendering and serialization.
+- [Artifact persistence](internal/artifact/AGENTS.md) owns filesystem artifact creation and writing.
 - [CLI runtime](internal/cli/AGENTS.md) owns shared process and error behavior.
 - [Skill workflows](skills/AGENTS.md) and [evaluation controls](tests/evals/AGENTS.md) are agent-facing, not runtime code.
 
@@ -42,4 +43,4 @@ Composition is wired at the executable and command boundaries. Provider calls st
 
 # Placement
 
-Put reusable image evidence in `imagediff`, command policy in `commands`, provider adapters in `imagecontext`, presentation in `report`, and shared output/process behavior in their respective guides. Add a new top-level module only when a cohesive responsibility has an independent owner and boundary.
+Put reusable image evidence in `imagediff`, command policy in `pixelperfectcmd`, provider adapters in `imagecontext`, presentation in `pixelperfectreport`, and shared output/process behavior in their respective guides. Add a new top-level module only when a cohesive responsibility has an independent owner and boundary.

@@ -1,6 +1,6 @@
 # Purpose
 
-`internal/output` owns the stable output boundary: TOON-first structured rendering, compatibility JSON, raw text/file modes, and safe creation of artifact paths.
+`internal/output` owns the stable output boundary: TOON-first structured rendering, compatibility JSON, and raw text/file modes.
 
 # Boundaries
 
@@ -10,13 +10,13 @@ Callers provide domain values and choose a format. This package does not know im
 
 - [CLI runtime](internal/cli/AGENTS.md): selects and binds the printer to command streams.
 - [Command orchestration](internal/commands/AGENTS.md): supplies comparison and diagnostic values for rendering.
-- [Annotations](internal/annotations/AGENTS.md) and [reports](internal/report/AGENTS.md): consume file helpers for their artifacts.
+- [Annotations](internal/annotations/AGENTS.md) and [reports](internal/report/AGENTS.md): consume [artifact](internal/artifact/AGENTS.md) for filesystem persistence.
 
 # Landmarks
 
 - `internal/output/printer.go:New`: constructs a format-specific printer.
 - `internal/output/printer.go:Printer.Structured`: emits TOON or compatibility JSON.
-- `internal/output/file.go:WriteFile`: creates parent directories and writes an artifact.
+- `internal/output/printer.go:Printer.File`: emits raw or structured file-mode output.
 
 # Boundary flows
 
