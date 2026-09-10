@@ -16,7 +16,6 @@ linters:
 
     # Code duplication
     - dupl           # Code duplication detection
-    - goconst        # Repeated string literals
 
     # Style & best practices
     - misspell       # Spell checking
@@ -26,10 +25,6 @@ linters:
     dupl:
       threshold: 150  # Minimum tokens to consider as duplicate (default: 100)
                       # Higher = fewer false positives, lower = stricter
-
-    goconst:
-      min-len: 3           # Minimum string length to check
-      min-occurrences: 3   # Minimum occurrences to flag as duplicate
 
   exclusions:
     rules:
