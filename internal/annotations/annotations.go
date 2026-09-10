@@ -66,7 +66,14 @@ func Load(path string) (*Document, error) {
 		return nil, fmt.Errorf("read annotations: %w", err)
 	}
 	defer func() { _ = file.Close() }()
-	decoder := json.NewDecoder(file)
+
+	return Decode(file)
+}
+
+// Decode reads one strict JSON document and validates its annotation rules.
+// The caller owns the reader and its lifetime.
+func Decode(reader io.Reader) (*Document, error) {
+	decoder := json.NewDecoder(reader)
 	decoder.DisallowUnknownFields()
 	var document Document
 	if err := decoder.Decode(&document); err != nil {
@@ -75,24 +82,8 @@ func Load(path string) (*Document, error) {
 	if err := rejectTrailingJSON(decoder); err != nil {
 		return nil, err
 	}
-	if document.Version != 1 {
-		return nil, fmt.Errorf("unsupported annotations version %d", document.Version)
-	}
-	if document.CoordinateSpace.Width < 1 || document.CoordinateSpace.Height < 1 {
-		return nil, fmt.Errorf("annotation coordinate space dimensions must be positive")
-	}
-	seen := map[string]bool{}
-	for _, annotation := range document.Annotations {
-		if annotation.ID == "" {
-			return nil, fmt.Errorf("annotation id must not be empty")
-		}
-		if seen[annotation.ID] {
-			return nil, fmt.Errorf("duplicate annotation id %q", annotation.ID)
-		}
-		seen[annotation.ID] = true
-		if !within(annotation.Bounds, document.CoordinateSpace) {
-			return nil, fmt.Errorf("annotation %q bounds are outside coordinate space", annotation.ID)
-		}
+	if err := document.Validate(); err != nil {
+		return nil, err
 	}
 	return &document, nil
 }
