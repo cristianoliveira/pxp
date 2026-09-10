@@ -1,7 +1,7 @@
 ---
 id: TASK-0002
 title: Move probe and scan measurements into imagediff
-status: doing
+status: done
 depends_on: [TASK-0001]
 priority: normal
 tags: []
