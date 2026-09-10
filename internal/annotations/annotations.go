@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/cristianoliveira/figma-cli/internal/output"
+	"github.com/cristianoliveira/pxp/internal/output"
 )
 
 type Size struct {

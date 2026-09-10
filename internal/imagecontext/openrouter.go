@@ -65,7 +65,7 @@ func (o *OpenRouter) Describe(ctx context.Context, input Input) (Result, error) 
 	}
 	req.Header.Set("Authorization", "Bearer "+o.apiKey)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Title", "pixel-perfect")
+	req.Header.Set("X-Title", "pxp")
 	response, err := o.client.Do(req)
 	if err != nil {
 		return Result{}, fmt.Errorf("request visual context: %w", err)
@@ -101,7 +101,7 @@ func (o *OpenRouter) Describe(ctx context.Context, input Input) (Result, error) 
 }
 func visualContextPrompt(regions []Region, customPrompt string) string {
 	encoded, _ := json.Marshal(regions)
-	prompt := `The first image is reference and second is implementation. For each supplied region ID, name the visible object and briefly describe its appearance in each image. Mention only differences clearly visible inside that region. Use at most 15 words per field. Do not describe causes, measure, diagnose geometry, suggest fixes, infer DOM/Figma semantics, or alter metrics. Do not mention anything outside the supplied region. Preserve region IDs exactly. Return JSON only: {"regions":[{"region":"r1","referenceAppearance":"","actualAppearance":"","visualContext":""}]}.`
+	prompt := `The first image is reference and second is implementation. For each supplied region ID, name the visible object and briefly describe its appearance in each image. Mention only differences clearly visible inside that region. Use at most 15 words per field. Do not describe causes, measure, diagnose geometry, suggest fixes, infer DOM/domain semantics, or alter metrics. Do not mention anything outside the supplied region. Preserve region IDs exactly. Return JSON only: {"regions":[{"region":"r1","referenceAppearance":"","actualAppearance":"","visualContext":""}]}.`
 	if strings.TrimSpace(customPrompt) != "" {
 		prompt += " User focus: " + strings.TrimSpace(customPrompt)
 	}

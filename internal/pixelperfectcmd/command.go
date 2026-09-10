@@ -15,12 +15,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cristianoliveira/figma-cli/internal/annotations"
-	"github.com/cristianoliveira/figma-cli/internal/cli"
-	"github.com/cristianoliveira/figma-cli/internal/imagecontext"
-	diff "github.com/cristianoliveira/figma-cli/internal/imagediff"
-	outputpkg "github.com/cristianoliveira/figma-cli/internal/output"
-	"github.com/cristianoliveira/figma-cli/internal/pixelperfectreport"
+	"github.com/cristianoliveira/pxp/internal/annotations"
+	"github.com/cristianoliveira/pxp/internal/cli"
+	"github.com/cristianoliveira/pxp/internal/imagecontext"
+	diff "github.com/cristianoliveira/pxp/internal/imagediff"
+	outputpkg "github.com/cristianoliveira/pxp/internal/output"
+	"github.com/cristianoliveira/pxp/internal/pixelperfectreport"
 	"github.com/spf13/cobra"
 )
 
@@ -460,7 +460,7 @@ func newCommand(compare imageComparer) *cobra.Command {
 	command := &cobra.Command{
 		Use:   "image <reference.png> <actual.png>",
 		Short: "Compare equal-sized PNGs and write a changed-pixel mask",
-		Args:  requireImagePair("compare", "pixel-perfect reference.png actual.png"),
+		Args:  requireImagePair("compare", "pxp reference.png actual.png"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runComparisonCommand(cmd, args, compare)
 		},
@@ -473,7 +473,7 @@ func newCommand(compare imageComparer) *cobra.Command {
 	command.Flags().Float64("perceptual-threshold", diff.DefaultPerceptualThreshold, "OKLab HyAB distance above which a pixel is perceptually changed (non-negative)")
 	command.Flags().String("region", "", "compare only x,y,width,height")
 	command.Flags().String("reference-crop", "", "crop reference before comparing: x,y,width,height")
-	command.Flags().String("reference-metadata", "", "apply logical crop from figma export metadata JSON")
+	command.Flags().String("reference-metadata", "", "apply logical crop from image export metadata JSON")
 	command.Flags().String("actual-crop", "", "crop actual before comparing: x,y,width,height")
 	command.Flags().StringArray("ignore-region", nil, "exclude x,y,width,height; repeat for multiple areas")
 	command.Flags().String("mask", "", "full-size PNG selecting compared pixels (visible non-black includes)")
@@ -501,10 +501,10 @@ func newProbeCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "probe <reference.png> <actual.png>",
 		Short: "Inspect colors at one pixel in two equal-sized PNGs",
-		Args:  requireImagePair("probe", "pixel-perfect probe reference.png actual.png --at 12,24"),
-		Example: `  pixel-perfect probe reference.png actual.png --at 12,24
-  pixel-perfect probe reference.png actual.png --from 0,20 --to 100,20
-  pixel-perfect probe reference.png actual.png --at 12,24 --format json`,
+		Args:  requireImagePair("probe", "pxp probe reference.png actual.png --at 12,24"),
+		Example: `  pxp probe reference.png actual.png --at 12,24
+  pxp probe reference.png actual.png --from 0,20 --to 100,20
+  pxp probe reference.png actual.png --at 12,24 --format json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			limit, err := inspectionResultLimit(cmd)
 			if err != nil {
@@ -559,9 +559,9 @@ func newScanCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "scan <reference.png> <actual.png>",
 		Short: "Inspect compact color runs along one row or column in two PNGs",
-		Args:  requireImagePair("scan", "pixel-perfect scan reference.png actual.png --row 24"),
-		Example: `  pixel-perfect scan reference.png actual.png --row 24
-  pixel-perfect scan reference.png actual.png --column 12 --format json`,
+		Args:  requireImagePair("scan", "pxp scan reference.png actual.png --row 24"),
+		Example: `  pxp scan reference.png actual.png --row 24
+  pxp scan reference.png actual.png --column 12 --format json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			limit, err := inspectionResultLimit(cmd)
 			if err != nil {
@@ -991,7 +991,7 @@ func parseOptionalCrop(cmd *cobra.Command, flagName string) (*diff.Bounds, error
 
 func addInputPreparationFlags(command *cobra.Command) {
 	command.Flags().String("reference-crop", "", "crop reference before operation: x,y,width,height")
-	command.Flags().String("reference-metadata", "", "apply logical crop from figma export metadata JSON")
+	command.Flags().String("reference-metadata", "", "apply logical crop from image export metadata JSON")
 	command.Flags().String("actual-crop", "", "crop actual before operation: x,y,width,height")
 }
 
@@ -1048,7 +1048,7 @@ func prepareImageInputs(referencePath, actualPath string, referenceCrop, actualC
 	if referenceCompareWidth != actualCompareWidth || referenceCompareHeight != actualCompareHeight {
 		return preparedImageInputs{}, cli.NewUsageError(fmt.Errorf("cropped image dimensions differ: reference is %dx%d, actual is %dx%d", referenceCompareWidth, referenceCompareHeight, actualCompareWidth, actualCompareHeight))
 	}
-	tempDir, err := os.MkdirTemp("", "pixel-perfect-crops-*")
+	tempDir, err := os.MkdirTemp("", "pxp-crops-*")
 	if err != nil {
 		return preparedImageInputs{}, err
 	}
@@ -1345,10 +1345,10 @@ func NewCommand() *cobra.Command {
 
 func newCommandWithExecutable(resolveExecutable func() (string, error)) *cobra.Command {
 	command := newCommand(nil)
-	command.Use = "pixel-perfect <reference.png> <actual.png>"
-	command.Example = `  pixel-perfect reference.png actual.png
-  pixel-perfect reference.png actual.png --overlay overlay.png
-  pixel-perfect reference.png actual.png --max-changed-ratio 0.01`
+	command.Use = "pxp <reference.png> <actual.png>"
+	command.Example = `  pxp reference.png actual.png
+  pxp reference.png actual.png --overlay overlay.png
+  pxp reference.png actual.png --max-changed-ratio 0.01`
 	validateArgs := command.Args
 	command.Args = func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 && cmd.Flags().NFlag() == 0 {
@@ -1365,13 +1365,13 @@ func newCommandWithExecutable(resolveExecutable func() (string, error)) *cobra.C
 		if err != nil {
 			return err
 		}
-		_, err = fmt.Fprintf(cmd.OutOrStdout(), `pixel-perfect compares PNG screenshots.
+		_, err = fmt.Fprintf(cmd.OutOrStdout(), `pxp compares PNG screenshots.
 Executable: %s
-Usage: pixel-perfect <reference.png> <actual.png>
+Usage: pxp <reference.png> <actual.png>
 Next:
-  pixel-perfect reference.png actual.png
-  pixel-perfect probe --help
-  pixel-perfect scan --help
+  pxp reference.png actual.png
+  pxp probe --help
+  pxp scan --help
 `, executable)
 		return err
 	}

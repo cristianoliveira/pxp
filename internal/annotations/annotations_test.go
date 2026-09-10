@@ -15,7 +15,7 @@ func TestLoadAndIntersectAnnotations(t *testing.T) {
 		"version":1,
 		"coordinateSpace":{"width":100,"height":80},
 		"annotations":[
-			{"id":"sidebar","label":"Sidebar","bounds":{"x":0,"y":0,"width":40,"height":80},"metadata":{"source":"figma"}},
+			{"id":"sidebar","label":"Sidebar","bounds":{"x":0,"y":0,"width":40,"height":80},"metadata":{"source":"capture"}},
 			{"id":"content","bounds":{"x":40,"y":0,"width":60,"height":80}}
 		]
 	}`), 0o600))
@@ -28,7 +28,7 @@ func TestLoadAndIntersectAnnotations(t *testing.T) {
 	require.Len(t, matches, 2)
 	assert.Equal(t, "sidebar", matches[0].ID)
 	assert.Equal(t, 0.5, matches[0].RegionIntersectionRatio)
-	assert.Equal(t, "figma", matches[0].Metadata["source"])
+	assert.Equal(t, "capture", matches[0].Metadata["source"])
 	assert.Equal(t, "content", matches[1].ID)
 }
 

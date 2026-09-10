@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/cristianoliveira/figma-cli/internal/imagediff"
+	"github.com/cristianoliveira/pxp/internal/imagediff"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

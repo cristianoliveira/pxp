@@ -7,9 +7,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/cristianoliveira/figma-cli/internal/env"
-	"github.com/cristianoliveira/figma-cli/internal/figma"
-	"github.com/cristianoliveira/figma-cli/internal/output"
+	"github.com/cristianoliveira/pxp/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -96,15 +94,4 @@ func MarkUsageErrors(command *cobra.Command) {
 	for _, child := range command.Commands() {
 		MarkUsageErrors(child)
 	}
-}
-
-// LoadClient builds a Figma API client from the configured access token.
-// Centralizing construction means HTTP config (timeouts, base URL, retries)
-// has exactly one place to change.
-func LoadClient() (*figma.Client, error) {
-	token, err := env.GetFigmaToken()
-	if err != nil {
-		return nil, err
-	}
-	return figma.NewClient(token), nil
 }

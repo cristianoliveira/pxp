@@ -6,8 +6,8 @@ import (
 	"html/template"
 	"os"
 
-	"github.com/cristianoliveira/figma-cli/internal/imagediff"
-	"github.com/cristianoliveira/figma-cli/internal/output"
+	"github.com/cristianoliveira/pxp/internal/imagediff"
+	"github.com/cristianoliveira/pxp/internal/output"
 )
 
 type Input struct {

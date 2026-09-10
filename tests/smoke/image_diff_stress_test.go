@@ -9,13 +9,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	diff "github.com/cristianoliveira/figma-cli/internal/imagediff"
+	diff "github.com/cristianoliveira/pxp/internal/imagediff"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPixelPerfectHandlesThousandsOfDisconnectedChanges(t *testing.T) {
-	binary := buildCommand(t, "pixel-perfect")
+	binary := buildCommand(t, "pxp")
 	dir := t.TempDir()
 	reference := filepath.Join(dir, "reference.png")
 	actual := filepath.Join(dir, "actual.png")
@@ -49,7 +49,7 @@ func TestPixelPerfectHandlesThousandsOfDisconnectedChanges(t *testing.T) {
 }
 
 func TestPixelPerfectReportsMixedForCompetingMismatchSignals(t *testing.T) {
-	binary := buildCommand(t, "pixel-perfect")
+	binary := buildCommand(t, "pxp")
 	dir := t.TempDir()
 	reference := filepath.Join(dir, "reference.png")
 	actual := filepath.Join(dir, "actual.png")
@@ -83,7 +83,7 @@ func TestPixelPerfectReportsMixedForCompetingMismatchSignals(t *testing.T) {
 }
 
 func TestPixelPerfectGroupingCanTurnClearSignalsIntoMixedDiagnosis(t *testing.T) {
-	binary := buildCommand(t, "pixel-perfect")
+	binary := buildCommand(t, "pxp")
 	dir := t.TempDir()
 	reference := filepath.Join(dir, "reference.png")
 	actual := filepath.Join(dir, "actual.png")
@@ -124,7 +124,7 @@ func TestPixelPerfectGroupingCanTurnClearSignalsIntoMixedDiagnosis(t *testing.T)
 }
 
 func TestPixelPerfectExposesClassificationBoundarySensitivity(t *testing.T) {
-	binary := buildCommand(t, "pixel-perfect")
+	binary := buildCommand(t, "pxp")
 	for _, test := range []struct {
 		name           string
 		dominantPixels int
@@ -162,7 +162,7 @@ func TestPixelPerfectExposesClassificationBoundarySensitivity(t *testing.T) {
 }
 
 func TestPixelPerfectHandlesDenseAlphaGradient(t *testing.T) {
-	binary := buildCommand(t, "pixel-perfect")
+	binary := buildCommand(t, "pxp")
 	dir := t.TempDir()
 	reference := filepath.Join(dir, "reference.png")
 	actual := filepath.Join(dir, "actual.png")

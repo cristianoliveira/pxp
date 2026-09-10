@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "status": "inconclusive_all_conditions_timed_out",
+  "question": "Which, if either, of the Pixel Perfect skill and CLI helps DeepSeek v4 Flash/high reproduce the upload panel?",
+  "model": "deepseek/deepseek-v4-flash",
+  "thinking": "high",
+  "timeout_seconds": 900,
+  "design": {
+    "type": "2x2_factorial",
+    "conditions": {
+      "neither": { "skill": false, "cli": false },
+      "skill_only": { "skill": true, "cli": false },
+      "cli_only": { "skill": false, "cli": true },
+      "skill_plus_cli": { "skill": true, "cli": true }
+    }
+  },
+  "preflight": {
+    "cli_absent_when_expected": true,
+    "cli_present_when_expected": true,
+    "explicit_browser_selection_rejected": true
+  },
+  "result": {
+    "neither": "runner_timeout_before_delivery",
+    "skill_only": "runner_timeout_before_delivery",
+    "cli_only": "runner_timeout_before_delivery",
+    "skill_plus_cli": "runner_timeout_before_delivery"
+  },
+  "interpretation": [
+    "No condition delivered source, so coordinator verification and visual comparison did not run.",
+    "This is not evidence about skill or CLI effectiveness.",
+    "Do not repeat unchanged. Change the time cap or task scope first, then rerun the full factorial."
+  ],
+  "evidence_workspace": "/Users/cristianoliveira/.agents/evals/pxp-factorial-deepseek-v1-20260908/"
+}

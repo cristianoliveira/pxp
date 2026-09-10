@@ -3,14 +3,10 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"github.com/spf13/cobra"
 	"image/png"
-	"net/http"
 	"os"
 	"strings"
-
-	"github.com/cristianoliveira/figma-cli/internal/env"
-	"github.com/cristianoliveira/figma-cli/internal/figma"
-	"github.com/spf13/cobra"
 )
 
 // ErrorOutput is the stable process-level failure envelope.
@@ -96,23 +92,6 @@ func usageErrorContract(err error) ErrorOutput {
 }
 
 func operationalErrorContract(err error) ErrorOutput {
-	var token *env.ErrTokenNotSet
-	if errors.As(err, &token) {
-		return newErrorOutput("operational", "Figma authentication is not configured.", 1, "Set FIGMA_ACCESS_TOKEN and retry.")
-	}
-
-	var response *figma.ResponseError
-	if errors.As(err, &response) {
-		switch response.StatusCode {
-		case http.StatusUnauthorized, http.StatusForbidden:
-			return newErrorOutput("operational", "Figma rejected authentication or access.", 1, "Check FIGMA_ACCESS_TOKEN and file permissions, then retry.")
-		case http.StatusTooManyRequests:
-			return newErrorOutput("operational", "Figma rate limit reached.", 1, "Wait before retrying the Figma request.")
-		default:
-			return newErrorOutput("operational", "Figma request failed.", 1, "Check Figma availability and retry.")
-		}
-	}
-
 	var path *os.PathError
 	if errors.As(err, &path) {
 		return newErrorOutput("operational", "Could not access a required file.", 1, "Check the file path and permissions, then retry.")

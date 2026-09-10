@@ -31,7 +31,6 @@ go.work.sum
 # Build artifacts
 /dist/
 /bin/
-/figma-cli
 
 # OS generated files
 .DS_Store
@@ -48,8 +47,7 @@ tmp/
 
 # Beads tracking
 .beads/*.json
-!.beads/config.jsonfigma-cli
-/figma
+!.beads/config.json
 
 # bv (beads viewer) local config and caches
 .bv/

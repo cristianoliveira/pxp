@@ -10,8 +10,8 @@ import (
 	"os"
 	"sort"
 
-	"github.com/cristianoliveira/figma-cli/internal/annotations"
-	"github.com/cristianoliveira/figma-cli/internal/output"
+	"github.com/cristianoliveira/pxp/internal/annotations"
+	"github.com/cristianoliveira/pxp/internal/output"
 )
 
 type Bounds struct {

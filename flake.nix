@@ -1,5 +1,5 @@
 {
-  description = "Figma CLI";
+  description = "pxp screenshot comparison CLI";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs";
@@ -10,57 +10,22 @@
     utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
-
-        mkCLI = pname: subPackage: pkgs.buildGoModule {
-          inherit pname;
+        pxp = pkgs.buildGoModule {
+          pname = "pxp";
           version = "0.1.0";
-          src = ./. ;
+          src = ./.;
           vendorHash = "sha256-yN6RmmJD1ir+2LDnjMCySiiO31iE4jg/SuPp6FylrBw=";
-          subPackages = [ subPackage ];
+          subPackages = [ "cmd/pxp" ];
           proxyVendor = true;
         };
-        figma = mkCLI "figma" "cmd/figma";
-        pixel-perfect = mkCLI "pixel-perfect" "cmd/pixel-perfect";
       in {
-        packages = {
-          inherit figma pixel-perfect;
-          default = figma;
-        };
-
+        packages = { inherit pxp; default = pxp; };
         apps = {
-          figma = utils.lib.mkApp { drv = figma; };
-          pixel-perfect = utils.lib.mkApp { drv = pixel-perfect; };
-          default = utils.lib.mkApp { drv = figma; };
+          pxp = utils.lib.mkApp { drv = pxp; };
+          default = utils.lib.mkApp { drv = pxp; };
         };
-
         devShells.default = pkgs.mkShell {
-           packages = with pkgs; [
-             go
-
-             golangci-lint
-             gotools
-
-             # Test runner with good output
-             # USAGE: gotestsum --watch
-             gotestsum
-
-             # To create new subcommands, run:
-             # cobra-cli add <subcommand-name>
-             cobra-cli
-
-             # To generate the mock for the interfaces, run:
-             # mockgen -source=./pkg/cli/cli.go -destination=./pkg/cli/mock/mock_cli.go -package=mock
-             mockgen
-
-             # Pre-commit hooks manager
-             lefthook
-
-             # OpenAPI code generation (npm package for spec conversion)
-             nodejs
-
-             # Go code generation from OpenAPI specs
-             oapi-codegen
-           ];
+          packages = with pkgs; [ go golangci-lint gotools gotestsum lefthook ];
         };
-    });
+      });
 }

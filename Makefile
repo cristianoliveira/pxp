@@ -1,85 +1,38 @@
-# Makefile for figma-cli
-# Only targets that work RIGHT NOW
-
-# Variables
-BINARY_NAME := figma
+BINARY_NAME := pxp
 BUILD_DIR := bin
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 LDFLAGS := -ldflags="-X main.version=$(VERSION)"
 
-# Help
-.PHONY: help
-help: ## Show this help message
-	@echo 'Usage: make [target]'
-	@echo ''
-	@echo 'Available targets:'
+.PHONY: help build clean run test test-short test-race test-cover fmt vet deps tidy install-hooks run-hooks version
+help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
-
-# Build
-.PHONY: build clean run
-build: ## Build binary
-	@echo "Building $(BINARY_NAME)..."
+build: ## Build pxp
 	@mkdir -p $(BUILD_DIR)
-	go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/figma
-
-clean: ## Clean build artifacts
-	@echo "Cleaning..."
-	@rm -rf $(BUILD_DIR)
-
-run: ## Run application with go run
-	go run ./cmd/figma
-
-# Testing
-.PHONY: test test-short test-race test-cover
+	go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/pxp
+clean: ## Remove build artifacts
+	rm -rf $(BUILD_DIR)
+run: ## Run pxp
+	go run ./cmd/pxp
 test: ## Run all tests
 	go test ./...
-
-test-cover: ## Run coverage for packages that contain tests
-	@go list -f '{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' ./... | xargs -r go test -cover
-
-test-short: ## Run short tests only
+test-short: ## Run short tests
 	go test ./... -short
-
-test-race: ## Run tests with race detection
+test-race: ## Run tests with the race detector
 	go test ./... -race
-
-# Code Quality
-.PHONY: fmt vet
-fmt: ## Format code
+test-cover: ## Run tests with coverage
+	go test ./... -cover
+fmt: ## Format Go files
 	go fmt ./...
-	goimports -w .
-
 vet: ## Run go vet
 	go vet ./...
-
-# Dependencies
-.PHONY: deps tidy
 deps: ## Download dependencies
 	go mod download
-
-tidy: ## Run go mod tidy
+tidy: ## Tidy dependencies
 	go mod tidy
-
-# Pre-commit Hooks
-.PHONY: install-hooks run-hooks
 install-hooks: ## Install pre-commit hooks
 	lefthook install
-
-run-hooks: ## Run all pre-commit hooks manually
+run-hooks: ## Run pre-commit hooks
 	lefthook run pre-commit
-
-# Nix profile
-.PHONY: nix-profile-install
-nix-profile-install: ## Reinstall figma and pixel-perfect from the current local flake
-	-nix profile remove figma-cli
-	-nix profile remove figma
-	-nix profile remove pixel-perfect
-	nix profile install path:.#figma
-	nix profile install path:.#pixel-perfect
-
-# Utility
-.PHONY: version
-version: ## Show version information
+version: ## Show version
 	@echo "Version: $(VERSION)"
-
 .DEFAULT_GOAL := help

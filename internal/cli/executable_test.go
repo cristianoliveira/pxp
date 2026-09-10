@@ -14,20 +14,20 @@ func TestResolveExecutablePathHandlesInvocationForms(t *testing.T) {
 	home := t.TempDir()
 	bin := filepath.Join(home, "bin")
 	require.NoError(t, os.MkdirAll(bin, 0o755))
-	target := filepath.Join(bin, "figma")
+	target := filepath.Join(bin, "pxp")
 	require.NoError(t, os.WriteFile(target, []byte("binary"), 0o755))
-	link := filepath.Join(t.TempDir(), "figma-link")
+	link := filepath.Join(t.TempDir(), "pxp-link")
 	require.NoError(t, os.Symlink(target, link))
 	t.Setenv("PATH", bin)
-	pathResolved, err := exec.LookPath("figma")
+	pathResolved, err := exec.LookPath("pxp")
 	require.NoError(t, err)
 
 	tests := []struct {
 		name, executable, expected string
 	}{
-		{name: "PATH resolved absolute", executable: pathResolved, expected: "~/bin/figma"},
-		{name: "absolute invocation", executable: target, expected: "~/bin/figma"},
-		{name: "symlink", executable: link, expected: "~/bin/figma"},
+		{name: "PATH resolved absolute", executable: pathResolved, expected: "~/bin/pxp"},
+		{name: "absolute invocation", executable: target, expected: "~/bin/pxp"},
+		{name: "symlink", executable: link, expected: "~/bin/pxp"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

@@ -5,13 +5,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	diff "github.com/cristianoliveira/figma-cli/internal/imagediff"
+	diff "github.com/cristianoliveira/pxp/internal/imagediff"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPixelPerfectAgainstUpstreamComparisonCorpus(t *testing.T) {
-	binary := buildCommand(t, "pixel-perfect")
+	binary := buildCommand(t, "pxp")
 	fixtures := filepath.Join("fixtures", "upstream")
 	tests := []struct {
 		name, project, reference, actual string

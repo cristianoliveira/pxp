@@ -1,0 +1,50 @@
+{
+  "skill_name": "pxp",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Build a reusable upload-status component in the supplied Daylight React app from upload-modal-multifiles.png. The app source is in todoapp.tar.gz; unpack it into outputs/app. Use upload-state.json for the initial seven-item state. Match the PNG as closely as you can with real UI, not an embedded screenshot. This is a local demo, not a Shared Drive integration. Cancel removes an active item, Cancel all removes active items but keeps failed and completed items, Retry changes the failed item back to uploading, and the chevron toggles the list. Keep the component reusable and provide a working isolated preview. Verify visual progress with pxp and save the app source, screenshots, measurements, and a short result summary under outputs/. Stop after at most five visual refinement iterations.",
+      "expected_output": "A reusable, accessible React upload panel with deterministic demo state, a working preview, tested controls, and reproducible before/after visual evidence.",
+      "files": ["fixtures/todoapp.tar.gz", "fixtures/upload-modal-multifiles.png", "fixtures/upload-state.json"],
+      "expectations": [
+        "The delivered app builds and the panel is implemented as real reusable DOM with explicit data/actions; the reference PNG is not rendered, traced into a screenshot substitute, or used as a CSS background.",
+        "The initial browser render contains all seven rows from upload-state.json with the correct labels and the two uploading, one failed, and four completed states; human review confirms the header, row layout, status colors, and icon categories resemble the reference.",
+        "Behavior tests and browser evidence verify individual cancel, Cancel all preserving failed/completed rows, retry returning the failed row to uploading, and collapse/expand; action controls have accessible names and work from the keyboard.",
+        "The isolated preview renders the delivered reusable component with its real styles, not a second screenshot-only component, and capture instructions identify the URL and fixed state.",
+        "Unmodified reference bytes, a first-render baseline, final browser screenshot, CLI-generated structured metrics, and nonempty mask/overlay artifacts exist; the transcript confirms that measurements come from pxp rather than invented results.",
+        "Baseline and final comparisons use equivalent component scope, fixed capture settings, and identical comparison options without input resizing or hiding defects; final changedRatio and perceptualRmse do not increase and at least one decreases, unless both were already zero.",
+        "The result reports measured baseline/final values, checks run, and visible remaining differences; it does not claim an exact match solely because metrics improved, and it respects the five-iteration limit."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Add the upload panel shown in upload-modal-multifiles.png to the supplied Daylight todo app. Extract todoapp.tar.gz into outputs/app. I want to open it from a new Upload activity button in the existing workspace, without losing task creation, editing, filters, or attachment handling. The panel should start with upload-state.json; this is independent demo activity and must not pretend files were sent to a server or alter stored task attachments. Cancel active rows, retry the failed row, and collapse/expand the list. Use pxp to refine the component, then check it in the app. Deliver working source, behavior checks, visual evidence, and remaining differences under outputs/. Use at most five refinement iterations.",
+      "expected_output": "An integrated upload activity panel that matches the reference more closely after measured refinement while preserving the existing app's task and attachment behavior.",
+      "files": ["fixtures/todoapp.tar.gz", "fixtures/upload-modal-multifiles.png", "fixtures/upload-state.json"],
+      "expectations": [
+        "The delivered app builds and a real Upload activity button in the existing workspace opens the new panel; existing workspace content is not replaced by a static demo page.",
+        "The isolated visual preview and workspace import the same panel component and styles; the source does not embed the reference screenshot as the implementation.",
+        "The initial panel shows all seven fixture rows in the correct states, and tests cover cancel, retry, and collapse/expand with accessible, keyboard-operable controls.",
+        "All original app tests are retained and pass, and browser evidence verifies creating and editing a task and filtering the workspace after adding the panel; upload demo actions do not modify stored task attachments or send network uploads.",
+        "A first-render baseline and final screenshot have authentic pxp JSON and mask/overlay evidence using the same component scope and settings; final changedRatio and perceptualRmse do not increase and at least one decreases, unless both were already zero.",
+        "Browser evidence includes the integrated app context as well as the isolated component, with no clipped controls or obvious new overflow at the documented viewport.",
+        "The summary states visual improvement, test results, remaining mismatches, and demo-only upload behavior without inventing a backend or claiming an unmeasured exact match; at most five refinement iterations are used."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Implement the upload-status component from upload-modal-multifiles.png in the supplied React app archive, using upload-state.json as fixed demo data. Extract the app into outputs/app. Make a preview at 900 by 700 CSS pixels with device scale 1; place the 436 by 406 reference-sized component capture area at x=32, y=24, including its shadow padding. Keep full-viewport screenshots so I can inspect context. Use pxp to measure the component without stretching images or comparing unrelated empty page space. I only have budget for the first-render baseline plus two visual refinement iterations. Prioritize geometry and readable text, retain the best result, and tell me honestly what is still off. Save source, full screenshots, comparison artifacts, and the result under outputs/. No real uploads are needed.",
+      "expected_output": "A real component and explicitly cropped, reproducible visual comparisons within a larger viewport, with bounded refinement and an honest partial-result report.",
+      "files": ["fixtures/todoapp.tar.gz", "fixtures/upload-modal-multifiles.png", "fixtures/upload-state.json"],
+      "expectations": [
+        "The delivered app builds and renders a real reusable upload component with seven correct fixture rows, rather than displaying the supplied PNG.",
+        "Browser capture evidence fixes the viewport at 900x700 and device scale at 1; baseline and final full screenshots are 900x700, with the reference-sized area at x=32,y=24 and stable fonts/state.",
+        "Successful pxp comparisons use the explicit actual crop 32,24,436,406 against the original 436x406 reference; structured output preserves the crop provenance and no input is resized or externally cropped to force a match.",
+        "Baseline and final comparison settings stay identical and cover the whole reference area, including padding; metric gains are not achieved by trimming shadows, ignoring mismatch regions, or raising thresholds.",
+        "Authentic CLI JSON plus mask/overlay artifacts and first/final screenshots exist; final changedRatio and perceptualRmse do not increase and at least one decreases, unless both were already zero.",
+        "At most two post-baseline refinement iterations occur, and the delivered code corresponds to the retained best screenshot rather than a worse discarded iteration.",
+        "The summary identifies remaining differences and reports the budget limit when it prevents further refinement; it does not declare pxp completion merely from a lower error."
+      ]
+    }
+  ]
+}

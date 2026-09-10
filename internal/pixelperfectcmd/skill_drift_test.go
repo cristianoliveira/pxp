@@ -10,16 +10,16 @@ import (
 )
 
 func TestPixelPerfectHomeAndSkillGuidanceStaySynchronized(t *testing.T) {
-	skill, err := os.ReadFile(filepath.Join("..", "..", "skills", "pixel-perfect", "SKILL.md"))
+	skill, err := os.ReadFile(filepath.Join("..", "..", "skills", "pxp", "SKILL.md"))
 	require.NoError(t, err)
 	guidance := string(skill)
-	result := executeCommand(newCommandWithExecutable(func() (string, error) { return "~/bin/pixel-perfect", nil }))
+	result := executeCommand(newCommandWithExecutable(func() (string, error) { return "~/bin/pxp", nil }))
 	require.NoError(t, result.Err)
 
 	for _, example := range []string{
-		"pixel-perfect reference.png actual.png",
-		"pixel-perfect probe",
-		"pixel-perfect scan",
+		"pxp reference.png actual.png",
+		"pxp probe",
+		"pxp scan",
 	} {
 		assert.Containsf(t, result.Stdout, example, "home view missing %q", example)
 		assert.Containsf(t, guidance, example, "skill drift: home example %q is missing", example)

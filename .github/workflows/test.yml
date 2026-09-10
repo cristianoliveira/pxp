@@ -77,10 +77,10 @@ jobs:
         run: go mod tidy
 
       - name: Build binary
-        run: go build -o figma ./cmd/figma
+        run: go build -o pxp ./cmd/pxp
 
       - name: Verify binary help
-        run: ./figma --help
+        run: ./pxp --help
 
       - name: Run tests with coverage
         run: go test ./... -coverprofile=coverage.out

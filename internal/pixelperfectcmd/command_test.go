@@ -13,8 +13,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	clipkg "github.com/cristianoliveira/figma-cli/internal/cli"
-	diff "github.com/cristianoliveira/figma-cli/internal/imagediff"
+	clipkg "github.com/cristianoliveira/pxp/internal/cli"
+	diff "github.com/cristianoliveira/pxp/internal/imagediff"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -88,14 +88,14 @@ func TestComparisonDefaultsToTOON(t *testing.T) {
 }
 
 func TestCommandNoArgsShowsCompactNextSteps(t *testing.T) {
-	result := executeCommand(newCommandWithExecutable(func() (string, error) { return "~/bin/pixel-perfect", nil }))
+	result := executeCommand(newCommandWithExecutable(func() (string, error) { return "~/bin/pxp", nil }))
 
 	require.NoError(t, result.Err)
-	assert.Contains(t, result.Stdout, "pixel-perfect compares PNG screenshots")
-	assert.Contains(t, result.Stdout, "Executable: ~/bin/pixel-perfect")
-	assert.Contains(t, result.Stdout, "pixel-perfect reference.png actual.png")
-	assert.Contains(t, result.Stdout, "pixel-perfect probe --help")
-	assert.Contains(t, result.Stdout, "pixel-perfect scan --help")
+	assert.Contains(t, result.Stdout, "pxp compares PNG screenshots")
+	assert.Contains(t, result.Stdout, "Executable: ~/bin/pxp")
+	assert.Contains(t, result.Stdout, "pxp reference.png actual.png")
+	assert.Contains(t, result.Stdout, "pxp probe --help")
+	assert.Contains(t, result.Stdout, "pxp scan --help")
 	assert.Less(t, len(result.Stdout), 400)
 }
 
@@ -103,20 +103,20 @@ func TestCommandUsageErrorsShowCorrectionsAndLocalExamples(t *testing.T) {
 	missing := executeCommand(NewCommand(), "reference.png")
 	require.Error(t, missing.Err)
 	assert.ErrorContains(t, missing.Err, "requires <reference.png> and <actual.png>")
-	assert.ErrorContains(t, missing.Err, "pixel-perfect reference.png actual.png")
+	assert.ErrorContains(t, missing.Err, "pxp reference.png actual.png")
 
 	unknown := executeCommand(NewCommand(), "reference.png", "actual.png", "--threshol", "8")
 	require.Error(t, unknown.Err)
 	assert.ErrorContains(t, unknown.Err, "unknown flag: --threshol")
 	assert.ErrorContains(t, unknown.Err, "Did you mean `--threshold`?")
-	assert.ErrorContains(t, unknown.Err, "Run `pixel-perfect --help` for valid flags.")
+	assert.ErrorContains(t, unknown.Err, "Run `pxp --help` for valid flags.")
 	assert.NotContains(t, unknown.Err.Error(), "Available flags")
 	assert.Less(t, len(unknown.Err.Error()), 180)
 
 	help := executeCommand(NewCommand(), "probe", "--help")
 	require.NoError(t, help.Err)
 	assert.Contains(t, help.Stdout, "Examples:")
-	assert.Contains(t, help.Stdout, "pixel-perfect probe reference.png actual.png --at 12,24")
+	assert.Contains(t, help.Stdout, "pxp probe reference.png actual.png --at 12,24")
 }
 
 func TestProbeCommandReportsPointColorsAndDelta(t *testing.T) {
@@ -180,7 +180,7 @@ func TestProbeCommandBoundsOutputAndProvidesScopePreservingHint(t *testing.T) {
 	assert.Equal(t, 25, output.Returned)
 	assert.True(t, output.Truncated)
 	assert.Len(t, output.Points, 25)
-	assert.Contains(t, output.Hint, "pixel-perfect probe")
+	assert.Contains(t, output.Hint, "pxp probe")
 	assert.Contains(t, output.Hint, "'"+reference+"'")
 	assert.Contains(t, output.Hint, "--at 5,5")
 	assert.Contains(t, output.Hint, "--radius 5")
