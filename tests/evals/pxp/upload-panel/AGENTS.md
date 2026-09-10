@@ -1,6 +1,6 @@
 # Purpose
 
-This directory is the holdout control set for the upload-panel pixel-perfect evaluation. It contains accepted evidence, deliberate defects, alternatives, and coordinator checks.
+This directory is the holdout control set for the upload-panel pxp evaluation. It contains accepted evidence, deliberate defects, alternatives, and coordinator checks.
 
 # Boundaries
 
@@ -9,7 +9,7 @@ The controls are grader inputs, not skill content or production examples. Verifi
 # Connections
 
 - [Evaluation root](../../AGENTS.md): owns the evaluation scope and placement policy.
-- [Pixel-perfect skill](../../../../skills/pixel-perfect/AGENTS.md): is evaluated against these controls.
+- [pxp skill](../../../../skills/pxp/AGENTS.md): is evaluated against these controls.
 
 # Placement
 

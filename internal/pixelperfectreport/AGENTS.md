@@ -10,7 +10,7 @@ The report consumes a comparison result and artifact paths. It owns presentation
 
 - [Image comparison](internal/imagediff/AGENTS.md): provides `ImageComparison` and artifact paths.
 - [Output](internal/output/AGENTS.md): provides filesystem writing for the report.
-- [Pixel-perfect orchestration](internal/pixelperfectcmd/AGENTS.md): supplies report input after command processing.
+- [pxp orchestration](internal/pixelperfectcmd/AGENTS.md): supplies report input after command processing.
 
 # Landmarks
 

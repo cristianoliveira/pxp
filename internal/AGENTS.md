@@ -1,38 +1,15 @@
 # Purpose
 
-`internal/` contains the private capabilities behind the CLIs. It keeps composition, external adapters, pure Figma transforms, image analysis, and output contracts separate so each boundary can be tested without a live service.
+`internal/` contains the private capabilities behind `pxp`.
 
 # Boundaries
 
-- [CLI wiring](internal/cli/AGENTS.md) owns environment-backed dependency construction and error classification.
-- [Figma transport](internal/figma/AGENTS.md) owns user input normalization, URLs, HTTP, and typed responses.
-- [Document extraction](internal/extract/AGENTS.md) owns pure traversal and result shaping.
-- [Asset workflows](internal/assets/AGENTS.md), [comments](internal/comments/AGENTS.md), and [history diff](internal/diff/AGENTS.md) own their capability decisions.
-- [Image comparison](internal/imagediff/AGENTS.md) is generic and must not depend on Figma.
-- [Visual context](internal/imagecontext/AGENTS.md) is advisory and must not alter deterministic metrics.
-- [Pixel-perfect orchestration](internal/pixelperfectcmd/AGENTS.md) composes image workflows; [reports](internal/pixelperfectreport/AGENTS.md) render their artifacts.
-- [Output contracts](internal/output/AGENTS.md) own structured rendering and filesystem artifacts.
-- Annotations and component parity helpers remain bounded cross-cutting packages owned by this guide unless their boundaries grow.
+- `internal/pixelperfectcmd` owns command options and orchestration.
+- `internal/imagediff` owns deterministic PNG comparison.
+- `internal/imagecontext` owns optional visual descriptions.
+- `internal/annotations` owns annotation data and intersection math.
+- `internal/pixelperfectreport` owns HTML report rendering.
+- `internal/output` owns structured output and filesystem artifacts.
+- `internal/cli` owns shared Cobra error and output helpers.
 
-# Connections
-
-- [Commands](cmd/AGENTS.md): the composition layer calls internal capabilities; internal packages never import commands.
-- [Generated API](internal/figma/api/AGENTS.md): Figma adapters consume generated models and map them before pure extraction.
-- [Output](internal/output/AGENTS.md): capabilities provide stable values and artifact paths to the shared renderer.
-
-# Landmarks
-
-- `internal/cli/runtime.go:LoadClient`: composition root for configured Figma transport.
-- `internal/figma/input.go:ParseInput`: normalized Figma input boundary.
-- `internal/extract/inspect.go:InspectTree`: pure document-to-output boundary.
-- `internal/imagediff/image.go:CompareImagesWithThresholds`: deterministic image evidence boundary.
-
-# Boundary flows
-
-- Information flow: `internal/cli/runtime.go:LoadClient` -> `internal/figma/client.go:NewClient` via `cmd/root.go:Execute`; value: `FIGMA_ACCESS_TOKEN`.
-- Information flow: `internal/figma/document.go:FetchDocument` -> `internal/extract/inspect.go:InspectTree` via `cmd/root.go:Execute`; value: `document (any)`.
-- Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/pixelperfectreport/report.go:Render` via `internal/pixelperfectcmd/command.go:NewCommand`; value: `imagediff.ImageComparison`.
-
-# Placement
-
-Keep infrastructure at the edge and domain decisions in the owning capability. Add a package when a responsibility has a distinct input/output boundary and would otherwise create a dependency cycle or force unrelated callers to share policy.
+Keep external integrations at the edge and image metrics independent of them.

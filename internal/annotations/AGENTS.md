@@ -4,13 +4,13 @@
 
 # Boundaries
 
-It owns annotation data integrity and intersection math. It does not know Figma transport, image comparison thresholds, or Cobra command policy.
+It owns annotation data integrity and intersection math. It does not know external integrations, image comparison thresholds, or Cobra command policy.
 
 # Connections
 
 - [Image comparison](internal/imagediff/AGENTS.md): consumes intersection matches to enrich mismatch regions.
 - [Output](internal/output/AGENTS.md): supplies filesystem helpers for annotation files.
-- [Pixel-perfect orchestration](internal/pixelperfectcmd/AGENTS.md): loads annotation documents at the command boundary.
+- [pxp orchestration](internal/pixelperfectcmd/AGENTS.md): loads annotation documents at the command boundary.
 
 # Landmarks
 

@@ -4,7 +4,7 @@
 
 # Boundaries
 
-This package owns Cobra workflow policy but not image algorithms, provider protocol details, or HTML template ownership. It is used by the standalone [pixel-perfect executable](cmd/AGENTS.md).
+This package owns Cobra workflow policy but not image algorithms, provider protocol details, or HTML template ownership. It is used by the standalone [pxp executable](cmd/AGENTS.md).
 
 # Connections
 

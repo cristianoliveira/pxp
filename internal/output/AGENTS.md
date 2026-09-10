@@ -4,7 +4,7 @@
 
 # Boundaries
 
-Callers provide domain values and select the output mode. This package must not know Figma command semantics, image-analysis policy, or environment configuration.
+Callers provide domain values and select the output mode. This package must not know external command semantics, image-analysis policy, or environment configuration.
 
 # Connections
 

@@ -1,6 +1,6 @@
 # Purpose
 
-`skills/pixel-perfect` guides agents through implementing a UI from a reference screenshot, measuring progress with the standalone CLI, and reporting evidence honestly.
+`skills/pxp` guides agents through implementing a UI from a reference screenshot, measuring progress with the standalone CLI, and reporting evidence honestly.
 
 # Boundaries
 
@@ -8,10 +8,10 @@ The skill describes an iterative workflow and references stable CLI contracts. I
 
 # Connections
 
-- [Pixel-perfect command](cmd/AGENTS.md): provides the executable workflow the skill invokes.
+- [pxp command](cmd/AGENTS.md): provides the executable workflow the skill invokes.
 - [Image comparison](internal/imagediff/AGENTS.md): provides deterministic measurements.
-- [Pixel-perfect orchestration](internal/pixelperfectcmd/AGENTS.md): defines command options and artifacts.
-- [Skill evaluations](skills/pixel-perfect/evals/AGENTS.md): validates packaging and workflow guidance.
+- [pxp orchestration](internal/pixelperfectcmd/AGENTS.md): defines command options and artifacts.
+- [Skill evaluations](skills/pxp/evals/AGENTS.md): validates packaging and workflow guidance.
 
 # Placement
 

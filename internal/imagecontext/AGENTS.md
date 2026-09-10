@@ -8,7 +8,7 @@ The package owns provider configuration, request serialization, response parsing
 
 # Connections
 
-- [Pixel-perfect orchestration](internal/pixelperfectcmd/AGENTS.md): requests advisory descriptions after deterministic analysis.
+- [pxp orchestration](internal/pixelperfectcmd/AGENTS.md): requests advisory descriptions after deterministic analysis.
 - [Image comparison](internal/imagediff/AGENTS.md): consumes region identity and bounds but remains the source of truth for metrics.
 
 # Landmarks
