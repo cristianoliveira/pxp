@@ -1,4 +1,4 @@
-package pixelperfectcmd
+package commands
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"github.com/cristianoliveira/pxp/internal/cli"
 	"github.com/cristianoliveira/pxp/internal/imagecontext"
 	diff "github.com/cristianoliveira/pxp/internal/imagediff"
-	"github.com/cristianoliveira/pxp/internal/pixelperfectreport"
+	reportpkg "github.com/cristianoliveira/pxp/internal/report"
 	"github.com/spf13/cobra"
 )
 
@@ -280,7 +280,7 @@ func writeComparisonReport(report string, inputs preparedImageInputs, maskPath, 
 	if report == "" {
 		return nil
 	}
-	return pixelperfectreport.Write(report, pixelperfectreport.Input{
+	return reportpkg.Write(report, reportpkg.Input{
 		ReferencePath:       inputs.referencePath,
 		ActualPath:          inputs.actualPath,
 		MaskPath:            maskPath,
