@@ -1,15 +1,15 @@
 ---
 name: pxp
 description: >
-  Implement or refine a UI component from a reference screenshot using the
-  pxp CLI to measure and reduce visual differences. Use for requests
+  Implement or refine a UI component from a reference screenshot by
+  harnessing image comparison with the pxp CLI. Use for requests
   like "build this component from this PNG", "make this component match", or
   "pixel perfect this UI" when application code changes are expected.
   Also supports screenshot comparison without code changes when explicitly requested.
   Not for implementing a UI without a visual reference.
 ---
 
-# Pixel Perfect
+# Harness image comparison
 
 Turn a reference screenshot into a working component in the user's application.
 The deliverable is real code, verified behavior, and measured visual progress—not just a diff report.

@@ -1365,7 +1365,7 @@ func newCommandWithExecutable(resolveExecutable func() (string, error)) *cobra.C
 		if err != nil {
 			return err
 		}
-		_, err = fmt.Fprintf(cmd.OutOrStdout(), `pxp compares PNG screenshots.
+		_, err = fmt.Fprintf(cmd.OutOrStdout(), `pxp harnesses image comparison.
 Executable: %s
 Usage: pxp <reference.png> <actual.png>
 Next:

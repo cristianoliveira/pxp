@@ -1,6 +1,6 @@
 # pxp
 
-Compare two PNG files and report what changed. Use the metrics, mismatch regions,
+Harness image comparison between two PNG files and report what changed. Use the metrics, mismatch regions,
 and image artifacts to debug a UI or check a visual regression in CI.
 
 `pxp` works offline without external credentials or a vision model. It does

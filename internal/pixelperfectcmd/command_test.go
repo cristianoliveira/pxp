@@ -91,7 +91,7 @@ func TestCommandNoArgsShowsCompactNextSteps(t *testing.T) {
 	result := executeCommand(newCommandWithExecutable(func() (string, error) { return "~/bin/pxp", nil }))
 
 	require.NoError(t, result.Err)
-	assert.Contains(t, result.Stdout, "pxp compares PNG screenshots")
+	assert.Contains(t, result.Stdout, "pxp harnesses image comparison")
 	assert.Contains(t, result.Stdout, "Executable: ~/bin/pxp")
 	assert.Contains(t, result.Stdout, "pxp reference.png actual.png")
 	assert.Contains(t, result.Stdout, "pxp probe --help")

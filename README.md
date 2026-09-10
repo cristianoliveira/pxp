@@ -1,6 +1,6 @@
 # pxp
 
-`pxp` is an offline, agent-facing CLI for comparing PNG screenshots. It reports
+`pxp` is an offline, agent-facing CLI for harnessing image comparison. It reports
 raw and perceptual image metrics, mismatch regions, probes, scans, overlays, and
 self-contained HTML reports.
 
