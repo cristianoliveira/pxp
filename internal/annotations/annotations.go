@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/cristianoliveira/pxp/internal/output"
+	"github.com/cristianoliveira/pxp/internal/artifact"
 )
 
 type Size struct {
@@ -43,7 +43,7 @@ type Match struct {
 }
 
 func Write(path string, document Document) error {
-	file, err := output.CreateFile(path)
+	file, err := artifact.CreateFile(path)
 	if err != nil {
 		return fmt.Errorf("write annotations: %w", err)
 	}

@@ -9,12 +9,13 @@
 - [Visual context](internal/imagecontext/AGENTS.md) owns optional provider protocols.
 - [Annotations](internal/annotations/AGENTS.md) owns annotation data integrity and geometry.
 - [Reports](internal/pixelperfectreport/AGENTS.md) owns HTML presentation.
-- [Output](internal/output/AGENTS.md) owns structured output and filesystem artifacts.
+- [Output](internal/output/AGENTS.md) owns structured output and serialization.
+- [Artifact persistence](internal/artifact/AGENTS.md) owns filesystem artifact creation and writing.
 - [CLI runtime](internal/cli/AGENTS.md) owns shared process helpers and error contracts.
 
 # Connections
 
-The command package coordinates capabilities. Core image evidence may consume annotation geometry and output file helpers; provider and report packages consume comparison results without changing their meaning.
+The command package coordinates capabilities. Core image evidence may consume annotation geometry and artifact persistence; provider and report packages consume comparison results without changing their meaning.
 
 # Placement
 
