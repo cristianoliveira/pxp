@@ -19,8 +19,12 @@ linters:
 
     # Style & best practices
     - misspell       # Spell checking
+    - lll            # Enforce maximum line length
 
   settings:
+    lll:
+      line-length: 100
+
     # Duplication settings
     dupl:
       threshold: 150  # Minimum tokens to consider as duplicate (default: 100)
