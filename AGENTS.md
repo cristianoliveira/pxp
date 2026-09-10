@@ -1,13 +1,45 @@
 # Purpose
 
-`pxp` is an agent-facing CLI for deterministic PNG comparison and visual regression evidence.
+`pxp` is an offline, agent-facing CLI that compares PNG screenshots and emits deterministic visual-regression evidence: metrics, mismatch regions, probes, scans, masks, overlays, and HTML reports.
 
 # Architecture
 
-`cmd/pxp` owns executable composition. `internal/pixelperfectcmd` owns Cobra workflow policy. `internal/imagediff` owns deterministic image metrics and artifacts; `internal/imagecontext` owns optional advisory provider calls; `internal/annotations` owns annotation validation; `internal/pixelperfectreport` owns HTML reports; `internal/output` owns structured output and files.
+- [Executable composition](cmd/AGENTS.md) owns process startup.
+- [Command orchestration](internal/pixelperfectcmd/AGENTS.md) owns Cobra policy and workflow sequencing.
+- [Image comparison](internal/imagediff/AGENTS.md) owns deterministic image evidence.
+- [Visual context](internal/imagecontext/AGENTS.md) owns optional provider-backed descriptions.
+- [Annotations](internal/annotations/AGENTS.md) owns annotation contracts and geometry.
+- [Reports](internal/pixelperfectreport/AGENTS.md) owns HTML presentation.
+- [Output](internal/output/AGENTS.md) owns structured rendering and artifact files.
+- [CLI runtime](internal/cli/AGENTS.md) owns shared process and error behavior.
+- [Skill workflows](skills/AGENTS.md) and [evaluation controls](tests/evals/AGENTS.md) are agent-facing, not runtime code.
 
-# Boundary flow
+Composition is wired at the executable and command boundaries. Provider calls stay optional and at the edge; deterministic image metrics do not depend on them.
 
-`cmd/pxp/main.go` -> `internal/pixelperfectcmd.NewCommand` -> `internal/imagediff` and `internal/pixelperfectreport`.
+# Modules
 
-Keep provider calls and filesystem wiring at the edges. Keep image metrics deterministic and independent of external services.
+- [Commands](cmd/AGENTS.md): executable entrypoint and composition.
+- [Internal capabilities](internal/AGENTS.md): private runtime packages.
+- [Documentation](docs/AGENTS.md): user-facing command contracts.
+- [Development scripts](scripts/AGENTS.md): support tooling.
+- [Skills](skills/AGENTS.md): agent workflows and packaging.
+- [Evaluation controls](tests/evals/AGENTS.md): offline workflow evaluation inputs.
+
+# Landmarks
+
+- `cmd/pxp/main.go:main`: process entrypoint; executes the composed Cobra command.
+- `internal/pixelperfectcmd/command.go:NewCommand`: creates the CLI command tree.
+- `internal/imagediff/image.go:CompareImagesWithThresholds`: starts deterministic comparison.
+- `internal/output/printer.go:Printer.Structured`: emits the default structured result.
+- `internal/pixelperfectreport/report.go:Render`: creates self-contained report bytes.
+
+# Boundary flows
+
+- Information flow: `internal/pixelperfectcmd/command.go:NewCommand` -> `internal/cli/error_output.go:RenderError` via `cmd/pxp/main.go:main`; value: `error`.
+- Information flow: `internal/annotations/annotations.go:Load` -> `internal/imagediff/image.go:CompareImagesWithThresholds` via `internal/pixelperfectcmd/command.go:NewCommand`; value: `annotations.Document`.
+- Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/pixelperfectreport/report.go:Render` via `internal/pixelperfectcmd/command.go:NewCommand`; value: `imagediff.ImageComparison`.
+- Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/output/printer.go:Printer.Structured` via `internal/pixelperfectcmd/command.go:NewCommand`; value: `imagediff.ImageComparison`.
+
+# Placement
+
+Put reusable image evidence in `imagediff`, command policy in `pixelperfectcmd`, provider adapters in `imagecontext`, presentation in `pixelperfectreport`, and shared output/process behavior in their respective guides. Add a new top-level module only when a cohesive responsibility has an independent owner and boundary.

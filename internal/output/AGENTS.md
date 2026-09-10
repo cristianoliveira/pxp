@@ -1,29 +1,27 @@
 # Purpose
 
-`internal/output` owns stable result envelopes, TOON/JSON rendering, text/file compatibility behavior, and safe filesystem artifact creation.
+`internal/output` owns the stable output boundary: TOON-first structured rendering, compatibility JSON, raw text/file modes, and safe creation of artifact paths.
 
 # Boundaries
 
-Callers provide domain values and select the output mode. This package must not know external command semantics, image-analysis policy, or environment configuration.
+Callers provide domain values and choose a format. This package does not know image-analysis policy, command semantics, provider configuration, or report presentation.
 
 # Connections
 
-- [CLI wiring](internal/cli/AGENTS.md): selects the format and binds the printer to a command stream.
-- [Commands](cmd/AGENTS.md): consume the stable renderer for user-facing results.
-- [Internal capabilities](internal/AGENTS.md): provide query/detail values and artifact paths.
+- [CLI runtime](internal/cli/AGENTS.md): selects and binds the printer to command streams.
+- [Command orchestration](internal/pixelperfectcmd/AGENTS.md): supplies comparison and diagnostic values for rendering.
+- [Annotations](internal/annotations/AGENTS.md) and [reports](internal/pixelperfectreport/AGENTS.md): consume file helpers for their artifacts.
 
 # Landmarks
 
-- `internal/output/contracts.go:NewQuery`: creates a non-null collection envelope.
-- `internal/output/contracts.go:NewLimitedQuery`: adds bounded-result metadata.
-- `internal/output/printer.go:Printer.Structured`: emits TOON by default or compatibility JSON.
-- `internal/output/file.go:WriteFile`: writes deterministic artifacts.
+- `internal/output/printer.go:New`: constructs a format-specific printer.
+- `internal/output/printer.go:Printer.Structured`: emits TOON or compatibility JSON.
+- `internal/output/file.go:WriteFile`: creates parent directories and writes an artifact.
 
 # Boundary flows
 
-- Information flow: `internal/extract/inspect.go:InspectTree` -> `internal/output/printer.go:Printer.Structured` via `cmd/root.go:Execute`; value: `extract.InspectOutput`.
 - Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/output/printer.go:Printer.Structured` via `internal/pixelperfectcmd/command.go:NewCommand`; value: `imagediff.ImageComparison`.
 
 # Placement
 
-Add a renderer or envelope here only when it is shared output policy. Keep domain-specific result construction in the producer package.
+Add shared envelopes or renderers here only when multiple producers need the same output policy. Keep domain-specific result construction with its producer.

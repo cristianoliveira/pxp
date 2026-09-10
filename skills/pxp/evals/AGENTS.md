@@ -1,16 +1,16 @@
 # Purpose
 
-`skills/pxp/evals` packages offline checks for skill metadata, fixture integrity, deterministic packing, and evaluation protocol.
+`skills/pxp/evals` packages offline checks for skill metadata, fixture integrity, deterministic fixture packing, and evaluation protocol inputs.
 
 # Boundaries
 
-These helpers validate evaluation inputs and packaging. They do not score model quality, implement the target UI, or replace independent browser and metric review.
+These helpers validate packaging and evaluation inputs. They do not score model quality, implement target UIs, or replace independent browser and metric review.
 
 # Connections
 
-- [pxp skill](../AGENTS.md): is the subject of the package checks.
-- [Evaluation fixtures](tests/evals/AGENTS.md): owns holdout implementation controls and accepted evidence.
+- [The `pxp` skill](skills/pxp/AGENTS.md): is the subject whose contract and fixtures are checked.
+- [Evaluation controls](tests/evals/AGENTS.md): owns holdout implementations, controls, and accepted evidence.
 
 # Placement
 
-Keep schema and packaging checks beside the skill inputs. Keep accepted implementations, defect controls, and coordinator-owned evidence in the separate `tests/evals/` tree.
+Keep schema and packaging checks beside skill inputs. Keep accepted implementations and grader-owned evidence in `tests/evals/`.

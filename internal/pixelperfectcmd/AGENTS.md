@@ -1,29 +1,30 @@
 # Purpose
 
-`internal/pixelperfectcmd` composes the standalone image-comparison command: option validation, input crops and metadata, deterministic comparison, bounded diagnostics, optional annotations/visual context, and artifact orchestration.
+`internal/pixelperfectcmd` owns the `pxp` command workflow: Cobra command construction, option validation, crop and metadata preparation, deterministic comparison, probes, scans, annotations, optional visual context, validation gates, and artifact orchestration.
 
 # Boundaries
 
-This package owns Cobra workflow policy but not image algorithms, provider protocol details, or HTML template ownership. It is used by the standalone [pxp executable](cmd/AGENTS.md).
+It coordinates capabilities but does not implement image algorithms, provider protocols, HTML templates, or process exit handling.
 
 # Connections
 
-- [Image comparison](internal/imagediff/AGENTS.md): performs deterministic metrics and artifacts.
-- [Visual context](internal/imagecontext/AGENTS.md): provides optional advisory descriptions.
-- [Annotations](internal/annotations/AGENTS.md): loads and validates semantic region metadata.
-- [Reports](internal/pixelperfectreport/AGENTS.md): renders HTML reports from comparison results.
-- [CLI wiring](internal/cli/AGENTS.md): supplies output, errors, and exit-code behavior.
-- [Output](internal/output/AGENTS.md): renders structured command results.
+- [Image comparison](internal/imagediff/AGENTS.md): performs deterministic measurements and image artifacts.
+- [Annotations](internal/annotations/AGENTS.md): loads and matches semantic region metadata.
+- [Visual context](internal/imagecontext/AGENTS.md): provides optional provider-backed descriptions.
+- [Reports](internal/pixelperfectreport/AGENTS.md): renders HTML from comparison inputs and results.
+- [Output](internal/output/AGENTS.md): emits structured command results.
+- [CLI runtime](internal/cli/AGENTS.md): supplies shared printer and error policy.
 
 # Landmarks
 
-- `internal/pixelperfectcmd/command.go:NewCommand`: creates the standalone Cobra command.
+- `internal/pixelperfectcmd/command.go:NewCommand`: creates the command tree and binds comparison, probe, and scan workflows.
 
 # Boundary flows
 
 - Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/pixelperfectreport/report.go:Render` via `internal/pixelperfectcmd/command.go:NewCommand`; value: `imagediff.ImageComparison`.
 - Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/output/printer.go:Printer.Structured` via `internal/pixelperfectcmd/command.go:NewCommand`; value: `imagediff.ImageComparison`.
+- Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/imagecontext/openrouter.go:OpenRouter.Describe` via `internal/pixelperfectcmd/command.go:NewCommand`; value: `[]imagecontext.Region`.
 
 # Placement
 
-Put command option and orchestration policy here. Put reusable image evidence in `imagediff`, provider adapters in `imagecontext`, and artifact templates in `pixelperfectreport`.
+Put command option semantics and sequencing here. Put reusable evidence in `imagediff`, provider adapters in `imagecontext`, report presentation in `pixelperfectreport`, and process behavior in `cli`.

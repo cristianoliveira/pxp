@@ -1,22 +1,22 @@
 # Purpose
 
-`internal/annotations` defines the versioned JSON contract for semantic screenshot annotations, validates coordinate spaces, and computes annotation/region intersections.
+`internal/annotations` owns the versioned JSON contract for semantic screenshot annotations, coordinate validation, persistence, and region intersections.
 
 # Boundaries
 
-It owns annotation data integrity and intersection math. It does not know external integrations, image comparison thresholds, or Cobra command policy.
+It validates annotation documents and computes geometric matches. It does not own image thresholds, provider protocols, or Cobra workflow policy.
 
 # Connections
 
-- [Image comparison](internal/imagediff/AGENTS.md): consumes intersection matches to enrich mismatch regions.
-- [Output](internal/output/AGENTS.md): supplies filesystem helpers for annotation files.
-- [pxp orchestration](internal/pixelperfectcmd/AGENTS.md): loads annotation documents at the command boundary.
+- [Command orchestration](internal/pixelperfectcmd/AGENTS.md): loads and dimension-checks annotation documents at the command boundary.
+- [Image comparison](internal/imagediff/AGENTS.md): consumes intersection matches to enrich comparison regions.
+- [Output](internal/output/AGENTS.md): provides safe file creation used when writing the JSON contract.
 
 # Landmarks
 
-- `internal/annotations/annotations.go:Load`: validates a versioned annotation document.
-- `internal/annotations/annotations.go:Write`: persists the annotation contract.
-- `internal/annotations/annotations.go:Document.Intersections`: maps a region to matching annotations.
+- `internal/annotations/annotations.go:Load`: decodes and validates a versioned document.
+- `internal/annotations/annotations.go:Document.Intersections`: returns annotation matches for a comparison region.
+- `internal/annotations/annotations.go:Write`: persists a document.
 
 # Boundary flows
 
@@ -24,4 +24,4 @@ It owns annotation data integrity and intersection math. It does not know extern
 
 # Placement
 
-Keep coordinate validation and intersection math here. Put image metrics in `imagediff` and input/flag handling in `pixelperfectcmd`.
+Keep coordinate-space rules and intersection math here. Put image-derived metrics in `imagediff` and command input policy in `pixelperfectcmd`.
