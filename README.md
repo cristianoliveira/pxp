@@ -22,6 +22,33 @@ Optional visual descriptions can add context, but they don't change the measurem
 
 ## Install
 
+### Homebrew
+
+On macOS, install the latest release from the tap:
+
+```bash
+brew tap cristianoliveira/tap
+brew install pxp
+```
+
+### Nix
+
+Run the packaged release directly from Cristian's Nix packages:
+
+```bash
+nix run github:cristianoliveira/nixpkgs#pxp -- --help
+nix profile install github:cristianoliveira/nixpkgs#pxp
+```
+
+Or use the repository's development flake from a local checkout:
+
+```bash
+nix run .#pxp -- --help
+nix build .#pxp
+```
+
+### GitHub Releases
+
 Download an archive from [GitHub Releases](https://github.com/cristianoliveira/pxp/releases) for your OS (`linux`, `darwin` for macOS, or `windows`) and CPU (`amd64` or `arm64`). Extract it and put `pxp` (or `pxp.exe`) on your `PATH`. Each release includes `checksums.txt` with SHA-256 hashes for the archives.
 
 From a local checkout, with Go 1.25.5 or newer:
@@ -35,13 +62,6 @@ Make sure your Go binary directory is on `PATH`. Or build a local executable:
 ```bash
 go build -o bin/pxp ./cmd/pxp
 ./bin/pxp --help
-```
-
-With Nix:
-
-```bash
-nix run .#pxp -- --help
-nix build .#pxp
 ```
 
 ## Try it
