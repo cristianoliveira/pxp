@@ -22,6 +22,17 @@ Optional visual descriptions can add context, but they don't change the measurem
 
 ## Install
 
+### Homebrew
+
+On macOS, install the latest release from the tap:
+
+```bash
+brew tap cristianoliveira/tap
+brew install pxp
+```
+
+### GitHub Releases
+
 Download an archive from [GitHub Releases](https://github.com/cristianoliveira/pxp/releases) for your OS (`linux`, `darwin` for macOS, or `windows`) and CPU (`amd64` or `arm64`). Extract it and put `pxp` (or `pxp.exe`) on your `PATH`. Each release includes `checksums.txt` with SHA-256 hashes for the archives.
 
 From a local checkout, with Go 1.25.5 or newer:
