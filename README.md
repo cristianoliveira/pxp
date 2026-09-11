@@ -22,6 +22,8 @@ Optional visual descriptions can add context, but they don't change the measurem
 
 ## Install
 
+Download an archive from [GitHub Releases](https://github.com/cristianoliveira/pxp/releases) for your OS (`linux`, `darwin` for macOS, or `windows`) and CPU (`amd64` or `arm64`). Extract it and put `pxp` (or `pxp.exe`) on your `PATH`. Each release includes `checksums.txt` with SHA-256 hashes for the archives.
+
 From a local checkout, with Go 1.25.5 or newer:
 
 ```bash
@@ -86,6 +88,17 @@ Set `--max-*` limits if you need a pass/fail check, using tolerances that make s
 
 The [PXP skill](skills/pxp/SKILL.md) describes the workflow: build the real component, capture a baseline, compare, and make a limited number of changes.
 It also asks the agent to report what still differs, rather than call it done just because the score improved.
+
+## Releasing
+
+Push a version tag to run tests, build binaries for all supported platforms, and publish the archives and checksums as GitHub Release assets:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Tags containing a hyphen (for example, `v0.1.0-rc.1`) create prereleases. The workflow also stores the files as a GitHub Actions artifact for seven days.
 
 ## Development
 
