@@ -15,7 +15,7 @@ The user reports that round-8 Submit feedback was a misclick rather than the int
 ## Context
 Planning only: no runtime change is authorized by this task's creation. Preserve the goals in `docs/review-loop-vision.md`, especially keyboard completeness and human control.
 
-This is distinct from TASK-0008 visual UI acceptance. TASK-0008 awaits a fresh explicit Approve round according to the lead's current handoff. Round-8 Submit must not be relabeled as Approve or used as product acceptance. A screenshot-round decision alone still does not replace verification of TASK-0008's visual and accessibility criteria.
+This is distinct from TASK-0008 visual UI acceptance. TASK-0008 later received a separate, persisted explicit Approve decision; Round-8 Submit remains historical feedback and must not be relabeled. A screenshot-round decision alone still does not replace verification of visual and accessibility criteria.
 
 ## Decision alternatives to evaluate before implementation
 1. Recommended: a shared, explicit review step after choosing either action. Show the selected outcome, round, note count, and consequence; final buttons name the actual action (for example, Send feedback to agent / Approve and finish), never generic OK. Back returns to the intact draft.
