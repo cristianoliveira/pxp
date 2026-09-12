@@ -1,3 +1,18 @@
+const actualImageURL = '/image/actual.png';
+const feedbackURL = '/api/feedback';
+const jsonContentType = 'application/json';
+const decisionSubmitted = 'submitted';
+const decisionApproved = 'approved';
+const annotationPoint = 'point';
+const annotationRectangle = 'rectangle';
+const errorClass = 'error';
+const successClass = 'success';
+const annotationColor = '#ef4444';
+const pointRadius = 5;
+const fullCircleRadians = Math.PI * 2;
+const rectangleSizeOffset = 1;
+const minimumRectangleSize = 2;
+
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const imageSelect = document.getElementById('image');
@@ -14,7 +29,7 @@ actualImage.onload = () => {
   canvas.height = actualImage.naturalHeight;
   ctx.drawImage(actualImage, 0, 0);
 };
-actualImage.src = '/image/actual.png';
+actualImage.src = actualImageURL;
 
 function canvasPointFromEvent(event) {
   const rect = canvas.getBoundingClientRect();
@@ -47,12 +62,12 @@ function canvasPointFromEvent(event) {
 function redrawCanvas() {
   if (!actualImage.complete) return;
   ctx.drawImage(actualImage, 0, 0);
-  ctx.strokeStyle = '#ef4444';
-  ctx.fillStyle = '#ef4444';
+  ctx.strokeStyle = annotationColor;
+  ctx.fillStyle = annotationColor;
   annotations.forEach((annotation) => {
-    if (annotation.type === 'point') {
+    if (annotation.type === annotationPoint) {
       ctx.beginPath();
-      ctx.arc(annotation.x, annotation.y, 5, 0, Math.PI * 2);
+      ctx.arc(annotation.x, annotation.y, pointRadius, 0, fullCircleRadians);
       ctx.fill();
     } else {
       ctx.strokeRect(
@@ -94,12 +109,12 @@ canvas.addEventListener('pointerup', (event) => {
     note: annotationNote.value,
   };
 
-  if (annotationTypeSelect.value === 'rectangle') {
+  if (annotationTypeSelect.value === annotationRectangle) {
     annotation.x = Math.min(startPoint.x, endPoint.x);
     annotation.y = Math.min(startPoint.y, endPoint.y);
-    annotation.width = Math.abs(endPoint.x - startPoint.x) + 1;
-    annotation.height = Math.abs(endPoint.y - startPoint.y) + 1;
-    if (annotation.width < 2 || annotation.height < 2) {
+    annotation.width = Math.abs(endPoint.x - startPoint.x) + rectangleSizeOffset;
+    annotation.height = Math.abs(endPoint.y - startPoint.y) + rectangleSizeOffset;
+    if (annotation.width < minimumRectangleSize || annotation.height < minimumRectangleSize) {
       startPoint = null;
       return;
     }
@@ -113,13 +128,13 @@ canvas.addEventListener('pointerup', (event) => {
 
 async function submitDecision(decision) {
   const notes = document.getElementById('notes').value;
-  if (decision === 'approved' && (annotations.length || notes.trim())) {
-    status.className = 'error';
+  if (decision === decisionApproved && (annotations.length || notes.trim())) {
+    status.className = errorClass;
     status.textContent = 'Remove notes and annotations before approving.';
     return;
   }
-  if (decision === 'submitted' && !annotations.length && !notes.trim()) {
-    status.className = 'error';
+  if (decision === decisionSubmitted && !annotations.length && !notes.trim()) {
+    status.className = errorClass;
     status.textContent = 'Add a note or annotation before submitting.';
     return;
   }
@@ -127,24 +142,24 @@ async function submitDecision(decision) {
   status.className = '';
   status.textContent = 'Saving…';
   try {
-    const response = await fetch('/api/feedback', {
+    const response = await fetch(feedbackURL, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': jsonContentType},
       body: JSON.stringify({annotations, notes, decision}),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'feedback was rejected');
-    status.className = 'success';
-    status.textContent = decision === 'approved'
+    status.className = successClass;
+    status.textContent = decision === decisionApproved
       ? 'Approved. You may close this page.'
       : 'Feedback saved. You may close this page.';
     document.getElementById('submit').disabled = true;
     document.getElementById('approve').disabled = true;
   } catch (error) {
-    status.className = 'error';
+    status.className = errorClass;
     status.textContent = error.message;
   }
 }
 
-document.getElementById('submit').onclick = () => submitDecision('submitted');
-document.getElementById('approve').onclick = () => submitDecision('approved');
+document.getElementById('submit').onclick = () => submitDecision(decisionSubmitted);
+document.getElementById('approve').onclick = () => submitDecision(decisionApproved);

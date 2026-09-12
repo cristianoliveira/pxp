@@ -13,6 +13,34 @@ import (
 	"time"
 )
 
+const (
+	listenNetwork = "tcp4"
+	listenAddress = "127.0.0.1:0"
+	urlScheme     = "http://"
+
+	readHeaderTimeout = 5 * time.Second
+	readTimeout       = 15 * time.Second
+	writeTimeout      = 15 * time.Second
+	idleTimeout       = 30 * time.Second
+
+	indexRoute    = "/"
+	sessionRoute  = "/api/session"
+	feedbackRoute = "/api/feedback"
+	styleAsset    = "style.css"
+	scriptAsset   = "app.js"
+	styleRoute    = "/assets/" + styleAsset
+	scriptRoute   = "/assets/" + scriptAsset
+
+	htmlContentType = "text/html; charset=utf-8"
+	cssContentType  = "text/css; charset=utf-8"
+	jsContentType   = "text/javascript; charset=utf-8"
+	jsonContentType = "application/json"
+	pngContentType  = "image/png"
+	immutableCache  = "public, max-age=31536000, immutable"
+
+	completedErrorFragment = "already completed"
+)
+
 // Server exposes one review round over a loopback listener only.
 type Server struct {
 	session    *Session
@@ -25,20 +53,20 @@ func NewServer(session *Session) *Server { return &Server{session: session} }
 func (s *Server) Handler() http.Handler  { return s.handler() }
 
 func (s *Server) Start() (string, error) {
-	listener, err := net.Listen("tcp4", "127.0.0.1:0")
+	listener, err := net.Listen(listenNetwork, listenAddress)
 	if err != nil {
 		return "", fmt.Errorf("listen on localhost: %w", err)
 	}
 	s.listener = listener
 	s.httpServer = &http.Server{
 		Handler:           s.handler(),
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      15 * time.Second,
-		IdleTimeout:       30 * time.Second,
+		ReadHeaderTimeout: readHeaderTimeout,
+		ReadTimeout:       readTimeout,
+		WriteTimeout:      writeTimeout,
+		IdleTimeout:       idleTimeout,
 	}
 	go func() { _ = s.httpServer.Serve(listener) }()
-	return "http://" + listener.Addr().String(), nil
+	return urlScheme + listener.Addr().String(), nil
 }
 
 func (s *Server) Wait() (Result, error) {
@@ -71,25 +99,25 @@ func (s *Server) Close() error {
 
 func (s *Server) handler() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", s.handleIndex)
-	mux.HandleFunc("/api/session", s.handleSession)
-	mux.HandleFunc("/api/feedback", s.handleFeedback)
-	mux.HandleFunc("/assets/style.css", func(w http.ResponseWriter, r *http.Request) {
-		s.handleFrontendAsset(w, r, "style.css", "text/css; charset=utf-8")
+	mux.HandleFunc(indexRoute, s.handleIndex)
+	mux.HandleFunc(sessionRoute, s.handleSession)
+	mux.HandleFunc(feedbackRoute, s.handleFeedback)
+	mux.HandleFunc(styleRoute, func(w http.ResponseWriter, r *http.Request) {
+		s.handleFrontendAsset(w, r, styleAsset, cssContentType)
 	})
-	mux.HandleFunc("/assets/app.js", func(w http.ResponseWriter, r *http.Request) {
-		s.handleFrontendAsset(w, r, "app.js", "text/javascript; charset=utf-8")
+	mux.HandleFunc(scriptRoute, func(w http.ResponseWriter, r *http.Request) {
+		s.handleFrontendAsset(w, r, scriptAsset, jsContentType)
 	})
-	mux.HandleFunc("/image/reference.png", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/image/"+referenceFileName, func(w http.ResponseWriter, r *http.Request) {
 		s.handleImage(w, r, s.snapshot().Reference.Path)
 	})
-	mux.HandleFunc("/image/actual.png", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/image/"+actualFileName, func(w http.ResponseWriter, r *http.Request) {
 		s.handleImage(w, r, s.snapshot().Actual.Path)
 	})
-	mux.HandleFunc("/image/overlay.png", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/image/"+overlayFileName, func(w http.ResponseWriter, r *http.Request) {
 		s.handleImage(w, r, s.snapshot().Overlay.Path)
 	})
-	mux.HandleFunc("/image/mask.png", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/image/"+maskFileName, func(w http.ResponseWriter, r *http.Request) {
 		s.handleImage(w, r, s.snapshot().Mask.Path)
 	})
 	return securityHeaders(mux)
@@ -98,7 +126,7 @@ func (s *Server) handler() http.Handler {
 func (s *Server) snapshot() Snapshot { return s.session.snapshot }
 
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
+	if r.URL.Path != indexRoute {
 		http.NotFound(w, r)
 		return
 	}
@@ -107,7 +135,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "review page unavailable", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Type", htmlContentType)
 	_, _ = w.Write(data)
 }
 
@@ -126,7 +154,7 @@ func (s *Server) handleFrontendAsset(
 		return
 	}
 	w.Header().Set("Content-Type", contentType)
-	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	w.Header().Set("Cache-Control", immutableCache)
 	_, _ = w.Write(data)
 }
 
@@ -153,8 +181,8 @@ func (s *Server) handleImage(w http.ResponseWriter, r *http.Request, path string
 		http.NotFound(w, r)
 		return
 	}
-	w.Header().Set("Content-Type", "image/png")
-	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	w.Header().Set("Content-Type", pngContentType)
+	w.Header().Set("Cache-Control", immutableCache)
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(data)))
 	_, _ = w.Write(data)
 }
@@ -180,7 +208,7 @@ func (s *Server) handleFeedback(w http.ResponseWriter, r *http.Request) {
 	result, err := s.session.Submit(request)
 	if err != nil {
 		status := http.StatusBadRequest
-		if strings.Contains(err.Error(), "already completed") {
+		if strings.Contains(err.Error(), completedErrorFragment) {
 			status = http.StatusConflict
 		}
 		http.Error(w, err.Error(), status)
@@ -191,7 +219,7 @@ func (s *Server) handleFeedback(w http.ResponseWriter, r *http.Request) {
 }
 
 func writeJSON(w http.ResponseWriter, value any) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", jsonContentType)
 	_ = json.NewEncoder(w).Encode(value)
 }
 
