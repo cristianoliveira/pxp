@@ -5,6 +5,7 @@
 # Boundaries
 
 - [The `pxp` skill](skills/pxp/AGENTS.md) guides screenshot-driven UI implementation and measured refinement.
+- `pxp-review-loop` guides human-annotated review rounds and explicit approval handoff.
 - Skill evaluation packaging belongs to [the evaluation helpers](skills/pxp/evals/AGENTS.md).
 
 Skill content may explain stable CLI contracts but must not implement application code or contain holdout answers.

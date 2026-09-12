@@ -1,0 +1,119 @@
+---
+name: pxp-review-loop
+description: >
+  Run a human-in-the-loop visual review loop with the pxp CLI. Use when a
+  user wants to inspect a reference/actual screenshot comparison, annotate
+  differences in a browser, submit location-aware feedback, repeat after
+  implementation changes, or explicitly approve the visual result. Also use
+  for launching a durable local review session and handing its structured
+  feedback to an agent. Do not use for autonomous UI editing, generic
+  screenshot comparison without human annotations, or claiming fixture-only
+  changes were applied.
+---
+
+# PXP annotated review loop
+
+Use this skill to coordinate one or more local review rounds:
+
+```text
+compare -> human annotates -> Submit feedback -> agent fixes -> recapture
+-> next comparison -> repeat until Approve
+```
+
+The loop is a handoff protocol, not an autonomous editing engine. Keep the
+human decision explicit and keep each comparison round immutable.
+
+## Before starting
+
+1. Locate the reference and actual PNGs. Confirm they have equal dimensions.
+2. Locate the editable application source and the capture command, if any.
+3. If the pair is only a fixture or artifact, say so. Do not claim that notes
+   changed an implementation when no editable source is associated.
+4. Use a new private artifact root for every independent review session. Keep
+   review artifacts outside production assets.
+5. Explain that the local server is unauthenticated and binds to loopback.
+
+## Start a round
+
+Run the command with a unique output directory. Keep stdout and stderr
+separate because stdout is the completion result and stderr announces the URL:
+
+```bash
+mkdir -p .tmp/pxp-review
+pxp review reference.png actual.png \
+  --out .tmp/pxp-review \
+  --json > .tmp/pxp-review/round-1.result.json \
+  2> .tmp/pxp-review/round-1.server.log
+```
+
+The command intentionally waits until the browser records a decision. Read the
+URL from the server log and give it to the human. If the environment supports
+browser interaction, open the URL for inspection, but do not click Submit or
+Approve, invent annotations, or impersonate the human decision.
+
+The page displays reference, actual, and overlay images. The human can add:
+
+- general notes;
+- point annotations; and
+- rectangle annotations.
+
+Each annotation records a stable ID, image identity, and original-pixel
+coordinates. Display scaling and canvas borders are accounted for. **Submit
+feedback** requires at least one nonblank note or annotation. **Approve** must
+contain neither notes nor annotations.
+
+## Interpret completion
+
+Read the structured result only after the process exits:
+
+```bash
+cat .tmp/pxp-review/round-1.result.json
+jq .feedback_path .tmp/pxp-review/round-1.result.json
+```
+
+Expected decisions:
+
+- `submitted`: read the feedback JSON, preserve the snapshot identity and
+  annotations, then fix the associated source and capture a new actual image.
+- `approved`: stop the loop and report the approval and feedback path.
+
+A cancelled or closed round returns an operational error and does not write a
+feedback JSON file. Treat missing feedback as an incomplete round, not as
+approval. Invalid submissions return an error while the server remains alive;
+the human can correct the form and retry.
+
+## Continue a round
+
+Use a new actual capture and link the previous feedback. Never overwrite a
+prior round:
+
+```bash
+previous=$(jq -r .feedback_path .tmp/pxp-review/round-1.result.json)
+pxp review reference.png actual-v2.png \
+  --out .tmp/pxp-review \
+  --previous-feedback "$previous" \
+  --json > .tmp/pxp-review/round-2.result.json \
+  2> .tmp/pxp-review/round-2.server.log
+```
+
+Repeat until the human chooses Approve. Check that each result has a distinct
+feedback path and that linked previous feedback remains byte-identical.
+
+## Report and boundaries
+
+At the end of each round, report:
+
+- decision and feedback path;
+- round/session ID;
+- snapshot input identities or hashes;
+- note IDs and coordinates that require action;
+- whether editable source was available; and
+- the next command or reason the loop stopped.
+
+Do not call a lower pixel difference approval. Do not edit source code during
+an active review round unless the workflow explicitly hands the feedback back
+to an implementation step. Keep accounts, collaboration, freehand drawing,
+live editing, and autonomous agent edits out of this POC.
+
+For implementation and measurement workflows without this handoff loop, use
+the `pxp` skill instead.
