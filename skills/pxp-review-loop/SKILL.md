@@ -66,7 +66,10 @@ never replaces human judgment. The human can add:
 
 - general notes;
 - point annotations; and
-- rectangle annotations.
+- rectangle annotations. Selecting geometry opens a contextual annotation editor
+with source-view and original-pixel geometry. Save commits the note; Cancel or
+Escape leaves the annotation and draft unchanged. Pending editor input survives
+browser reload until it is explicitly saved or cancelled.
 
 Each annotation records a stable ID, image identity, and original-pixel
 coordinates. Display scaling and canvas borders are accounted for. **Submit

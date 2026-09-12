@@ -41,7 +41,12 @@ With `--open`, it attempts a platform default-browser opener after the server is
 ready; opener failure is nonfatal and the printed URL remains the manual
 fallback. The page shows reference, actual, and overlay images. Click or drag
 on the actual image to add point or rectangle notes; display scaling is
-converted back to original image pixels.
+converted back to original image pixels. A contextual annotation editor opens
+for the selected geometry; Save commits the note and Cancel/Escape leaves the
+annotation and draft unchanged. The editor shows source view and original-pixel
+geometry, and its pending note survives browser reload until explicitly saved
+or cancelled.
+
 
 Use `--context-file` to provide an optional JSON object with these string
 fields: `title`, `what_changed`, `what_to_test`, `expected_outcome`,

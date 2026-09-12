@@ -84,19 +84,12 @@
         <div class="eyebrow">Your feedback</div>
         <h2 id="feedback-title">What needs to change?</h2>
 
-        <section class="annotation-form" aria-labelledby="annotation-title">
-          <h3 id="annotation-title">Add annotation</h3>
-          <div class="field-grid">
-            <label for="type">Type</label>
-            <select id="type">
-              <option value="point">Pin</option>
-              <option value="rectangle">Rectangle</option>
-            </select>
-            <label for="annotation-note">Note</label>
-            <input id="annotation-note" maxlength="2000" placeholder="Describe this detail…">
-          </div>
-        </section>
+        <select id="type" class="visually-hidden" tabindex="-1" aria-hidden="true">
+          <option value="point">Pin</option>
+          <option value="rectangle">Rectangle</option>
+        </select>
 
+        <p id="annotation-editor-hint" class="muted">Select a point or rectangle on the evidence to open its contextual note editor.</p>
         <ol id="annotations" aria-label="Annotations"></ol>
 
         <label for="notes">General note</label>
@@ -113,6 +106,20 @@
       </div>
     </aside>
   </main>
+
+  <dialog id="annotation-editor" role="dialog" aria-labelledby="annotation-editor-title" aria-describedby="annotation-editor-context" aria-modal="true">
+    <div class="annotation-editor-content">
+      <h2 id="annotation-editor-title">Add annotation note</h2>
+      <p id="annotation-editor-context" class="muted"></p>
+      <label for="annotation-note">Annotation note</label>
+      <textarea id="annotation-note" maxlength="2000" placeholder="Describe this detail…"></textarea>
+      <p id="annotation-editor-status" class="status" role="status" aria-live="polite"></p>
+      <div class="decision-actions">
+        <button id="annotation-editor-cancel" type="button">Cancel</button>
+        <button id="annotation-editor-save" type="button" class="primary">Save annotation</button>
+      </div>
+    </div>
+  </dialog>
 
   <dialog id="decision-dialog" role="dialog" aria-labelledby="decision-title" aria-describedby="decision-summary decision-consequence" aria-modal="true">
     <div class="decision-content">

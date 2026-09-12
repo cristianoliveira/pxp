@@ -39,6 +39,12 @@ const annotationNote = document.getElementById('annotation-note');
 const annotationList = document.getElementById('annotations');
 const notesInput = document.getElementById('notes');
 const status = document.getElementById('status');
+const annotationEditor = document.getElementById('annotation-editor');
+const annotationEditorTitle = document.getElementById('annotation-editor-title');
+const annotationEditorContext = document.getElementById('annotation-editor-context');
+const annotationEditorStatus = document.getElementById('annotation-editor-status');
+const annotationEditorCancel = document.getElementById('annotation-editor-cancel');
+const annotationEditorSave = document.getElementById('annotation-editor-save');
 const decisionDialog = document.getElementById('decision-dialog');
 const decisionSummary = document.getElementById('decision-summary');
 const decisionConsequence = document.getElementById('decision-consequence');
@@ -56,14 +62,11 @@ const annotations = [];
 const viewImages = new Map();
 let activeView = 'actual';
 let selectedAnnotationId = '';
+let pendingAnnotation = null;
+let restoredAnnotationEditor = null;
 let startPoint = null;
 let keyboardPoint = null;
 let keyboardRectangleStart = null;
-let editingAnnotationId = '';
-let inlineAnnotationId = '';
-let inlineOriginalNote = '';
-let editingOriginalNote = '';
-let editingTriggerId = '';
 let nextDraftID = 1;
 let draftStorageKey = '';
 let viewLoadVersion = 0;
@@ -186,14 +189,14 @@ function pendingViewSwitchMessage() {
   if (startPoint || keyboardRectangleStart) {
     return 'Finish or cancel the rectangle before switching views.';
   }
-  return 'Finish or cancel the note edit before switching views.';
+  return 'Save or cancel the annotation editor before switching views.';
 }
 
 async function setView(view, {allowPending = false} = {}) {
   if (!viewLabels[view]) return false;
   if (
     !allowPending
-    && (startPoint || keyboardRectangleStart || editingAnnotationId || inlineAnnotationId)
+    && (startPoint || keyboardRectangleStart || pendingAnnotation)
   ) {
     announceKeyboardPoint(pendingViewSwitchMessage());
     return false;
@@ -330,7 +333,7 @@ function renderAnnotations() {
     editButton.dataset.annotationEdit = '';
     editButton.setAttribute('aria-label', `Edit annotation ${displayIndex + 1}`);
     editButton.textContent = 'Edit note';
-    editButton.addEventListener('click', () => beginAnnotationEdit(annotation, key));
+    editButton.addEventListener('click', (event) => beginAnnotationEdit(annotation, key, event.currentTarget));
 
     removeButton.type = 'button';
     removeButton.dataset.annotationId = key;
@@ -345,82 +348,176 @@ function renderAnnotations() {
   redrawCanvas();
 }
 
-function selectAnnotation(annotation, key) {
-  if (editingAnnotationId && editingAnnotationId !== key) finishAnnotationEdit(true, false);
-  selectedAnnotationId = key;
-  renderAnnotations();
-  void setView(annotation.image).then(() => canvas.focus());
+function annotationGeometryDescription(annotation) {
+  const dimensions = annotation.width
+    ? `, ${annotation.width}×${annotation.height}`
+    : '';
+  return `${sourceLabel(annotation.image)} ${annotationTypeLabel(annotation.type)} at `
+    + `${annotation.x},${annotation.y}${dimensions} original pixels.`;
 }
 
-function beginAnnotationEdit(annotation, key) {
-  if (inlineAnnotationId) finishInlineAnnotationEdit(true, false);
-  if (editingAnnotationId && editingAnnotationId !== key) finishAnnotationEdit(true, false);
-  editingAnnotationId = key;
-  editingOriginalNote = annotation.note || '';
-  editingTriggerId = key;
+function serializePendingAnnotation() {
+  if (!pendingAnnotation) return null;
+  const value = {
+    mode: pendingAnnotation.mode,
+    image: pendingAnnotation.image,
+    type: pendingAnnotation.type,
+    note: annotationNote.value,
+  };
+  if (pendingAnnotation.mode === 'edit') {
+    value.annotationId = pendingAnnotation.key;
+    return value;
+  }
+  return {...value, start: pendingAnnotation.start, end: pendingAnnotation.end};
+}
+
+function openAnnotationEditor(pending) {
+  if (pendingAnnotation || annotationEditor.open) return;
+  pendingAnnotation = pending;
+  annotationNote.value = pending.initialNote || pending.annotation?.note || '';
+  annotationEditorTitle.textContent = pending.mode === 'edit' ? 'Edit annotation note' : 'Add annotation note';
+  const geometry = pending.mode === 'edit'
+    ? pending.annotation
+    : {
+      image: pending.image,
+      type: pending.type,
+      x: pending.start.x,
+      y: pending.start.y,
+      width: pending.type === annotationRectangle ? Math.abs(pending.end.x - pending.start.x) + rectangleSizeOffset : 0,
+      height: pending.type === annotationRectangle ? Math.abs(pending.end.y - pending.start.y) + rectangleSizeOffset : 0,
+    };
+  annotationEditorContext.textContent = annotationGeometryDescription(geometry);
+  annotationEditorStatus.textContent = '';
+  saveDraft();
+  annotationEditor.showModal();
+  annotationNote.focus();
+}
+
+function beginAnnotationEdit(annotation, key, trigger = canvas) {
   selectedAnnotationId = key;
-  annotationNote.value = editingOriginalNote;
-  renderAnnotations();
   void setView(annotation.image, {allowPending: true}).then(() => {
-    annotationNote.focus();
+    openAnnotationEditor({
+      mode: 'edit',
+      annotation,
+      key,
+      image: annotation.image,
+      type: annotation.type,
+      invoker: trigger,
+    });
     announceKeyboardPoint(`Editing annotation ${annotations.indexOf(annotation) + 1}. Press Enter to save or Escape to cancel.`);
   });
 }
 
 function beginInlineAnnotationEdit(annotation, initialText = '') {
-  inlineAnnotationId = annotation.id;
-  inlineOriginalNote = annotation.note || '';
-  annotationNote.value = `${inlineOriginalNote}${initialText}`;
-  annotation.note = annotationNote.value;
-  annotationNote.focus();
-  annotationNote.setSelectionRange(annotationNote.value.length, annotationNote.value.length);
-  saveDraft();
+  openAnnotationEditor({
+    mode: 'edit',
+    annotation,
+    key: annotationKey(annotation, annotations.indexOf(annotation)),
+    image: annotation.image,
+    type: annotation.type,
+    initialNote: `${annotation.note || ''}${initialText}`,
+    invoker: canvas,
+  });
   announceKeyboardPoint('Editing annotation note. Press Enter to save or Escape to cancel.');
 }
 
-function finishInlineAnnotationEdit(save, restoreFocus) {
-  if (!inlineAnnotationId) return;
-  const annotation = annotations.find((item) => item.id === inlineAnnotationId);
-  const annotationId = inlineAnnotationId;
-  if (annotation && !save) annotation.note = inlineOriginalNote;
-  inlineAnnotationId = '';
-  inlineOriginalNote = '';
-  annotationNote.value = '';
-  saveDraft();
-  renderAnnotations();
-  if (restoreFocus) focusAnnotationAction(annotationId, 'edit');
-  else canvas.focus();
-  announceKeyboardPoint(save ? 'Annotation note saved.' : 'Annotation note left blank.');
+function openNewAnnotationEditor(start, end, invoker = canvas) {
+  const type = annotationTypeSelect.value;
+  if (type === annotationRectangle) {
+    const width = Math.abs(end.x - start.x) + rectangleSizeOffset;
+    const height = Math.abs(end.y - start.y) + rectangleSizeOffset;
+    if (width < minimumRectangleSize || height < minimumRectangleSize) {
+      announceKeyboardPoint('Rectangle must cover at least two pixels in each direction.');
+      return false;
+    }
+  }
+  openAnnotationEditor({
+    mode: 'new',
+    image: activeView,
+    type,
+    start: {...start},
+    end: {...end},
+    invoker,
+  });
+  return true;
 }
 
-function finishAnnotationEdit(save, restoreFocus) {
-  if (!editingAnnotationId) return;
-  const annotation = annotations.find((item, index) => annotationKey(item, index) === editingAnnotationId);
-  const triggerId = editingTriggerId;
-  if (annotation && !save) annotation.note = editingOriginalNote;
-  editingAnnotationId = '';
-  editingOriginalNote = '';
-  editingTriggerId = '';
+function restoreAnnotationEditorDraft() {
+  const draft = restoredAnnotationEditor;
+  restoredAnnotationEditor = null;
+  if (!draft || pendingAnnotation) return;
+  if (draft.mode === 'edit') {
+    const index = annotations.findIndex((annotation, itemIndex) => (
+      annotationKey(annotation, itemIndex) === draft.annotationId
+    ));
+    if (index < 0) return;
+    const annotation = annotations[index];
+    selectedAnnotationId = draft.annotationId;
+    void setView(annotation.image, {allowPending: true}).then(() => openAnnotationEditor({
+      mode: 'edit', annotation, key: draft.annotationId, image: annotation.image,
+      type: annotation.type, initialNote: draft.note, invoker: canvas,
+    }));
+    return;
+  }
+  if (
+    draft.mode !== 'new'
+    || !viewLabels[draft.image]
+    || !validAnnotationTypes.has(draft.type)
+    || !draft.start || !draft.end
+  ) return;
+  activeView = draft.image;
+  void setView(activeView, {allowPending: true}).then(() => openAnnotationEditor({
+    mode: 'new', image: draft.image, type: draft.type,
+    start: draft.start, end: draft.end, initialNote: draft.note, invoker: canvas,
+  }));
+}
+
+function finishAnnotationEditor(save) {
+  if (!pendingAnnotation) return;
+  const pending = pendingAnnotation;
+  const invoker = pending.invoker;
+  if (save) {
+    if (pending.mode === 'edit') {
+      pending.annotation.note = annotationNote.value;
+      selectedAnnotationId = pending.key;
+    } else {
+      const annotation = {
+        id: `draft-${nextDraftID++}`,
+        image: pending.image,
+        type: pending.type,
+        x: pending.type === annotationPoint
+          ? pending.start.x
+          : Math.min(pending.start.x, pending.end.x),
+        y: pending.type === annotationPoint
+          ? pending.start.y
+          : Math.min(pending.start.y, pending.end.y),
+        note: annotationNote.value,
+      };
+      if (pending.type === annotationRectangle) {
+        annotation.width = Math.abs(pending.end.x - pending.start.x) + rectangleSizeOffset;
+        annotation.height = Math.abs(pending.end.y - pending.start.y) + rectangleSizeOffset;
+      }
+      annotations.push(annotation);
+      selectedAnnotationId = annotation.id;
+    }
+  }
+  annotationEditor.close();
+  pendingAnnotation = null;
   annotationNote.value = '';
+  annotationEditorStatus.textContent = '';
   saveDraft();
   renderAnnotations();
-  if (restoreFocus) focusAnnotationAction(triggerId, 'edit');
+  if (invoker?.isConnected) invoker.focus();
+  else canvas.focus();
+  announceKeyboardPoint(
+    save ? 'Annotation note saved.'
+      : pending.mode === 'new' ? 'Annotation discarded.' : 'Annotation edit cancelled.',
+  );
 }
 
 function removeAnnotation(annotation, key) {
   const index = annotations.indexOf(annotation);
   if (index < 0) return;
-  if (editingAnnotationId === key) {
-    editingAnnotationId = '';
-    editingOriginalNote = '';
-    editingTriggerId = '';
-    annotationNote.value = '';
-  }
-  if (inlineAnnotationId === key) {
-    inlineAnnotationId = '';
-    inlineOriginalNote = '';
-    annotationNote.value = '';
-  }
   annotations.splice(index, 1);
   if (selectedAnnotationId === key) selectedAnnotationId = '';
   saveDraft();
@@ -438,7 +535,7 @@ function saveDraft() {
   if (!draftStorageKey) return;
   localStorage.setItem(draftStorageKey, JSON.stringify({
     activeView,
-    annotationNote: annotationNote.value,
+    annotationEditor: serializePendingAnnotation(),
     keyboardRectangleStart,
     annotationType: annotationTypeSelect.value,
     annotations,
@@ -462,8 +559,10 @@ function restoreDraft() {
       annotations.push({...annotation, id});
     });
     if (typeof draft.notes === 'string') notesInput.value = draft.notes;
-    if (typeof draft.annotationNote === 'string') annotationNote.value = draft.annotationNote;
     if (validAnnotationTypes.has(draft.annotationType)) annotationTypeSelect.value = draft.annotationType;
+    if (draft.annotationEditor && typeof draft.annotationEditor === 'object') {
+      restoredAnnotationEditor = draft.annotationEditor;
+    }
     if (viewLabels[draft.activeView]) activeView = draft.activeView;
     if (draft.keyboardRectangleStart && viewLabels[draft.activeView]) {
       keyboardRectangleStart = draft.keyboardRectangleStart;
@@ -473,43 +572,7 @@ function restoreDraft() {
   }
 }
 
-function addAnnotation(start, end) {
-  const annotation = {
-    id: `draft-${nextDraftID++}`,
-    image: activeView,
-    type: annotationTypeSelect.value,
-    x: start.x,
-    y: start.y,
-    note: annotationNote.value,
-  };
-
-  if (annotation.type === annotationRectangle) {
-    annotation.x = Math.min(start.x, end.x);
-    annotation.y = Math.min(start.y, end.y);
-    annotation.width = Math.abs(end.x - start.x) + rectangleSizeOffset;
-    annotation.height = Math.abs(end.y - start.y) + rectangleSizeOffset;
-    if (annotation.width < minimumRectangleSize || annotation.height < minimumRectangleSize) {
-      announceKeyboardPoint('Rectangle must cover at least two pixels in each direction.');
-      return false;
-    }
-  }
-
-  annotations.push(annotation);
-  selectedAnnotationId = annotation.id;
-  annotationNote.value = '';
-  saveDraft();
-  renderAnnotations();
-  announceKeyboardPoint(
-    annotation.note.trim()
-      ? 'Annotation placed.'
-      : 'Annotation placed. Type a key to edit its note, or press Enter to continue.',
-  );
-  return true;
-}
-
 canvas.addEventListener('pointerdown', (event) => {
-  if (inlineAnnotationId) finishInlineAnnotationEdit(true, false);
-  if (editingAnnotationId) finishAnnotationEdit(true, false);
   startPoint = canvasPointFromEvent(event);
   keyboardPoint = startPoint;
   canvas.setPointerCapture(event.pointerId);
@@ -520,7 +583,7 @@ canvas.addEventListener('pointerup', (event) => {
   if (!startPoint) return;
   const endPoint = canvasPointFromEvent(event);
   keyboardPoint = endPoint;
-  addAnnotation(startPoint, endPoint);
+  openNewAnnotationEditor(startPoint, endPoint, canvas);
   startPoint = null;
 });
 
@@ -638,8 +701,8 @@ canvas.addEventListener('keydown', (event) => {
   }
 
   const start = keyboardRectangleStart || keyboardPoint;
-  const created = addAnnotation(start, keyboardPoint);
-  if (created) keyboardRectangleStart = null;
+  const opened = openNewAnnotationEditor(start, keyboardPoint, canvas);
+  if (opened) keyboardRectangleStart = null;
   saveDraft();
   redrawCanvas();
 });
@@ -693,6 +756,25 @@ document.addEventListener('keydown', (event) => {
 });
 
 document.addEventListener('focusin', clearReturnShortcut);
+
+annotationEditor.addEventListener('cancel', (event) => {
+  event.preventDefault();
+  finishAnnotationEditor(false);
+});
+annotationEditor.addEventListener('keydown', (event) => {
+  if (event.key !== 'Tab') return;
+  const focusable = Array.from(annotationEditor.querySelectorAll('button:not([disabled]), textarea:not([disabled])'));
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+});
 
 decisionDialog.addEventListener('cancel', (event) => {
   event.preventDefault();
@@ -836,7 +918,7 @@ async function initialize() {
     status.className = errorClass;
     status.textContent = error.message;
   }
-  void setView(activeView);
+  void setView(activeView).then(() => restoreAnnotationEditorDraft());
 }
 
 viewButtons.forEach((button) => {
@@ -846,29 +928,20 @@ modeButtons.forEach((button) => {
   button.addEventListener('click', () => setAnnotationType(button.dataset.annotationMode));
 });
 annotationTypeSelect.addEventListener('change', () => setAnnotationType(annotationTypeSelect.value));
-annotationNote.addEventListener('input', () => {
-  if (editingAnnotationId) {
-    const annotation = annotations.find((item, index) => annotationKey(item, index) === editingAnnotationId);
-    if (annotation) annotation.note = annotationNote.value;
-  }
-  if (inlineAnnotationId) {
-    const annotation = annotations.find((item) => item.id === inlineAnnotationId);
-    if (annotation) annotation.note = annotationNote.value;
-  }
-  saveDraft();
-});
+annotationNote.addEventListener('input', saveDraft);
 annotationNote.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter') {
+  if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault();
-    if (inlineAnnotationId) finishInlineAnnotationEdit(true, false);
-    else finishAnnotationEdit(true, true);
+    finishAnnotationEditor(true);
   } else if (event.key === 'Escape') {
     event.preventDefault();
-    if (inlineAnnotationId) finishInlineAnnotationEdit(false, false);
-    else finishAnnotationEdit(false, true);
+    finishAnnotationEditor(false);
   }
 });
 notesInput.addEventListener('input', saveDraft);
+annotationEditorCancel.addEventListener('click', () => finishAnnotationEditor(false));
+annotationEditorSave.addEventListener('click', () => finishAnnotationEditor(true));
+
 document.getElementById('return-to-canvas').onclick = focusCanvas;
 document.getElementById('submit').onclick = (event) => openDecisionConfirmation(decisionSubmitted, event.currentTarget);
 document.getElementById('approve').onclick = (event) => openDecisionConfirmation(decisionApproved, event.currentTarget);

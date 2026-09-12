@@ -39,6 +39,18 @@ button:hover {
   background: #edf2fa;
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
@@ -270,21 +282,6 @@ canvas {
   font-size: 12px;
 }
 
-.annotation-form {
-  padding: 12px;
-  border: 1px solid #e0e5ee;
-  background: #fafbfe;
-  border-radius: 8px;
-  margin-bottom: 14px;
-}
-
-.field-grid {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 8px 10px;
-  align-items: center;
-}
-
 label {
   font-weight: 600;
   font-size: 13px;
@@ -394,6 +391,7 @@ textarea {
   color: #36816a;
 }
 
+#annotation-editor,
 #decision-dialog {
   width: min(440px, calc(100vw - 32px));
   padding: 0;
@@ -403,8 +401,26 @@ textarea {
   box-shadow: 0 20px 60px #20273540;
 }
 
+#annotation-editor::backdrop,
 #decision-dialog::backdrop {
   background: #20273566;
+}
+
+.annotation-editor-content {
+  padding: 24px;
+}
+
+.annotation-editor-content h2 {
+  margin-top: 0;
+}
+
+.annotation-editor-content label {
+  display: block;
+  margin-top: 18px;
+}
+
+.annotation-editor-content textarea {
+  min-height: 120px;
 }
 
 .decision-content {
