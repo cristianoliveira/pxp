@@ -321,6 +321,7 @@ async function checkEditCancelAndRectangleEscape(page, url) {
   await page.keyboard.type('saved note');
   await page.keyboard.press('Enter');
   assert.match((await listText(page))[0], /saved note/);
+  assert.equal(await page.locator(':focus').textContent(), 'Edit note');
 
   await page.getByRole('button', {name: 'Edit annotation 2', exact: true}).focus();
   await page.keyboard.press('Enter');

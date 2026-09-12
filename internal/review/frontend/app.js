@@ -476,6 +476,7 @@ function finishAnnotationEditor(save) {
   if (!pendingAnnotation) return;
   const pending = pendingAnnotation;
   const invoker = pending.invoker;
+  const restoreListEditor = pending.mode === 'edit' && invoker !== canvas;
   if (save) {
     if (pending.mode === 'edit') {
       pending.annotation.note = annotationNote.value;
@@ -507,7 +508,8 @@ function finishAnnotationEditor(save) {
   annotationEditorStatus.textContent = '';
   saveDraft();
   renderAnnotations();
-  if (invoker?.isConnected) invoker.focus();
+  if (restoreListEditor) focusAnnotationAction(pending.key, 'edit');
+  else if (invoker?.isConnected) invoker.focus();
   else canvas.focus();
   announceKeyboardPoint(
     save ? 'Annotation note saved.'
