@@ -1,7 +1,7 @@
 ---
 id: TASK-0008
 title: Match runtime Focus UI to approved prototype
-status: doing
+status: done
 depends_on: []
 priority: high
 tags: []
