@@ -132,9 +132,8 @@ function updateAnnotationModeControls() {
 
 function setAnnotationType(type, announce = true) {
   if (!validAnnotationTypes.has(type)) return;
-  const changed = annotationTypeSelect.value !== type;
   annotationTypeSelect.value = type;
-  if (changed) keyboardRectangleStart = null;
+  keyboardRectangleStart = null;
   updateAnnotationModeControls();
   saveDraft();
   if (announce) announceKeyboardPoint(`${annotationTypeLabel(type)} mode selected.`);

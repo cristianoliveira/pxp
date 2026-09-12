@@ -114,6 +114,28 @@ async function checkKeyboardViewsAndLifo(page, url) {
   return {created, afterRemove};
 }
 
+async function checkAnnotationModes(page, url) {
+  await resetDraft(page, url);
+  await page.locator('#type').selectOption('rectangle');
+  await page.locator('#canvas').focus();
+  await page.keyboard.press('Enter');
+  await page.locator('#type').selectOption('point');
+  const draft = await page.evaluate(() => {
+    const key = Object.keys(localStorage).find((item) => item.startsWith('pxp.review.draft.'));
+    return key ? JSON.parse(localStorage.getItem(key)) : null;
+  });
+  assert.equal(draft.keyboardRectangleStart, null);
+  assert.equal(await page.locator('#interaction-status').textContent(), 'Pin mode selected.');
+  await page.keyboard.press('Enter');
+  assert.match((await listText(page))[0], /Current point/);
+
+  await page.locator('[data-annotation-mode="rectangle"]').click();
+  assert.equal(await page.locator('#type').inputValue(), 'rectangle');
+  assert.equal(await page.locator('[data-annotation-mode="rectangle"]').getAttribute('aria-pressed'), 'true');
+  assert.equal(await page.locator('[data-annotation-mode="point"]').getAttribute('aria-pressed'), 'false');
+  return {mode: await page.locator('#type').inputValue()};
+}
+
 async function checkReturnToCanvas(page, url) {
   await resetDraft(page, url);
   const returnButton = page.getByRole('button', {name: 'Return to canvas', exact: true});
@@ -262,12 +284,13 @@ async function checkDraftAndValidation(page, url) {
 async function runReviewBrowserChecks(page, options) {
   assert.ok(options && options.url, 'runReviewBrowserChecks requires options.url');
   const tabOrder = await checkTabOrder(page, options.url);
+  const modes = await checkAnnotationModes(page, options.url);
   const returnToCanvas = await checkReturnToCanvas(page, options.url);
   const inline = await checkInlineAnnotationNote(page, options.url);
   const keyboard = await checkKeyboardViewsAndLifo(page, options.url);
   const editing = await checkEditCancelAndRectangleEscape(page, options.url);
   const draft = await checkDraftAndValidation(page, options.url);
-  return {tabOrder, returnToCanvas, inline, keyboard, editing, draft};
+  return {tabOrder, modes, returnToCanvas, inline, keyboard, editing, draft};
 }
 
 module.exports = {runReviewBrowserChecks};
