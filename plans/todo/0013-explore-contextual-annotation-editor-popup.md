@@ -1,7 +1,7 @@
 ---
 id: TASK-0013
 title: Explore contextual annotation editor popup
-status: todo
+status: doing
 depends_on: []
 priority: normal
 tags: []
