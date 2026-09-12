@@ -20,7 +20,13 @@ Agent starts review → human receives URL → agent waits → human confirms Su
 
 First reproduce the missing agent handoff in the actual harness. This may be a workflow/tool-execution integration gap rather than missing CLI blocking. Do not build a second wait mechanism or a new daemon without evidence.
 
+## Authorization and chosen workflow
+User authorized team implementation and a live demonstration. Use `pxp review --open` in the foreground: start server, open the default browser, wait for the human decision, persist completion, and close the server. The user explicitly rejected forgotten background servers. Update the agent skill to teach this workflow after implementation is verified.
+
 ## Acceptance criteria
+- [ ] `--open` opens the server-generated localhost URL in the default browser only after the server is ready. Browser launching is optional; plain review remains usable in headless environments.
+- [ ] Always print the URL. A browser-launch failure reports a useful diagnostic and manual URL fallback while review remains pending; it does not imply submission or approval. Keep diagnostics separate from structured stdout.
+- [ ] Run the review command in the foreground, with ownership of server cleanup on both decision and cancellation. Do not detach it with shell backgrounding or an orphan-prone launcher.
 - [ ] The human receives a usable localhost URL while the review command is still running; URL discovery cannot depend on waiting for the final result.
 - [ ] Once review starts, the initiating agent remains in an awaited review operation. It does not finish its turn with instructions to return to chat, start unrelated implementation, or rely on repeated status polling to notice the decision.
 - [ ] Valid explicit Submit causes the command's completion to resume the agent with a structured decision and feedback path, without the human sending any further chat message. The agent then reads the saved feedback before acting.
@@ -33,10 +39,10 @@ First reproduce the missing agent handoff in the actual harness. This may be a w
 
 ## Delivery plan
 1. Lead/dev inspect actual tool capabilities: live URL delivery while blocked, completion notification, cancellation, and time limits. Reproduce current failure and identify the narrowest boundary that needs change.
-2. Prefer existing foreground CLI wait with supported tool streaming. If launch and await must be separate tool operations, they must form one owned workflow: deliver URL then immediately await completion. No orphaned server with a final chat response asking the human to notify the agent.
-3. Update workflow instructions and only the runtime/integration behavior shown to be missing. Keep persistence and server lifecycle under the existing owner.
+2. Use existing foreground CLI wait with `--open` to deliver the browser before completion even when shell output is buffered. Report unsupported host/browser capabilities explicitly; do not silently replace this with detached execution.
+3. Add browser-launch behavior at the appropriate runtime boundary with deterministic injected-launcher tests for success/failure and existing lifecycle regression checks. Keep persistence and server lifecycle under the existing owner. Update `skills/pxp-review-loop/SKILL.md` and CLI documentation after behavior is verified: foreground `--open`, automatic completion consumption, cleanup, manual URL fallback, cancellation, and honest harness wait limits. Do not teach shell backgrounding or require a human chat message after submission.
 4. QA records URL delivery, pending operation, submitted payload, agent continuation, process/listener cleanup, failure paths, and next-round start. Never fabricate a user submission or approval.
 
 ## Relationships and non-goals
-TASK-0010 covers accidental decision confirmation; this task preserves its intent but does not depend on implementation starting there. TASK-0008 visual/product acceptance is separate. No persistent daemon, new collaboration service, autonomous editing inside pxp, or changes to image metrics. Plan only until lead assigns implementation.
+TASK-0010 covers accidental decision confirmation; this task preserves its intent but does not depend on implementation starting there. TASK-0008 visual/product acceptance is separate. No persistent daemon, new collaboration service, autonomous editing inside pxp, or changes to image metrics. Implementation is user-authorized; lead assigns execution and keeps the task open until actual handoff evidence is recorded.
 
