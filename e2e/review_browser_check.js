@@ -37,17 +37,26 @@ async function resetDraft(page, url) {
   await page.locator('#canvas').waitFor();
 }
 
+async function addBlankPin(page) {
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(50);
+  assert.equal(await page.locator('#annotation-note').getAttribute('id'), 'annotation-note');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'annotation-note');
+  assert.equal(await page.locator('#interaction-status').textContent(), 'Annotation placed. Describe it now; press Enter to save or Escape to leave it blank.');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'canvas');
+}
+
 async function addCurrentPins(page) {
   await focusBody(page);
   await tab(page, 1);
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(50);
   await tab(page, 3);
-  await page.keyboard.press('Enter');
+  await addBlankPin(page);
   await page.keyboard.press('Shift+ArrowRight');
-  await page.keyboard.press('Enter');
+  await addBlankPin(page);
   await page.keyboard.press('Shift+ArrowRight');
-  await page.keyboard.press('Enter');
+  await addBlankPin(page);
 }
 
 async function viewWithKeyboard(page, name) {
@@ -83,6 +92,27 @@ async function checkKeyboardViewsAndLifo(page, url) {
   assert.match(await page.locator(':focus').textContent(), /@ 297,238/);
 
   return {created, afterRemove};
+}
+
+async function checkInlineAnnotationNote(page, url) {
+  await resetDraft(page, url);
+  await page.locator('#canvas').focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'annotation-note');
+  await page.locator('#annotation-note').fill('placed inline');
+  await page.keyboard.press('Enter');
+  assert.match((await listText(page))[0], /placed inline/);
+  assert.equal(await page.locator(':focus').getAttribute('aria-label'), 'Edit annotation 1');
+
+  await resetDraft(page, url);
+  await page.locator('#canvas').focus();
+  await page.keyboard.press('Enter');
+  await page.locator('#annotation-note').fill('discarded inline');
+  await page.keyboard.press('Escape');
+  assert.doesNotMatch((await listText(page))[0], /discarded inline/);
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'canvas');
+
+  return {saved: (await listText(page)).length};
 }
 
 async function checkEditCancelAndRectangleEscape(page, url) {
@@ -157,10 +187,11 @@ async function checkDraftAndValidation(page, url) {
 
 async function runReviewBrowserChecks(page, options) {
   assert.ok(options && options.url, 'runReviewBrowserChecks requires options.url');
+  const inline = await checkInlineAnnotationNote(page, options.url);
   const keyboard = await checkKeyboardViewsAndLifo(page, options.url);
   const editing = await checkEditCancelAndRectangleEscape(page, options.url);
   const draft = await checkDraftAndValidation(page, options.url);
-  return {keyboard, editing, draft};
+  return {inline, keyboard, editing, draft};
 }
 
 module.exports = {runReviewBrowserChecks};

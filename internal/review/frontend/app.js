@@ -46,6 +46,7 @@ let startPoint = null;
 let keyboardPoint = null;
 let keyboardRectangleStart = null;
 let editingAnnotationId = '';
+let inlineAnnotationId = '';
 let editingOriginalNote = '';
 let editingTriggerId = '';
 let nextDraftID = 1;
@@ -250,6 +251,7 @@ function selectAnnotation(annotation, key) {
 }
 
 function beginAnnotationEdit(annotation, key) {
+  if (inlineAnnotationId) finishInlineAnnotationEdit(true, false);
   if (editingAnnotationId && editingAnnotationId !== key) finishAnnotationEdit(true, false);
   editingAnnotationId = key;
   editingOriginalNote = annotation.note || '';
@@ -261,6 +263,27 @@ function beginAnnotationEdit(annotation, key) {
     annotationNote.focus();
     announceKeyboardPoint(`Editing annotation ${annotations.indexOf(annotation) + 1}. Press Enter to save or Escape to cancel.`);
   });
+}
+
+function beginInlineAnnotationEdit(annotation) {
+  inlineAnnotationId = annotation.id;
+  annotationNote.value = annotation.note || '';
+  annotationNote.focus();
+  announceKeyboardPoint('Annotation placed. Describe it now; press Enter to save or Escape to leave it blank.');
+}
+
+function finishInlineAnnotationEdit(save, restoreFocus) {
+  if (!inlineAnnotationId) return;
+  const annotation = annotations.find((item) => item.id === inlineAnnotationId);
+  const annotationId = inlineAnnotationId;
+  if (annotation && !save) annotation.note = '';
+  inlineAnnotationId = '';
+  annotationNote.value = '';
+  saveDraft();
+  renderAnnotations();
+  if (restoreFocus) focusAnnotationAction(annotationId, 'edit');
+  else canvas.focus();
+  announceKeyboardPoint(save ? 'Annotation note saved.' : 'Annotation note left blank.');
 }
 
 function finishAnnotationEdit(save, restoreFocus) {
@@ -284,6 +307,10 @@ function removeAnnotation(annotation, key) {
     editingAnnotationId = '';
     editingOriginalNote = '';
     editingTriggerId = '';
+    annotationNote.value = '';
+  }
+  if (inlineAnnotationId === key) {
+    inlineAnnotationId = '';
     annotationNote.value = '';
   }
   annotations.splice(index, 1);
@@ -364,10 +391,12 @@ function addAnnotation(start, end) {
   annotationNote.value = '';
   saveDraft();
   renderAnnotations();
+  if (!annotation.note.trim()) beginInlineAnnotationEdit(annotation);
   return true;
 }
 
 canvas.addEventListener('pointerdown', (event) => {
+  if (inlineAnnotationId) finishInlineAnnotationEdit(true, false);
   if (editingAnnotationId) finishAnnotationEdit(true, false);
   startPoint = canvasPointFromEvent(event);
   keyboardPoint = startPoint;
@@ -523,15 +552,21 @@ annotationNote.addEventListener('input', () => {
     const annotation = annotations.find((item, index) => annotationKey(item, index) === editingAnnotationId);
     if (annotation) annotation.note = annotationNote.value;
   }
+  if (inlineAnnotationId) {
+    const annotation = annotations.find((item) => item.id === inlineAnnotationId);
+    if (annotation) annotation.note = annotationNote.value;
+  }
   saveDraft();
 });
 annotationNote.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') {
     event.preventDefault();
-    finishAnnotationEdit(true, true);
+    if (inlineAnnotationId) finishInlineAnnotationEdit(true, true);
+    else finishAnnotationEdit(true, true);
   } else if (event.key === 'Escape') {
     event.preventDefault();
-    finishAnnotationEdit(false, true);
+    if (inlineAnnotationId) finishInlineAnnotationEdit(false, false);
+    else finishAnnotationEdit(false, true);
   }
 });
 notesInput.addEventListener('input', saveDraft);
