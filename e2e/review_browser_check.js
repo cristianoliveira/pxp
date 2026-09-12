@@ -40,11 +40,8 @@ async function resetDraft(page, url) {
 async function addBlankPin(page) {
   await page.keyboard.press('Enter');
   await page.waitForTimeout(50);
-  assert.equal(await page.locator('#annotation-note').getAttribute('id'), 'annotation-note');
-  assert.equal(await page.locator(':focus').getAttribute('id'), 'annotation-note');
-  assert.equal(await page.locator('#interaction-status').textContent(), 'Annotation placed. Describe it now; press Enter to save or Escape to leave it blank.');
-  await page.keyboard.press('Escape');
   assert.equal(await page.locator(':focus').getAttribute('id'), 'canvas');
+  assert.equal(await page.locator('#interaction-status').textContent(), 'Annotation placed. Type a key to edit its note, or press Enter to continue.');
 }
 
 async function addCurrentPins(page) {
@@ -98,19 +95,32 @@ async function checkInlineAnnotationNote(page, url) {
   await resetDraft(page, url);
   await page.locator('#canvas').focus();
   await page.keyboard.press('Enter');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'canvas');
+  await page.keyboard.press('n');
   assert.equal(await page.locator(':focus').getAttribute('id'), 'annotation-note');
-  await page.locator('#annotation-note').fill('placed inline');
+  assert.equal(await page.locator('#interaction-status').textContent(), 'Editing annotation note. Press Enter to save or Escape to cancel.');
+  await page.keyboard.type('ote');
   await page.keyboard.press('Enter');
-  assert.match((await listText(page))[0], /placed inline/);
-  assert.equal(await page.locator(':focus').getAttribute('aria-label'), 'Edit annotation 1');
+  assert.match((await listText(page))[0], /note/);
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'canvas');
 
   await resetDraft(page, url);
   await page.locator('#canvas').focus();
   await page.keyboard.press('Enter');
-  await page.locator('#annotation-note').fill('discarded inline');
+  await page.keyboard.press('d');
   await page.keyboard.press('Escape');
-  assert.doesNotMatch((await listText(page))[0], /discarded inline/);
+  assert.doesNotMatch((await listText(page))[0], /— d/);
   assert.equal(await page.locator(':focus').getAttribute('id'), 'canvas');
+
+  await resetDraft(page, url);
+  await page.locator('#type').selectOption('rectangle');
+  await page.locator('#canvas').focus();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('x');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'canvas');
+  assert.equal(await page.locator('#annotations li').count(), 0);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#interaction-status').textContent(), 'Rectangle cancelled.');
 
   return {saved: (await listText(page)).length};
 }
