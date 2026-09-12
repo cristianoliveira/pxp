@@ -3,7 +3,7 @@ BUILD_DIR := bin
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 LDFLAGS := -ldflags="-X main.version=$(VERSION)"
 
-.PHONY: help build clean run test test-short test-race test-cover fmt vet deps tidy install-hooks run-hooks version
+.PHONY: help build clean run test test-short test-race test-cover quality quality-test fmt vet deps tidy install-hooks run-hooks version
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 build: ## Build pxp
@@ -21,6 +21,10 @@ test-race: ## Run tests with the race detector
 	go test ./... -race
 test-cover: ## Run tests with coverage
 	go test ./... -cover
+quality: ## Run the advanced coverage and complexity quality gate
+	./scripts/quality-gate.sh
+quality-test: ## Run deterministic pass/fail quality-policy boundary tests
+	./scripts/quality-gate-test.sh
 fmt: ## Format Go files
 	go fmt ./...
 vet: ## Run go vet
