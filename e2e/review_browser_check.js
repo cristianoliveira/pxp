@@ -39,9 +39,12 @@ async function resetDraft(page, url) {
 
 async function addBlankPin(page) {
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(50);
+  assert.equal(await page.locator('#annotation-editor').getAttribute('open'), '');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'annotation-note');
+  await page.locator('#annotation-editor-save').click();
+  assert.equal(await page.locator('#annotation-editor').getAttribute('open'), null);
   assert.equal(await page.locator(':focus').getAttribute('id'), 'canvas');
-  assert.equal(await page.locator('#interaction-status').textContent(), 'Annotation placed. Type a key to edit its note, or press Enter to continue.');
+  assert.equal(await page.locator('#interaction-status').textContent(), 'Annotation note saved.');
 }
 
 async function addCurrentPins(page) {
@@ -102,8 +105,6 @@ async function checkTabOrder(page, url) {
     'Return to canvas',
     'Pin',
     'Rectangle',
-    'Type',
-    'Note',
     'General note',
   ];
   const actual = [];
@@ -116,7 +117,6 @@ async function checkTabOrder(page, url) {
     }
     else if (name === 'canvas') assert.equal(actual.at(-1), 'canvas');
     else if (name === 'General note') assert.equal(await page.locator(':focus').getAttribute('id'), 'notes');
-    else if (name === 'Type' || name === 'Note') assert.equal(await page.locator(':focus').getAttribute('id'), name === 'Type' ? 'type' : 'annotation-note');
     else if (name === 'Return to canvas') assert.equal(await page.locator(':focus').getAttribute('aria-label'), name);
     else assert.equal(await page.locator(':focus').textContent(), name);
   }
@@ -160,6 +160,7 @@ async function checkCanvasViewShortcuts(page, url) {
   await resetDraft(page, url);
   await page.locator('#canvas').focus();
   await page.keyboard.press('Enter');
+  await page.locator('#annotation-editor-save').click();
   const currentText = (await listText(page))[0];
   const coordinate = currentText.match(/@ ([^—]+)/)?.[1];
   assert.ok(coordinate, `missing current annotation coordinate: ${currentText}`);
@@ -171,6 +172,7 @@ async function checkCanvasViewShortcuts(page, url) {
   assert.equal((await listText(page))[0], currentText);
 
   await page.keyboard.press('Enter');
+  await page.locator('#annotation-editor-save').click();
   assert.match((await listText(page))[0], new RegExp(`Reference point @ ${coordinate}`));
   await page.keyboard.press('Shift+O');
   assert.equal(await page.locator('#view-status').textContent(), 'Viewing Overlay');
@@ -182,15 +184,25 @@ async function checkCanvasViewShortcuts(page, url) {
   await page.locator('#type').selectOption('rectangle');
   await page.locator('#canvas').focus();
   await page.keyboard.press('Enter');
-  await page.keyboard.press('Shift+R');
-  assert.equal(await page.locator('#view-status').textContent(), 'Viewing Current');
-  assert.equal(await page.locator('#interaction-status').textContent(), 'Finish or cancel the rectangle before switching views.');
-  assert.equal(await page.locator('#annotations li').count(), 0);
+  assert.equal(await page.locator('#annotation-editor').getAttribute('open'), '');
   await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#annotations li').count(), 0);
   await page.keyboard.press('Shift+R');
   assert.equal(await page.locator('#view-status').textContent(), 'Viewing Reference');
 
   return {coordinate, annotations: await listText(page)};
+}
+
+async function checkPointerAnnotationEditor(page, url) {
+  await resetDraft(page, url);
+  await page.locator('#canvas').click({position: {x: 50, y: 40}});
+  assert.equal(await page.locator('#annotation-editor').getAttribute('open'), '');
+  assert.match(await page.locator('#annotation-editor-context').textContent(), /Current Pin at/);
+  await page.locator('#annotation-note').fill('pointer note');
+  await page.locator('#annotation-editor-save').click();
+  assert.match((await listText(page))[0], /pointer note/);
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'canvas');
+  return {annotation: (await listText(page))[0]};
 }
 
 async function checkAnnotationModes(page, url) {
@@ -198,6 +210,7 @@ async function checkAnnotationModes(page, url) {
   await page.locator('#type').selectOption('rectangle');
   await page.locator('#canvas').focus();
   await page.keyboard.press('Enter');
+  await page.locator('#annotation-editor-cancel').click();
   await page.locator('#type').selectOption('point');
   const draft = await page.evaluate(() => {
     const key = Object.keys(localStorage).find((item) => item.startsWith('pxp.review.draft.'));
@@ -206,6 +219,7 @@ async function checkAnnotationModes(page, url) {
   assert.equal(draft.keyboardRectangleStart, null);
   assert.equal(await page.locator('#interaction-status').textContent(), 'Pin mode selected.');
   await page.keyboard.press('Enter');
+  await page.locator('#annotation-editor-save').click();
   assert.match((await listText(page))[0], /Current point/);
 
   await page.locator('[data-annotation-mode="rectangle"]').click();
@@ -263,8 +277,10 @@ async function checkInlineAnnotationNote(page, url) {
   await resetDraft(page, url);
   await page.locator('#canvas').focus();
   await page.keyboard.press('Enter');
+  await page.locator('#annotation-editor-save').click();
   assert.equal(await page.locator(':focus').getAttribute('id'), 'canvas');
   await page.keyboard.press('n');
+  assert.equal(await page.locator('#annotation-editor').getAttribute('open'), '');
   assert.equal(await page.locator(':focus').getAttribute('id'), 'annotation-note');
   assert.equal(await page.locator('#interaction-status').textContent(), 'Editing annotation note. Press Enter to save or Escape to cancel.');
   await page.keyboard.type('ote');
@@ -275,20 +291,22 @@ async function checkInlineAnnotationNote(page, url) {
   await resetDraft(page, url);
   await page.locator('#canvas').focus();
   await page.keyboard.press('Enter');
-  await page.keyboard.press('d');
+  await page.keyboard.type('d');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'annotation-note');
   await page.keyboard.press('Escape');
-  assert.doesNotMatch((await listText(page))[0], /— d/);
+  assert.equal(await page.locator('#annotations li').count(), 0);
   assert.equal(await page.locator(':focus').getAttribute('id'), 'canvas');
 
   await resetDraft(page, url);
   await page.locator('#type').selectOption('rectangle');
   await page.locator('#canvas').focus();
   await page.keyboard.press('Enter');
+  assert.equal(await page.locator('#annotation-editor').getAttribute('open'), '');
   await page.keyboard.press('x');
-  assert.equal(await page.locator(':focus').getAttribute('id'), 'canvas');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'annotation-note');
+  await page.locator('#annotation-editor-cancel').click();
   assert.equal(await page.locator('#annotations li').count(), 0);
-  await page.keyboard.press('Escape');
-  assert.equal(await page.locator('#interaction-status').textContent(), 'Rectangle cancelled.');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'canvas');
 
   return {saved: (await listText(page)).length};
 }
@@ -303,6 +321,7 @@ async function checkEditCancelAndRectangleEscape(page, url) {
   await page.keyboard.type('saved note');
   await page.keyboard.press('Enter');
   assert.match((await listText(page))[0], /saved note/);
+  assert.equal(await page.locator(':focus').textContent(), 'Edit note');
 
   await page.getByRole('button', {name: 'Edit annotation 2', exact: true}).focus();
   await page.keyboard.press('Enter');
@@ -323,10 +342,11 @@ async function checkEditCancelAndRectangleEscape(page, url) {
   await page.locator('#canvas').focus();
   const beforeCancel = await page.locator('#annotations li').count();
   await page.keyboard.press('Enter');
+  assert.equal(await page.locator('#annotation-editor').getAttribute('open'), '');
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#annotations li').count(), beforeCancel);
-  assert.equal(await page.locator('#interaction-status').textContent(), 'Rectangle cancelled.');
+  assert.equal(await page.locator('#interaction-status').textContent(), 'Annotation discarded.');
 
   return {remaining: beforeCancel};
 }
@@ -335,6 +355,14 @@ async function checkDraftAndValidation(page, url) {
   await resetDraft(page, url);
   await page.locator('#canvas').focus();
   await page.keyboard.press('Enter');
+  await page.locator('#annotation-note').fill('editor survives reload');
+  await page.reload();
+  assert.equal(await page.locator('#annotation-editor').getAttribute('open'), '');
+  assert.equal(await page.locator('#annotation-note').inputValue(), 'editor survives reload');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#annotations li').count(), 0);
+  await page.locator('#canvas').focus();
+  await addBlankPin(page);
   await page.locator('#notes').fill('draft survives reload');
   await viewWithKeyboard(page, 'Overlay');
   const draftKey = await page.evaluate(() => Object.keys(localStorage).find((key) => key.startsWith('pxp.review.draft.')));
@@ -421,6 +449,7 @@ async function runReviewBrowserChecks(page, options) {
   const context = await checkImplementationContext(page, options.url);
   const tabOrder = await checkTabOrder(page, options.url);
   const modes = await checkAnnotationModes(page, options.url);
+  const pointer = await checkPointerAnnotationEditor(page, options.url);
   const viewShortcuts = await checkCanvasViewShortcuts(page, options.url);
   const returnToCanvas = await checkReturnToCanvas(page, options.url);
   const inline = await checkInlineAnnotationNote(page, options.url);
@@ -428,7 +457,7 @@ async function runReviewBrowserChecks(page, options) {
   const editing = await checkEditCancelAndRectangleEscape(page, options.url);
   const draft = await checkDraftAndValidation(page, options.url);
   const decisionConfirmation = await checkDecisionConfirmation(page, options.url);
-  return {context, tabOrder, modes, viewShortcuts, returnToCanvas, inline, keyboard, editing, draft, decisionConfirmation};
+  return {context, tabOrder, modes, pointer, viewShortcuts, returnToCanvas, inline, keyboard, editing, draft, decisionConfirmation};
 }
 
 module.exports = {runReviewBrowserChecks};
