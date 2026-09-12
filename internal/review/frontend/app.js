@@ -117,7 +117,7 @@ function updateViewControls() {
   });
   viewStatus.textContent = `Viewing ${sourceLabel(activeView)}`;
   canvas.setAttribute('aria-label', `${sourceLabel(activeView)} screenshot annotation canvas`);
-  announceKeyboardPoint(`Use Arrow keys to move on the ${sourceLabel(activeView)} view.`);
+  announceKeyboardPoint(`Viewing ${sourceLabel(activeView)}. Use Arrow keys to move on this view.`);
 }
 
 function annotationTypeLabel(type) {
@@ -146,9 +146,22 @@ function clampPoint(point) {
   };
 }
 
-async function setView(view) {
-  if (!viewLabels[view]) return;
-  if (activeView !== view) keyboardRectangleStart = null;
+function pendingViewSwitchMessage() {
+  if (startPoint || keyboardRectangleStart) {
+    return 'Finish or cancel the rectangle before switching views.';
+  }
+  return 'Finish or cancel the note edit before switching views.';
+}
+
+async function setView(view, {allowPending = false} = {}) {
+  if (!viewLabels[view]) return false;
+  if (
+    !allowPending
+    && (startPoint || keyboardRectangleStart || editingAnnotationId || inlineAnnotationId)
+  ) {
+    announceKeyboardPoint(pendingViewSwitchMessage());
+    return false;
+  }
   activeView = view;
   updateViewControls();
   saveDraft();
@@ -168,6 +181,7 @@ async function setView(view) {
     status.className = errorClass;
     status.textContent = error.message;
   }
+  return true;
 }
 
 function canvasPointFromEvent(event) {
@@ -311,7 +325,7 @@ function beginAnnotationEdit(annotation, key) {
   selectedAnnotationId = key;
   annotationNote.value = editingOriginalNote;
   renderAnnotations();
-  void setView(annotation.image).then(() => {
+  void setView(annotation.image, {allowPending: true}).then(() => {
     annotationNote.focus();
     announceKeyboardPoint(`Editing annotation ${annotations.indexOf(annotation) + 1}. Press Enter to save or Escape to cancel.`);
   });
@@ -529,10 +543,30 @@ canvas.addEventListener('keydown', (event) => {
   }
   if (
     event.key.length === 1
+    && event.shiftKey
     && !event.ctrlKey
     && !event.metaKey
     && !event.altKey
     && !event.isComposing
+  ) {
+    const viewShortcut = {
+      r: 'reference',
+      c: 'actual',
+      o: 'overlay',
+    }[event.key.toLowerCase()];
+    if (viewShortcut) {
+      event.preventDefault();
+      void setView(viewShortcut);
+      return;
+    }
+  }
+  if (
+    event.key.length === 1
+    && !event.ctrlKey
+    && !event.metaKey
+    && !event.altKey
+    && !event.isComposing
+    && !event.shiftKey
     && !keyboardRectangleStart
   ) {
     const selectedAnnotation = annotations.find((annotation, index) => (

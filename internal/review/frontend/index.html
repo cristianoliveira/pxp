@@ -24,16 +24,16 @@
           <div class="muted">Immutable screenshot snapshot</div>
         </div>
         <div id="view-buttons" class="tools" role="group" aria-label="Image view">
-          <button type="button" data-view="reference" aria-pressed="false">Reference</button>
-          <button type="button" data-view="actual" aria-pressed="true">Current</button>
-          <button type="button" data-view="overlay" aria-pressed="false">Overlay</button>
+          <button type="button" data-view="reference" aria-keyshortcuts="Shift+R" aria-pressed="false">Reference</button>
+          <button type="button" data-view="actual" aria-keyshortcuts="Shift+C" aria-pressed="true">Current</button>
+          <button type="button" data-view="overlay" aria-keyshortcuts="Shift+O" aria-pressed="false">Overlay</button>
         </div>
       </div>
 
       <div class="evidence-stage">
         <div class="stage-label">
           <strong id="view-status" role="status" aria-live="polite">Viewing Current</strong>
-          <span class="muted">Click or use the keyboard to annotate</span>
+          <span class="muted">Click or use the keyboard to annotate this evidence</span>
         </div>
         <canvas id="canvas" role="img" tabindex="0" aria-describedby="keyboard-help" aria-label="Current screenshot annotation canvas"></canvas>
         <div class="canvas-controls">
@@ -43,7 +43,7 @@
             <button type="button" data-annotation-mode="rectangle" aria-pressed="false">Rectangle</button>
           </div>
         </div>
-        <p id="keyboard-help" class="hint">Keyboard: use Tab to reach the view buttons; focus the image and use Arrow keys to move the cursor (Shift+Arrow moves farther), then press Enter to place a pin or start/finish a rectangle. With the canvas focused, type a key to edit the selected annotation note; Enter saves and Escape cancels. Press Escape to cancel a rectangle. From other controls, press G then C or use Return to canvas to restore focus.</p>
+        <p id="keyboard-help" class="hint">Keyboard: focus the image and use Shift+R for Reference, Shift+C for Current, or Shift+O for Overlay without leaving the canvas. Use Arrow keys to move the cursor (Shift+Arrow moves farther), then press Enter to place a pin or start/finish a rectangle. With the canvas focused, type a key to edit the selected annotation note; Enter saves and Escape cancels. Press Escape to cancel a rectangle before switching views. From other controls, press G then C or use Return to canvas to restore focus.</p>
         <p id="interaction-status" role="status" aria-live="polite"></p>
       </div>
     </section>
