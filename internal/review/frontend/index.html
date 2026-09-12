@@ -83,6 +83,19 @@
     </aside>
   </main>
 
+  <dialog id="decision-dialog" role="dialog" aria-labelledby="decision-title" aria-describedby="decision-summary decision-consequence" aria-modal="true">
+    <div class="decision-content">
+      <h2 id="decision-title">Confirm review decision</h2>
+      <p id="decision-summary"></p>
+      <p id="decision-consequence" class="muted"></p>
+      <p id="decision-status" class="status" role="status" aria-live="polite"></p>
+      <div class="decision-actions">
+        <button id="decision-back" type="button">Back</button>
+        <button id="decision-confirm" type="button" class="primary"></button>
+      </div>
+    </div>
+  </dialog>
+
   <footer class="bottom">Closing this tab is not approval. Reopen this page to resume your draft. Submitting starts the next agent round; approval ends review.</footer>
   <script src="/assets/app.js" defer></script>
 </body>

@@ -39,6 +39,12 @@ const annotationNote = document.getElementById('annotation-note');
 const annotationList = document.getElementById('annotations');
 const notesInput = document.getElementById('notes');
 const status = document.getElementById('status');
+const decisionDialog = document.getElementById('decision-dialog');
+const decisionSummary = document.getElementById('decision-summary');
+const decisionConsequence = document.getElementById('decision-consequence');
+const decisionStatus = document.getElementById('decision-status');
+const decisionBack = document.getElementById('decision-back');
+const decisionConfirm = document.getElementById('decision-confirm');
 const annotations = [];
 const viewImages = new Map();
 let activeView = 'actual';
@@ -56,6 +62,10 @@ let draftStorageKey = '';
 let viewLoadVersion = 0;
 let returnToCanvasAnnouncement = false;
 let returnShortcutTimer = 0;
+let reviewRound = 1;
+let pendingDecision = '';
+let decisionInvoker = null;
+let decisionSubmitting = false;
 
 function imageForView(view) {
   if (!viewImages.has(view)) {
@@ -658,21 +668,89 @@ document.addEventListener('keydown', (event) => {
 
 document.addEventListener('focusin', clearReturnShortcut);
 
-async function submitDecision(decision) {
+decisionDialog.addEventListener('cancel', (event) => {
+  event.preventDefault();
+  closeDecisionConfirmation();
+});
+decisionDialog.addEventListener('keydown', (event) => {
+  if (event.key !== 'Tab') return;
+  const focusable = decisionFocusableElements();
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+});
+
+decisionBack.addEventListener('click', closeDecisionConfirmation);
+decisionConfirm.addEventListener('click', () => void confirmDecision());
+
+function validateDecision(decision) {
   const notes = notesInput.value;
   if (decision === decisionApproved && (annotations.length || notes.trim())) {
     status.className = errorClass;
     status.textContent = 'Remove notes and annotations before approving.';
-    return;
+    return false;
   }
   if (decision === decisionSubmitted && !annotations.length && !notes.trim()) {
     status.className = errorClass;
     status.textContent = 'Add a note or annotation before submitting.';
-    return;
+    return false;
   }
+  return true;
+}
 
+function decisionFocusableElements() {
+  return Array.from(decisionDialog.querySelectorAll('button:not([disabled])'));
+}
+
+function closeDecisionConfirmation() {
+  if (!pendingDecision) return;
+  decisionDialog.close();
+  const invokingControl = decisionInvoker;
+  pendingDecision = '';
+  decisionInvoker = null;
+  decisionSubmitting = false;
+  decisionConfirm.disabled = false;
+  decisionBack.disabled = false;
+  decisionStatus.className = 'status';
+  decisionStatus.textContent = '';
+  if (invokingControl && !invokingControl.disabled) invokingControl.focus();
+}
+
+function openDecisionConfirmation(decision, invokingControl) {
+  if (pendingDecision || decisionSubmitting || !validateDecision(decision)) return;
+  pendingDecision = decision;
+  decisionInvoker = invokingControl;
+  const annotationCount = annotations.length;
+  const generalNoteCount = notesInput.value.trim() ? 1 : 0;
+  const action = decision === decisionApproved ? 'Approve and finish' : 'Send feedback to agent';
+  decisionSummary.textContent = `${action} for Round ${reviewRound}. `
+    + `${annotationCount} annotation${annotationCount === 1 ? '' : 's'}, `
+    + `${generalNoteCount} general note${generalNoteCount === 1 ? '' : 's'}.`;
+  decisionConsequence.textContent = decision === decisionApproved
+    ? 'This ends the review. No further feedback will be sent for this round.'
+    : 'This sends the saved notes to the agent for another round.';
+  decisionConfirm.textContent = action;
+  decisionStatus.className = 'status';
+  decisionStatus.textContent = '';
+  decisionDialog.showModal();
+  window.queueMicrotask(() => {
+    if (pendingDecision && decisionDialog.open) decisionConfirm.focus();
+  });
+}
+
+async function submitDecision(decision) {
+  const notes = notesInput.value;
   status.className = '';
   status.textContent = 'Saving…';
+  decisionStatus.className = 'status';
+  decisionStatus.textContent = 'Saving…';
   try {
     const response = await fetch('/api/feedback', {
       method: 'POST',
@@ -688,9 +766,32 @@ async function submitDecision(decision) {
       : 'Feedback saved. You may close this page.';
     document.getElementById('submit').disabled = true;
     document.getElementById('approve').disabled = true;
+    decisionDialog.close();
+    pendingDecision = '';
+    decisionInvoker = null;
+    decisionStatus.className = 'status';
+    decisionStatus.textContent = '';
+    return true;
   } catch (error) {
     status.className = errorClass;
     status.textContent = error.message;
+    decisionStatus.className = `${errorClass} status`;
+    decisionStatus.textContent = error.message;
+    return false;
+  }
+}
+
+async function confirmDecision() {
+  if (!pendingDecision || decisionSubmitting) return;
+  decisionSubmitting = true;
+  decisionConfirm.disabled = true;
+  decisionBack.disabled = true;
+  const persisted = await submitDecision(pendingDecision);
+  decisionSubmitting = false;
+  if (!persisted && pendingDecision) {
+    decisionConfirm.disabled = false;
+    decisionBack.disabled = false;
+    decisionConfirm.focus();
   }
 }
 
@@ -699,6 +800,7 @@ async function initialize() {
     const response = await fetch('/api/session');
     if (!response.ok) throw new Error('Unable to load review session.');
     const session = await response.json();
+    reviewRound = session.round;
     draftStorageKey = `${draftStoragePrefix}${session.session_id}`;
     restoreDraft();
     updateAnnotationModeControls();
@@ -741,7 +843,7 @@ annotationNote.addEventListener('keydown', (event) => {
 });
 notesInput.addEventListener('input', saveDraft);
 document.getElementById('return-to-canvas').onclick = focusCanvas;
-document.getElementById('submit').onclick = () => submitDecision(decisionSubmitted);
-document.getElementById('approve').onclick = () => submitDecision(decisionApproved);
+document.getElementById('submit').onclick = (event) => openDecisionConfirmation(decisionSubmitted, event.currentTarget);
+document.getElementById('approve').onclick = (event) => openDecisionConfirmation(decisionApproved, event.currentTarget);
 
 void initialize();
