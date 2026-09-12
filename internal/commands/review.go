@@ -30,6 +30,11 @@ func newReviewCommand() *cobra.Command {
 		"",
 		"feedback JSON from the preceding round to link without overwriting",
 	)
+	command.Flags().Bool(
+		"open",
+		false,
+		"open the review URL in the default browser and wait for completion",
+	)
 	command.Flags().Uint8(
 		"threshold",
 		0,
@@ -49,6 +54,7 @@ type reviewOptions struct {
 	previousFeedback    string
 	threshold           uint8
 	perceptualThreshold float64
+	openBrowser         bool
 }
 
 func reviewOptionsFrom(command *cobra.Command) (reviewOptions, error) {
@@ -62,15 +68,21 @@ func reviewOptionsFrom(command *cobra.Command) (reviewOptions, error) {
 	outputRoot, _ := command.Flags().GetString("out")
 	previousFeedback, _ := command.Flags().GetString("previous-feedback")
 	threshold, _ := command.Flags().GetUint8("threshold")
+	openBrowser, _ := command.Flags().GetBool("open")
 	return reviewOptions{
 		outputRoot:          outputRoot,
 		previousFeedback:    previousFeedback,
 		threshold:           threshold,
 		perceptualThreshold: perceptualThreshold,
+		openBrowser:         openBrowser,
 	}, nil
 }
 
 func runReviewCommand(cmd *cobra.Command, args []string) error {
+	return runReviewCommandWithBrowser(cmd, args, openDefaultBrowser)
+}
+
+func runReviewCommandWithBrowser(cmd *cobra.Command, args []string, open browserOpener) error {
 	options, err := reviewOptionsFrom(cmd)
 	if err != nil {
 		return err
@@ -98,6 +110,18 @@ func runReviewCommand(cmd *cobra.Command, args []string) error {
 	)
 	if _, err := fmt.Fprintln(cmd.ErrOrStderr(), message); err != nil {
 		return err
+	}
+	if options.openBrowser {
+		if err := open(cmd.Context(), url); err != nil {
+			if _, writeErr := fmt.Fprintf(
+				cmd.ErrOrStderr(),
+				"pxp review browser open failed: %v; open %s manually\n",
+				err,
+				url,
+			); writeErr != nil {
+				return writeErr
+			}
+		}
 	}
 	result, err := server.WaitContext(cmd.Context())
 	if err != nil {

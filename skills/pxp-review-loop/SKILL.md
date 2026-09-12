@@ -35,21 +35,26 @@ human decision explicit and keep each comparison round immutable.
 
 ## Start a round
 
-Run the command with a unique output directory. Keep stdout and stderr
-separate because stdout is the completion result and stderr announces the URL:
+Run the command in the foreground with a unique output directory. Prefer
+`--open` when a default browser is available; stdout is the completion result
+and stderr announces the URL:
 
 ```bash
 mkdir -p .tmp/pxp-review
 pxp review reference.png actual.png \
   --out .tmp/pxp-review \
-  --json > .tmp/pxp-review/round-1.result.json \
+  --open --json > .tmp/pxp-review/round-1.result.json \
   2> .tmp/pxp-review/round-1.server.log
 ```
 
-The command intentionally waits until the browser records a decision. Read the
-URL from the server log and give it to the human. If the environment supports
-browser interaction, open the URL for inspection, but do not click Submit or
-Approve, invent annotations, or impersonate the human decision.
+The command starts the loopback server, prints the URL, attempts to open the
+default browser, and waits until the browser records Submit or Approve. Browser
+opening is best-effort; if it fails, use the printed URL manually while the
+foreground command remains pending. Never detach or background the server, and
+do not ask the human to return to chat to announce completion. Once the command
+returns, immediately consume stdout and read the structured result. If the
+environment cannot keep an expected human wait alive, report that limitation
+instead of inventing a submission or polling a detached process.
 
 The page displays reference, actual, and overlay images. The human can add:
 
