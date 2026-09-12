@@ -1,7 +1,7 @@
 ---
 id: TASK-0011
 title: Resume agent directly from blocking review completion
-status: doing
+status: done
 depends_on: []
 priority: high
 tags: []
