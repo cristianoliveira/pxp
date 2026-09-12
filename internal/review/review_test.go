@@ -61,7 +61,7 @@ func TestHandlerUsesOriginalPixelCoordinatesAndExplicitDecision(t *testing.T) {
 	require.Equal(t, "nosniff", response.Header.Get("X-Content-Type-Options"))
 	require.NoError(t, response.Body.Close())
 
-	body := `{"decision":"approved","notes":"looks good","annotations":[{"image":"actual","type":"point","x":2,"y":1,"note":"edge"},{"image":"reference","type":"rectangle","x":1,"y":0,"width":2,"height":2}]}`
+	body := `{"decision":"submitted","notes":"fix the edge","annotations":[{"image":"actual","type":"point","x":2,"y":1,"note":"edge"},{"image":"reference","type":"rectangle","x":1,"y":0,"width":2,"height":2}]}`
 	response, err = http.Post(server.URL+"/api/feedback", "application/json", bytes.NewBufferString(body))
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, response.StatusCode)
@@ -69,7 +69,7 @@ func TestHandlerUsesOriginalPixelCoordinatesAndExplicitDecision(t *testing.T) {
 	require.NoError(t, json.NewDecoder(response.Body).Decode(&result))
 	require.NoError(t, response.Body.Close())
 	feedback := mustReadFeedback(t, result.FeedbackPath)
-	require.Equal(t, "approved", feedback.Decision)
+	require.Equal(t, "submitted", feedback.Decision)
 	require.Equal(t, "note-0001", feedback.Annotations[0].ID)
 	require.Equal(t, 2, feedback.Annotations[0].X)
 	require.Equal(t, 1, feedback.Annotations[0].Y)
@@ -79,6 +79,25 @@ func TestHandlerUsesOriginalPixelCoordinatesAndExplicitDecision(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusConflict, response.StatusCode)
 	require.NoError(t, response.Body.Close())
+}
+
+func TestHandlerRejectsInvalidDecisionPayloads(t *testing.T) {
+	dir := t.TempDir()
+	reference, actual := writePNG(t, dir, "reference.png", color.Black, color.White)
+	session, err := NewSession(reference, actual, dir, "", 0, 0.1)
+	require.NoError(t, err)
+	server := httptest.NewServer(sessionHandler(session))
+	defer server.Close()
+	for _, body := range []string{
+		`{"decision":"submitted"}`,
+		`{"decision":"approved","notes":"not allowed"}`,
+		`{"decision":"approved","annotations":[{"image":"actual","type":"point","x":0,"y":0}]}`,
+	} {
+		response, postErr := http.Post(server.URL+"/api/feedback", "application/json", bytes.NewBufferString(body))
+		require.NoError(t, postErr)
+		require.Equal(t, http.StatusBadRequest, response.StatusCode)
+		require.NoError(t, response.Body.Close())
+	}
 }
 
 func TestHandlerRejectsOutOfBoundsAndUnknownFields(t *testing.T) {
@@ -135,7 +154,26 @@ func TestServerLifecycleIsLoopbackOnly(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, response.StatusCode)
 	require.NoError(t, response.Body.Close())
-	require.Equal(t, "approved", server.Wait().Decision)
+	result, waitErr := server.Wait()
+	require.NoError(t, waitErr)
+	require.Equal(t, "approved", result.Decision)
+}
+
+func TestServerCloseBeforeDecisionReturnsExplicitError(t *testing.T) {
+	dir := t.TempDir()
+	reference, actual := writePNG(t, dir, "reference.png", color.Black, color.White)
+	session, err := NewSession(reference, actual, dir, "", 0, 0.1)
+	require.NoError(t, err)
+	server := NewServer(session)
+	_, err = server.Start()
+	require.NoError(t, err)
+	require.NoError(t, server.Close())
+	result, waitErr := server.Wait()
+	require.Error(t, waitErr)
+	require.Contains(t, waitErr.Error(), "closed before a decision")
+	require.Empty(t, result.Decision)
+	_, statErr := os.Stat(filepath.Join(session.Root(), "feedback.json"))
+	require.ErrorIs(t, statErr, os.ErrNotExist)
 }
 
 func sessionHandler(session *Session) http.Handler { return NewServer(session).Handler() }

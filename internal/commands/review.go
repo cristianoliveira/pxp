@@ -46,6 +46,9 @@ func runReviewCommand(cmd *cobra.Command, args []string) error {
 	if _, err := fmt.Fprintf(cmd.ErrOrStderr(), "pxp review listening at %s (Submit feedback or Approve in the browser)\n", url); err != nil {
 		return err
 	}
-	result := server.Wait()
+	result, err := server.Wait()
+	if err != nil {
+		return err
+	}
 	return writeStructured(cmd, result)
 }

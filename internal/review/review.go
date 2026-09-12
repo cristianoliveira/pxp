@@ -85,14 +85,20 @@ type Result struct {
 	Snapshot     Snapshot `json:"snapshot"`
 }
 
+type completion struct {
+	result Result
+	err    error
+}
+
 type Session struct {
-	root       string
-	feedback   string
-	previous   string
-	feedbackMu sync.Mutex
-	snapshot   Snapshot
-	completed  chan Result
-	imageData  map[string][]byte
+	root           string
+	feedback       string
+	previous       string
+	feedbackMu     sync.Mutex
+	completionOnce sync.Once
+	snapshot       Snapshot
+	completed      chan completion
+	imageData      map[string][]byte
 }
 
 // NewSession creates a new immutable comparison snapshot. The input images are
@@ -226,13 +232,13 @@ func NewSession(referencePath, actualPath, outputRoot, previousFeedback string, 
 	}
 	return &Session{
 		root: root, feedback: filepath.Join(root, "feedback.json"), previous: previousCopy,
-		snapshot: snapshot, completed: make(chan Result, 1), imageData: imageData,
+		snapshot: snapshot, completed: make(chan completion, 1), imageData: imageData,
 	}, nil
 }
 
-func (s *Session) Snapshot() Snapshot       { return s.snapshot }
-func (s *Session) Root() string             { return s.root }
-func (s *Session) Completed() <-chan Result { return s.completed }
+func (s *Session) Snapshot() Snapshot           { return s.snapshot }
+func (s *Session) Root() string                 { return s.root }
+func (s *Session) Completed() <-chan completion { return s.completed }
 
 func (s *Session) Submit(request FeedbackRequest) (Result, error) {
 	s.feedbackMu.Lock()
@@ -272,7 +278,11 @@ func (s *Session) Submit(request FeedbackRequest) (Result, error) {
 }
 
 func (s *Session) complete(result Result) {
-	s.completed <- result
+	s.completionOnce.Do(func() { s.completed <- completion{result: result} })
+}
+
+func (s *Session) abort(err error) {
+	s.completionOnce.Do(func() { s.completed <- completion{err: err} })
 }
 
 func (s *Session) round() int {
@@ -293,6 +303,13 @@ func (s *Session) round() int {
 func validateRequest(request FeedbackRequest, width, height int) error {
 	if request.Decision != "submitted" && request.Decision != "approved" {
 		return errors.New("decision must be submitted or approved")
+	}
+	hasNotes := strings.TrimSpace(request.Notes) != ""
+	if request.Decision == "submitted" && !hasNotes && len(request.Annotations) == 0 {
+		return errors.New("submitted feedback requires a general note or annotation")
+	}
+	if request.Decision == "approved" && (hasNotes || len(request.Annotations) > 0) {
+		return errors.New("approval cannot include notes or annotations")
 	}
 	if len(request.Notes) > maxGeneralNotes {
 		return fmt.Errorf("notes exceed %d characters", maxGeneralNotes)
@@ -416,7 +433,10 @@ func (s *Server) Start() (string, error) {
 	go func() { _ = s.httpServer.Serve(listener) }()
 	return "http://" + listener.Addr().String(), nil
 }
-func (s *Server) Wait() Result { return <-s.session.Completed() }
+func (s *Server) Wait() (Result, error) {
+	completion := <-s.session.Completed()
+	return completion.result, completion.err
+}
 func (s *Server) Close() error {
 	s.once.Do(func() {
 		if s.httpServer != nil {
@@ -424,6 +444,7 @@ func (s *Server) Close() error {
 		} else if s.listener != nil {
 			_ = s.listener.Close()
 		}
+		s.session.abort(errors.New("review server closed before a decision was recorded"))
 	})
 	return nil
 }
@@ -525,6 +546,6 @@ function point(event){const r=canvas.getBoundingClientRect(); return {x:Math.max
 function redraw(){if(!actual.complete)return;ctx.drawImage(actual,0,0);ctx.strokeStyle='#ef4444';ctx.fillStyle='#ef4444';annotations.forEach(a=>{if(a.type==='point'){ctx.beginPath();ctx.arc(a.x,a.y,5,0,Math.PI*2);ctx.fill();}else{ctx.strokeRect(a.x,a.y,a.width,a.height);}});}
 function refresh(){list.replaceChildren();annotations.forEach((a,i)=>{const li=document.createElement('li');li.textContent=(i+1)+'. '+a.image+' '+a.type+' @ '+a.x+','+a.y+(a.width?', '+a.width+'x'+a.height:'')+(a.note?' — '+a.note:'');list.appendChild(li);});redraw();}
 canvas.addEventListener('pointerdown',e=>{start=point(e);canvas.setPointerCapture(e.pointerId);}); canvas.addEventListener('pointerup',e=>{if(!start)return;const end=point(e);let a={image:image.value,type:type.value,x:start.x,y:start.y,note:note.value};if(type.value==='rectangle'){a.x=Math.min(start.x,end.x);a.y=Math.min(start.y,end.y);a.width=Math.abs(end.x-start.x)+1;a.height=Math.abs(end.y-start.y)+1;if(a.width<2||a.height<2){start=null;return;}}annotations.push(a);start=null;note.value='';refresh();});
-async function send(decision){status.className='';status.textContent='Saving…';try{const response=await fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({annotations,notes:document.getElementById('notes').value,decision})});const data=await response.json();if(!response.ok)throw new Error(data.error||'feedback was rejected');status.className='success';status.textContent=decision==='approved'?'Approved. You may close this page.':'Feedback saved. You may close this page.';document.getElementById('submit').disabled=true;document.getElementById('approve').disabled=true;}catch(error){status.className='error';status.textContent=error.message;}}
+async function send(decision){const notes=document.getElementById('notes').value;if(decision==='approved'&&(annotations.length||notes.trim())){status.className='error';status.textContent='Remove notes and annotations before approving.';return;}if(decision==='submitted'&&!annotations.length&&!notes.trim()){status.className='error';status.textContent='Add a note or annotation before submitting.';return;}status.className='';status.textContent='Saving…';try{const response=await fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({annotations,notes,decision})});const data=await response.json();if(!response.ok)throw new Error(data.error||'feedback was rejected');status.className='success';status.textContent=decision==='approved'?'Approved. You may close this page.':'Feedback saved. You may close this page.';document.getElementById('submit').disabled=true;document.getElementById('approve').disabled=true;}catch(error){status.className='error';status.textContent=error.message;}}
 document.getElementById('submit').onclick=()=>send('submitted');document.getElementById('approve').onclick=()=>send('approved');
 </script></body></html>`
