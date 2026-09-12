@@ -167,11 +167,19 @@ button[aria-pressed="true"] {
   font-weight: 600;
 }
 
+.canvas-controls {
+  max-width: 850px;
+  margin: 10px auto 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .return-canvas {
-  margin-left: auto;
-  padding: 6px 10px;
-  font-size: 12px;
-  white-space: nowrap;
+  width: 34px;
+  height: 32px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
 }
 
 canvas {
