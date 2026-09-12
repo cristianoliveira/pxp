@@ -64,7 +64,11 @@ The page displays reference, actual, and overlay images. The human can add:
 
 Each annotation records a stable ID, image identity, and original-pixel
 coordinates. Display scaling and canvas borders are accounted for. **Submit
-feedback** requires at least one nonblank note or annotation. **Approve** must
+feedback** or **Approve** first opens an explicit confirmation dialog; no
+feedback is persisted until the final action. Review the round, note/annotation
+count, and consequence, then choose **Send feedback to agent** or **Approve and
+finish**. Back or Escape preserves the draft and restores focus to the invoking
+action. Submit requires at least one nonblank note or annotation. Approve must
 contain neither notes nor annotations.
 
 ## Interpret completion

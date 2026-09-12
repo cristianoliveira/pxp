@@ -42,10 +42,14 @@ fallback. The page shows reference, actual, and overlay images. Click or drag
 on the actual image to add point or rectangle notes; display scaling is
 converted back to original image pixels.
 
-Use **Submit feedback** to finish a round with `decision: submitted`, or use
-**Approve** to finish with `decision: approved`. Submitted feedback must include
-at least one note or annotation; approval must include neither. The structured
-result on stdout contains `decision`, `feedback_path`, and the snapshot hashes.
+Use **Submit feedback** or **Approve** to choose a round decision. A valid
+choice first opens an explicit confirmation dialog; it does not persist feedback
+or unblock the agent. Review the round, note/annotation count, and consequence,
+then choose **Send feedback to agent** (`decision: submitted`) or **Approve and
+finish** (`decision: approved`). Back or Escape preserves the draft and returns
+focus to the invoking action. Submitted feedback must include at least one note
+or annotation; approval must include neither. The structured result on stdout
+contains `decision`, `feedback_path`, and the snapshot hashes.
 Feedback is written once and never overwritten. Cancelling the command or
 closing the server before a decision returns an operational error and does not
 write feedback.

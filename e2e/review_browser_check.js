@@ -2,8 +2,8 @@
 //
 // The repository does not pin a Playwright test runner. This helper follows the
 // existing browser-check convention: call `runReviewBrowserChecks(page, {url})`
-// from a Playwright runner or an equivalent browser harness. It deliberately
-// never submits or approves a valid review.
+// from a Playwright runner or an equivalent browser harness. Its final-decision
+// check intercepts the request; it never submits or approves a live review.
 const assert = require('node:assert/strict');
 
 async function focusBody(page) {
@@ -318,6 +318,62 @@ async function checkDraftAndValidation(page, url) {
   return {draftKey};
 }
 
+async function checkDecisionConfirmation(page, url) {
+  await resetDraft(page, url);
+  await page.locator('#notes').fill('Keep this draft intact while reviewing the decision.');
+  const draftBefore = await page.evaluate(() => {
+    const key = Object.keys(localStorage).find((item) => item.startsWith('pxp.review.draft.'));
+    return key ? localStorage.getItem(key) : null;
+  });
+
+  await page.locator('#submit').click();
+  assert.equal(await page.locator('#decision-dialog').getAttribute('open'), '');
+  assert.equal(await page.locator('#decision-dialog').getAttribute('aria-modal'), 'true');
+  assert.equal(await page.locator('#decision-confirm').textContent(), 'Send feedback to agent');
+  assert.match(await page.locator('#decision-summary').textContent(), /Round 1/);
+  assert.match(await page.locator('#decision-summary').textContent(), /1 general note/);
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'decision-confirm');
+  await page.keyboard.press('Tab');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'decision-back');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#decision-dialog').getAttribute('open'), null);
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'submit');
+  assert.equal(await page.locator('#notes').inputValue(), 'Keep this draft intact while reviewing the decision.');
+  assert.equal(await page.evaluate(() => {
+    const key = Object.keys(localStorage).find((item) => item.startsWith('pxp.review.draft.'));
+    return key ? localStorage.getItem(key) : null;
+  }), draftBefore);
+
+  await page.locator('#approve').click();
+  assert.equal(await page.locator('#decision-dialog').getAttribute('open'), null);
+  assert.equal(await page.locator('#status').textContent(), 'Remove notes and annotations before approving.');
+  await page.locator('#notes').fill('');
+  await page.locator('#approve').focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await page.locator('#decision-dialog').getAttribute('open'), '');
+  assert.equal(await page.locator('#decision-confirm').textContent(), 'Approve and finish');
+  assert.match(await page.locator('#decision-summary').textContent(), /Review ends/);
+  await page.locator('#decision-back').click();
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'approve');
+
+  let submittedPayload = null;
+  await page.route('**/api/feedback', async (route) => {
+    submittedPayload = JSON.parse(route.request().postData() || '{}');
+    await route.fulfill({status: 200, contentType: 'application/json', body: '{}'});
+  });
+  await page.locator('#notes').fill('Submit only after confirmation.');
+  await page.locator('#submit').click();
+  await page.locator('#decision-confirm').click();
+  await page.waitForTimeout(50);
+  assert.equal(await page.locator('#decision-dialog').getAttribute('open'), null);
+  assert.equal(await page.locator('#status').textContent(), 'Feedback saved. You may close this page.');
+  assert.equal(submittedPayload.decision, 'submitted');
+  assert.equal(submittedPayload.notes, 'Submit only after confirmation.');
+  await page.unroute('**/api/feedback');
+
+  return {draftPreserved: true, submittedPayload, submitAction: 'Send feedback to agent', approveAction: 'Approve and finish'};
+}
+
 async function runReviewBrowserChecks(page, options) {
   assert.ok(options && options.url, 'runReviewBrowserChecks requires options.url');
   const tabOrder = await checkTabOrder(page, options.url);
@@ -328,7 +384,8 @@ async function runReviewBrowserChecks(page, options) {
   const keyboard = await checkKeyboardViewsAndLifo(page, options.url);
   const editing = await checkEditCancelAndRectangleEscape(page, options.url);
   const draft = await checkDraftAndValidation(page, options.url);
-  return {tabOrder, modes, viewShortcuts, returnToCanvas, inline, keyboard, editing, draft};
+  const decisionConfirmation = await checkDecisionConfirmation(page, options.url);
+  return {tabOrder, modes, viewShortcuts, returnToCanvas, inline, keyboard, editing, draft, decisionConfirmation};
 }
 
 module.exports = {runReviewBrowserChecks};

@@ -346,6 +346,38 @@ textarea {
   color: #36816a;
 }
 
+#decision-dialog {
+  width: min(440px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid #cdd5e2;
+  border-radius: 12px;
+  color: #202735;
+  box-shadow: 0 20px 60px #20273540;
+}
+
+#decision-dialog::backdrop {
+  background: #20273566;
+}
+
+.decision-content {
+  padding: 24px;
+}
+
+.decision-content h2 {
+  margin-top: 0;
+}
+
+.decision-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.decision-actions button {
+  width: 100%;
+}
+
 .bottom {
   padding: 0 32px 25px;
   color: #697487;
