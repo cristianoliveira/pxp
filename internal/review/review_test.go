@@ -182,7 +182,7 @@ func TestHandlerExposesImplementationContext(t *testing.T) {
 
 	response, err := http.Get(server.URL + "/api/session")
 	require.NoError(t, err)
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	require.Equal(t, http.StatusOK, response.StatusCode)
 	var payload struct {
 		Context ImplementationContext `json:"context"`

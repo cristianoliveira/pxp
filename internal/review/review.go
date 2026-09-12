@@ -341,7 +341,7 @@ func LoadContext(path string) (ImplementationContext, error) {
 	if err != nil {
 		return ImplementationContext{}, fmt.Errorf("read context file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	data, err := io.ReadAll(io.LimitReader(file, maxContextBytes+1))
 	if err != nil {
 		return ImplementationContext{}, fmt.Errorf("read context file: %w", err)
