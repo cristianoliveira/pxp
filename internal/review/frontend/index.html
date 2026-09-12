@@ -17,6 +17,37 @@
   </header>
 
   <main class="layout">
+    <section class="card context-card" aria-labelledby="context-title">
+      <details id="implementation-context" open>
+        <summary id="context-title">Implementation context</summary>
+        <div class="context-body" aria-live="polite">
+          <h2 id="context-heading">No implementation context was provided for this round.</h2>
+          <dl id="context-fields" class="context-fields">
+            <div data-context-section="what_changed">
+              <dt>What changed</dt>
+              <dd data-context-field="what_changed"></dd>
+            </div>
+            <div data-context-section="what_to_test">
+              <dt>What to test</dt>
+              <dd data-context-field="what_to_test"></dd>
+            </div>
+            <div data-context-section="expected_outcome">
+              <dt>Expected outcome</dt>
+              <dd data-context-field="expected_outcome"></dd>
+            </div>
+            <div data-context-section="limitations">
+              <dt>Known limitations / not in scope</dt>
+              <dd data-context-field="limitations"></dd>
+            </div>
+            <div data-context-section="source_reference">
+              <dt>Source or change reference</dt>
+              <dd data-context-field="source_reference"></dd>
+            </div>
+          </dl>
+        </div>
+      </details>
+    </section>
+
     <section class="card evidence-card" aria-labelledby="evidence-title">
       <div class="toolbar">
         <div>

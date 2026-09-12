@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -20,6 +21,96 @@ import (
 func TestNewSessionRejectsInvalidPerceptualThreshold(t *testing.T) {
 	_, err := NewSession("reference.png", "actual.png", t.TempDir(), "", 0, -1)
 	require.EqualError(t, err, "perceptual threshold must be a finite non-negative number")
+}
+
+func TestLoadContextNormalizesMultilineAndRejectsUnsafeShape(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "context.json")
+	require.NoError(t, os.WriteFile(path, []byte(`{
+  "title": "  Spacing update  ",
+  "what_changed": "First line\nSecond line",
+  "what_to_test": "<script>alert(1)</script>",
+  "expected_outcome": "  Buttons align  ",
+  "limitations": "No mobile changes",
+  "source_reference": "commit:abc123"
+}`), 0o600))
+
+	context, err := LoadContext(path)
+	require.NoError(t, err)
+	require.Equal(t, "Spacing update", context.Title)
+	require.Equal(t, "First line\nSecond line", context.WhatChanged)
+	require.Equal(t, "<script>alert(1)</script>", context.WhatToTest)
+	require.Equal(t, "Buttons align", context.ExpectedOutcome)
+
+	for _, content := range []string{
+		`{"title":"ok","unknown":"field"}`,
+		`{"title":"ok"}{"title":"trailing"}`,
+		`{"title":"ok"}null`,
+		`null`,
+		`{"title":null}`,
+		`{"title":123}`,
+	} {
+		require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
+		_, err = LoadContext(path)
+		require.Error(t, err)
+	}
+
+	require.NoError(t, os.WriteFile(path, []byte(`{"title":""}`), 0o600))
+	context, err = LoadContext(path)
+	require.NoError(t, err)
+	require.Equal(t, contextFallback, context.Title)
+}
+
+func TestLoadContextUsesDeterministicFallbackWhenOmitted(t *testing.T) {
+	context, err := LoadContext("")
+	require.NoError(t, err)
+	require.Equal(t, contextFallback, context.Title)
+	require.Empty(t, context.WhatChanged)
+
+	path := filepath.Join(t.TempDir(), "empty-context.json")
+	require.NoError(t, os.WriteFile(path, []byte(" \n\t"), 0o600))
+	context, err = LoadContext(path)
+	require.NoError(t, err)
+	require.Equal(t, contextFallback, context.Title)
+}
+
+func TestLoadContextRejectsByteLimits(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "context.json")
+	require.NoError(t, os.WriteFile(path, []byte(`{"what_changed":"`+strings.Repeat("x", maxContextFieldBytes)+`a"}`), 0o600))
+	_, err := LoadContext(path)
+	require.ErrorContains(t, err, "what_changed")
+
+	require.NoError(t, os.WriteFile(path, bytes.Repeat([]byte("x"), maxContextBytes+1), 0o600))
+	_, err = LoadContext(path)
+	require.ErrorContains(t, err, "exceeds")
+}
+
+func TestSessionPersistsImplementationContextWithoutChangingSnapshot(t *testing.T) {
+	dir := t.TempDir()
+	reference, actual := writePNG(t, dir, "reference.png", color.Black, color.White)
+	context := ImplementationContext{
+		Title:           "Spacing review",
+		WhatChanged:     "Moved the button.\nKept the snapshot fixed.",
+		WhatToTest:      "Try <script> as text.",
+		ExpectedOutcome: "Button aligns with the panel.",
+		Limitations:     "Desktop only.",
+		SourceReference: "commit:abc123",
+	}
+	session, err := NewSessionWithContext(reference, actual, filepath.Join(dir, "rounds"), "", 0, 0.1, context)
+	require.NoError(t, err)
+	result, err := session.Submit(FeedbackRequest{Decision: decisionApproved})
+	require.NoError(t, err)
+	require.Equal(t, context, result.Context)
+	feedback := mustReadFeedback(t, result.FeedbackPath)
+	require.Equal(t, context, feedback.Context)
+	manifest := mustRead(t, filepath.Join(session.Root(), snapshotManifestName))
+	var persisted struct {
+		Context ImplementationContext `json:"context"`
+	}
+	require.NoError(t, json.Unmarshal(manifest, &persisted))
+	require.Equal(t, context, persisted.Context)
+	require.Equal(t, session.Snapshot(), result.Snapshot)
 }
 
 func TestSessionPersistsImmutableSnapshotAndFeedback(t *testing.T) {
@@ -78,6 +169,26 @@ func TestHandlerServesEmbeddedFrontendAssets(t *testing.T) {
 		require.Equal(t, asset.contentType, response.Header.Get("Content-Type"))
 		require.NoError(t, response.Body.Close())
 	}
+}
+
+func TestHandlerExposesImplementationContext(t *testing.T) {
+	dir := t.TempDir()
+	reference, actual := writePNG(t, dir, "reference.png", color.Black, color.White)
+	context := ImplementationContext{Title: "Context title", WhatToTest: "Check the popup."}
+	session, err := NewSessionWithContext(reference, actual, dir, "", 0, 0.1, context)
+	require.NoError(t, err)
+	server := httptest.NewServer(sessionHandler(session))
+	defer server.Close()
+
+	response, err := http.Get(server.URL + "/api/session")
+	require.NoError(t, err)
+	defer response.Body.Close()
+	require.Equal(t, http.StatusOK, response.StatusCode)
+	var payload struct {
+		Context ImplementationContext `json:"context"`
+	}
+	require.NoError(t, json.NewDecoder(response.Body).Decode(&payload))
+	require.Equal(t, context, payload.Context)
 }
 
 func TestHandlerUsesOriginalPixelCoordinatesAndExplicitDecision(t *testing.T) {
@@ -198,14 +309,16 @@ func TestHandlerRejectsOutOfBoundsAndUnknownFields(t *testing.T) {
 func TestNewSessionLinksPreviousRoundWithoutOverwritingIt(t *testing.T) {
 	dir := t.TempDir()
 	reference, actual := writePNG(t, dir, "reference.png", color.Black, color.White)
-	first, err := NewSession(reference, actual, dir, "", 0, 0.1)
+	firstContext := ImplementationContext{Title: "First round", WhatToTest: "Check spacing."}
+	first, err := NewSessionWithContext(reference, actual, dir, "", 0, 0.1, firstContext)
 	require.NoError(t, err)
 	firstResult, err := first.Submit(FeedbackRequest{Decision: "submitted", Notes: "fix it"})
 	require.NoError(t, err)
 	firstBytes, err := os.ReadFile(firstResult.FeedbackPath)
 	require.NoError(t, err)
 
-	second, err := NewSession(reference, actual, dir, firstResult.FeedbackPath, 0, 0.1)
+	secondContext := ImplementationContext{Title: "Second round", WhatToTest: "Check the new button."}
+	second, err := NewSessionWithContext(reference, actual, dir, firstResult.FeedbackPath, 0, 0.1, secondContext)
 	require.NoError(t, err)
 	secondResult, err := second.Submit(FeedbackRequest{Decision: "approved"})
 	require.NoError(t, err)
@@ -213,7 +326,9 @@ func TestNewSessionLinksPreviousRoundWithoutOverwritingIt(t *testing.T) {
 	require.NotEqual(t, firstResult.FeedbackPath, secondResult.FeedbackPath)
 	require.Equal(t, firstBytes, mustRead(t, firstResult.FeedbackPath))
 	feedback := mustReadFeedback(t, secondResult.FeedbackPath)
+	require.Equal(t, secondContext, feedback.Context)
 	require.Equal(t, filepath.Join(second.Root(), "previous-feedback.json"), feedback.PreviousFeedback)
+	require.Equal(t, firstContext, mustReadFeedback(t, feedback.PreviousFeedback).Context)
 }
 
 func TestServerLifecycleIsLoopbackOnly(t *testing.T) {

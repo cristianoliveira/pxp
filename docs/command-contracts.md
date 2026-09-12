@@ -27,6 +27,7 @@ pxp probe reference.png actual.png --at 20,20 --format json
 pxp scan reference.png actual.png --row 20 --format json
 pxp review reference.png actual.png --out .pxp-review
 pxp review reference.png actual.png --out .pxp-review --open --json
+pxp review reference.png actual.png --context-file review-context.json --json
 ```
 
 ## Local annotated review loop
@@ -41,6 +42,19 @@ ready; opener failure is nonfatal and the printed URL remains the manual
 fallback. The page shows reference, actual, and overlay images. Click or drag
 on the actual image to add point or rectangle notes; display scaling is
 converted back to original image pixels.
+
+Use `--context-file` to provide an optional JSON object with these string
+fields: `title`, `what_changed`, `what_to_test`, `expected_outcome`,
+`limitations`, and `source_reference`. The top level must be one non-null JSON
+object; fields must be strings. Unknown fields, null fields, trailing JSON,
+files larger than 16 KiB, or fields larger than 4,000 UTF-8 bytes are rejected.
+Field edges are trimmed while internal line breaks are preserved. An omitted
+flag, an empty/whitespace-only context file, or blank context fields is
+represented as `No implementation context was provided for this round.` The
+exact normalized context is included in the session,
+`snapshot.json`, result, and feedback; `previous_feedback` links context across
+rounds without changing screenshot identity or human notes. Context is rendered
+as escaped text in a keyboard-accessible, collapsible panel before the evidence.
 
 Use **Submit feedback** or **Approve** to choose a round decision. A valid
 choice first opens an explicit confirmation dialog; it does not persist feedback
