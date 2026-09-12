@@ -3,6 +3,7 @@
 package review
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -434,8 +435,19 @@ func (s *Server) Start() (string, error) {
 	return "http://" + listener.Addr().String(), nil
 }
 func (s *Server) Wait() (Result, error) {
-	completion := <-s.session.Completed()
-	return completion.result, completion.err
+	return s.WaitContext(context.Background())
+}
+
+// WaitContext waits for a decision or cancels the round safely. Cancellation
+// closes the listener and records an operational error without writing feedback.
+func (s *Server) WaitContext(ctx context.Context) (Result, error) {
+	select {
+	case completion := <-s.session.Completed():
+		return completion.result, completion.err
+	case <-ctx.Done():
+		_ = s.Close()
+		return Result{}, fmt.Errorf("review server stopped before a decision: %w", ctx.Err())
+	}
 }
 func (s *Server) Close() error {
 	s.once.Do(func() {

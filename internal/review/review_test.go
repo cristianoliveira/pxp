@@ -2,6 +2,7 @@ package review
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"image"
 	"image/color"
@@ -157,6 +158,24 @@ func TestServerLifecycleIsLoopbackOnly(t *testing.T) {
 	result, waitErr := server.Wait()
 	require.NoError(t, waitErr)
 	require.Equal(t, "approved", result.Decision)
+}
+
+func TestServerWaitContextCancelsWithoutWritingFeedback(t *testing.T) {
+	dir := t.TempDir()
+	reference, actual := writePNG(t, dir, "reference.png", color.Black, color.White)
+	session, err := NewSession(reference, actual, dir, "", 0, 0.1)
+	require.NoError(t, err)
+	server := NewServer(session)
+	_, err = server.Start()
+	require.NoError(t, err)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	result, waitErr := server.WaitContext(ctx)
+	require.Error(t, waitErr)
+	require.Contains(t, waitErr.Error(), "stopped before a decision")
+	require.Empty(t, result.Decision)
+	_, statErr := os.Stat(filepath.Join(session.Root(), "feedback.json"))
+	require.ErrorIs(t, statErr, os.ErrNotExist)
 }
 
 func TestServerCloseBeforeDecisionReturnsExplicitError(t *testing.T) {
