@@ -7,48 +7,53 @@
   <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
-  <h1>pxp visual review</h1>
-  <p>Click or drag on the actual image to add an annotation. Coordinates are stored in original pixels.</p>
-  <section class="images">
-    <figure>
-      <figcaption>Reference</figcaption>
-      <img src="/image/reference.png" alt="Reference screenshot">
-    </figure>
-    <figure>
-      <figcaption>Actual (annotate here)</figcaption>
-      <canvas id="canvas" aria-label="Actual screenshot annotation canvas"></canvas>
-    </figure>
-    <figure>
-      <figcaption>Overlay</figcaption>
-      <img src="/image/overlay.png" alt="Difference overlay">
-    </figure>
-  </section>
-  <div class="controls">
-    <label>Image
-      <select id="image">
-        <option value="actual">actual</option>
-        <option value="reference">reference</option>
-        <option value="overlay">overlay</option>
-      </select>
-    </label>
-    <label>Type
-      <select id="type">
-        <option value="point">point</option>
-        <option value="rectangle">rectangle</option>
-      </select>
-    </label>
-    <label>Annotation note
-      <input id="annotation-note" maxlength="2000" size="40">
-    </label>
-  </div>
-  <ol id="annotations"></ol>
-  <label for="notes">General notes</label>
-  <textarea id="notes" maxlength="10000"></textarea>
-  <div class="controls">
-    <button id="submit" type="button">Submit feedback</button>
-    <button id="approve" type="button">Approve</button>
-    <span id="status" role="status"></span>
-  </div>
+  <main>
+    <h1>pxp visual review</h1>
+    <p>Switch views, then click or drag on the active image to add an annotation. Coordinates are stored in original pixels.</p>
+
+    <section class="focus-review" aria-labelledby="focus-title">
+      <div class="focus-heading">
+        <h2 id="focus-title">Focus view</h2>
+        <span id="view-status" role="status" aria-live="polite">Viewing Current</span>
+      </div>
+      <div id="view-buttons" class="view-buttons" role="group" aria-label="Evidence view">
+        <button type="button" data-view="reference" aria-pressed="false">Reference</button>
+        <button type="button" data-view="actual" aria-pressed="true">Current</button>
+        <button type="button" data-view="overlay" aria-pressed="false">Overlay</button>
+      </div>
+      <p id="keyboard-help">Keyboard: use Tab to reach the view buttons; focus the image and use Arrow keys to move the cursor (Shift+Arrow moves farther), then press Enter to place a pin or start/finish a rectangle. Press Escape to cancel a rectangle.</p>
+      <canvas id="canvas" role="img" tabindex="0" aria-describedby="keyboard-help" aria-label="Current screenshot annotation canvas"></canvas>
+      <p id="interaction-status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="annotation-controls" aria-labelledby="annotation-title">
+      <h2 id="annotation-title">Annotation</h2>
+      <div class="controls">
+        <label>Type
+          <select id="type">
+            <option value="point">Pin</option>
+            <option value="rectangle">Rectangle</option>
+          </select>
+        </label>
+        <label>Annotation note
+          <input id="annotation-note" maxlength="2000" size="40">
+        </label>
+      </div>
+    </section>
+
+    <section aria-labelledby="notes-title">
+      <h2 id="notes-title">Feedback</h2>
+      <ol id="annotations" aria-label="Annotations"></ol>
+      <label for="notes">General notes</label>
+      <textarea id="notes" maxlength="10000"></textarea>
+    </section>
+
+    <div class="controls actions">
+      <button id="submit" type="button">Submit feedback</button>
+      <button id="approve" type="button">Approve</button>
+      <span id="status" role="status" aria-live="polite"></span>
+    </div>
+  </main>
   <script src="/assets/app.js" defer></script>
 </body>
 </html>

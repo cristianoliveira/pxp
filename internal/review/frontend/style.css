@@ -6,24 +6,69 @@ body {
   color: #202124;
 }
 
-.images {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h2 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.focus-review {
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.focus-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   gap: 1rem;
 }
 
-.images img {
-  max-width: 100%;
-  border: 1px solid #bbb;
-  background: #eee;
+#view-status {
+  color: #4b5563;
+  font-weight: 600;
+}
+
+#keyboard-help,
+#interaction-status {
+  color: #4b5563;
+  font-size: 0.95rem;
+}
+
+#interaction-status {
+  min-height: 1.5rem;
+}
+
+.view-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.view-buttons button[aria-pressed="true"] {
+  background: #1d4ed8;
+  color: white;
 }
 
 canvas {
   display: block;
+  width: 100%;
   max-width: 100%;
   height: auto;
   border: 2px solid #2563eb;
   cursor: crosshair;
+}
+
+.annotation-controls,
+section[aria-labelledby="notes-title"] {
+  margin-top: 1.5rem;
 }
 
 .controls {
@@ -43,6 +88,15 @@ button {
   padding: 0.6rem 1rem;
 }
 
+button:focus-visible,
+canvas:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+}
+
 #status {
   min-height: 1.5rem;
 }
@@ -55,6 +109,28 @@ button {
   color: #166534;
 }
 
+#annotations {
+  padding-left: 1.5rem;
+}
+
 #annotations li {
   margin: 0.3rem 0;
+}
+
+#annotations button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.2rem;
+  text-align: left;
+}
+
+#annotations button:hover,
+#annotations button[aria-current="true"] {
+  background: #fef3c7;
+}
+
+.actions {
+  margin-top: 1.5rem;
 }
