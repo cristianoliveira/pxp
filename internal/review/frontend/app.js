@@ -1,6 +1,3 @@
-const actualImageURL = '/image/actual.png';
-const feedbackURL = '/api/feedback';
-const jsonContentType = 'application/json';
 const decisionSubmitted = 'submitted';
 const decisionApproved = 'approved';
 const annotationPoint = 'point';
@@ -29,7 +26,7 @@ actualImage.onload = () => {
   canvas.height = actualImage.naturalHeight;
   ctx.drawImage(actualImage, 0, 0);
 };
-actualImage.src = actualImageURL;
+actualImage.src = '/image/actual.png';
 
 function canvasPointFromEvent(event) {
   const rect = canvas.getBoundingClientRect();
@@ -142,9 +139,9 @@ async function submitDecision(decision) {
   status.className = '';
   status.textContent = 'Saving…';
   try {
-    const response = await fetch(feedbackURL, {
+    const response = await fetch('/api/feedback', {
       method: 'POST',
-      headers: {'Content-Type': jsonContentType},
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({annotations, notes, decision}),
     });
     const data = await response.json();

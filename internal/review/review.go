@@ -31,10 +31,8 @@ const (
 
 	firstRound             = 1
 	snapshotIDHexSize      = 16
-	snapshotImageCount     = 4
 	jsonIndent             = "  "
 	annotationIDFormat     = "note-%04d"
-	reviewIDPrefix         = "review"
 	reviewDirectoryPattern = "pxp-review-*"
 	reviewRoundPattern     = "round-*"
 	feedbackFileName       = "feedback.json"
@@ -233,7 +231,7 @@ func NewSession(
 			return nil, err
 		}
 	}
-	id, err := randomID(reviewIDPrefix)
+	id, err := randomID("review")
 	if err != nil {
 		cleanupOnError()
 		return nil, fmt.Errorf("create review session id: %w", err)
@@ -271,13 +269,13 @@ func NewSession(
 		cleanupOnError()
 		return nil, fmt.Errorf("write snapshot manifest: %w", err)
 	}
-	imageData := make(map[string][]byte, snapshotImageCount)
 	snapshotImages := []Image{
 		snapshot.Reference,
 		snapshot.Actual,
 		snapshot.Overlay,
 		snapshot.Mask,
 	}
+	imageData := make(map[string][]byte, len(snapshotImages))
 	for _, image := range snapshotImages {
 		data, readErr := os.ReadFile(image.Path)
 		if readErr != nil {
