@@ -30,6 +30,11 @@ func newReviewCommand() *cobra.Command {
 		"",
 		"feedback JSON from the preceding round to link without overwriting",
 	)
+	command.Flags().String(
+		"context-file",
+		"",
+		"JSON file with implementation context for this review round",
+	)
 	command.Flags().Bool(
 		"open",
 		false,
@@ -52,6 +57,8 @@ func newReviewCommand() *cobra.Command {
 type reviewOptions struct {
 	outputRoot          string
 	previousFeedback    string
+	contextFile         string
+	context             review.ImplementationContext
 	threshold           uint8
 	perceptualThreshold float64
 	openBrowser         bool
@@ -67,11 +74,18 @@ func reviewOptionsFrom(command *cobra.Command) (reviewOptions, error) {
 	}
 	outputRoot, _ := command.Flags().GetString("out")
 	previousFeedback, _ := command.Flags().GetString("previous-feedback")
+	contextFile, _ := command.Flags().GetString("context-file")
+	context, err := review.LoadContext(contextFile)
+	if err != nil {
+		return reviewOptions{}, cli.NewUsageError(err)
+	}
 	threshold, _ := command.Flags().GetUint8("threshold")
 	openBrowser, _ := command.Flags().GetBool("open")
 	return reviewOptions{
 		outputRoot:          outputRoot,
 		previousFeedback:    previousFeedback,
+		contextFile:         contextFile,
+		context:             context,
 		threshold:           threshold,
 		perceptualThreshold: perceptualThreshold,
 		openBrowser:         openBrowser,
@@ -87,13 +101,14 @@ func runReviewCommandWithBrowser(cmd *cobra.Command, args []string, open browser
 	if err != nil {
 		return err
 	}
-	session, err := review.NewSession(
+	session, err := review.NewSessionWithContext(
 		args[0],
 		args[1],
 		options.outputRoot,
 		options.previousFeedback,
 		options.threshold,
 		options.perceptualThreshold,
+		options.context,
 	)
 	if err != nil {
 		return err

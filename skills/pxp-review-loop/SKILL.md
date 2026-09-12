@@ -43,6 +43,7 @@ and stderr announces the URL:
 mkdir -p .tmp/pxp-review
 pxp review reference.png actual.png \
   --out .tmp/pxp-review \
+  --context-file review-context.json \
   --open --json > .tmp/pxp-review/round-1.result.json \
   2> .tmp/pxp-review/round-1.server.log
 ```
@@ -56,7 +57,12 @@ returns, immediately consume stdout and read the structured result. If the
 environment cannot keep an expected human wait alive, report that limitation
 instead of inventing a submission or polling a detached process.
 
-The page displays reference, actual, and overlay images. The human can add:
+The page displays the optional implementation context before the evidence,
+then reference, actual, and overlay images. Context is supplied with
+`--context-file` as a JSON object containing optional `title`, `what_changed`,
+`what_to_test`, `expected_outcome`, `limitations`, and `source_reference`
+strings. It is escaped, length-limited, preserved in round provenance, and
+never replaces human judgment. The human can add:
 
 - general notes;
 - point annotations; and

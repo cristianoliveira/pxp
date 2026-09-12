@@ -53,10 +53,48 @@ async function addCurrentPins(page) {
   await addBlankPin(page);
 }
 
+async function checkImplementationContext(page, url) {
+  await page.route('**/api/session', async (route) => {
+    const response = await route.fetch();
+    const session = await response.json();
+    session.context = {
+      title: 'Spacing <review>',
+      what_changed: 'First line\nSecond line',
+      what_to_test: '<script>not executable</script>',
+      expected_outcome: 'The button aligns.',
+      limitations: 'Desktop only.',
+      source_reference: 'commit:abc123',
+    };
+    await route.fulfill({
+      response,
+      contentType: 'application/json',
+      body: JSON.stringify(session),
+    });
+  });
+  await page.goto(url);
+  await page.locator('#canvas').waitFor();
+  assert.equal(await page.locator('#context-heading').textContent(), 'Spacing <review>');
+  assert.equal(await page.locator('[data-context-field="what_changed"]').textContent(), 'First line\nSecond line');
+  assert.equal(await page.locator('[data-context-field="what_to_test"]').textContent(), '<script>not executable</script>');
+  assert.equal(await page.locator('script').count(), 1);
+  assert.equal(await page.locator('#implementation-context').getAttribute('open'), null);
+  assert.equal(await page.locator('#context-title').textContent(), 'Show implementation context');
+  await page.locator('#implementation-context summary').click();
+  assert.equal(await page.locator('#implementation-context').getAttribute('open'), '');
+  assert.equal(await page.locator('#context-title').textContent(), 'Hide implementation context');
+  await page.locator('#implementation-context summary').press('Enter');
+  assert.equal(await page.locator('#implementation-context').getAttribute('open'), null);
+  await page.locator('#implementation-context summary').press('Space');
+  assert.equal(await page.locator('#implementation-context').getAttribute('open'), '');
+  await page.unroute('**/api/session');
+  return {title: await page.locator('#context-heading').textContent()};
+}
+
 async function checkTabOrder(page, url) {
   await resetDraft(page, url);
   await focusBody(page);
   const expected = [
+    'Implementation context',
     'Reference',
     'Current',
     'Overlay',
@@ -72,7 +110,11 @@ async function checkTabOrder(page, url) {
   for (const name of expected) {
     await page.keyboard.press('Tab');
     actual.push(await page.locator(':focus').getAttribute('id') || await page.locator(':focus').innerText());
-    if (name === 'canvas') assert.equal(actual.at(-1), 'canvas');
+    if (name === 'Implementation context') {
+      assert.equal(await page.locator(':focus').getAttribute('id'), 'context-title');
+      assert.equal(await page.locator(':focus').textContent(), 'Show implementation context');
+    }
+    else if (name === 'canvas') assert.equal(actual.at(-1), 'canvas');
     else if (name === 'General note') assert.equal(await page.locator(':focus').getAttribute('id'), 'notes');
     else if (name === 'Type' || name === 'Note') assert.equal(await page.locator(':focus').getAttribute('id'), name === 'Type' ? 'type' : 'annotation-note');
     else if (name === 'Return to canvas') assert.equal(await page.locator(':focus').getAttribute('aria-label'), name);
@@ -376,6 +418,7 @@ async function checkDecisionConfirmation(page, url) {
 
 async function runReviewBrowserChecks(page, options) {
   assert.ok(options && options.url, 'runReviewBrowserChecks requires options.url');
+  const context = await checkImplementationContext(page, options.url);
   const tabOrder = await checkTabOrder(page, options.url);
   const modes = await checkAnnotationModes(page, options.url);
   const viewShortcuts = await checkCanvasViewShortcuts(page, options.url);
@@ -385,7 +428,7 @@ async function runReviewBrowserChecks(page, options) {
   const editing = await checkEditCancelAndRectangleEscape(page, options.url);
   const draft = await checkDraftAndValidation(page, options.url);
   const decisionConfirmation = await checkDecisionConfirmation(page, options.url);
-  return {tabOrder, modes, viewShortcuts, returnToCanvas, inline, keyboard, editing, draft, decisionConfirmation};
+  return {context, tabOrder, modes, viewShortcuts, returnToCanvas, inline, keyboard, editing, draft, decisionConfirmation};
 }
 
 module.exports = {runReviewBrowserChecks};

@@ -168,6 +168,7 @@ func (s *Server) handleSession(w http.ResponseWriter, r *http.Request) {
 		"session_id": s.snapshot().ID,
 		"round":      s.session.round(),
 		"snapshot":   s.snapshot(),
+		"context":    s.session.Context(),
 	})
 }
 

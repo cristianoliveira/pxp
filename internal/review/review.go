@@ -3,6 +3,7 @@
 package review
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -21,13 +22,20 @@ import (
 	"github.com/cristianoliveira/pxp/internal/imageio"
 )
 
+var contextFieldNames = map[string]struct{}{
+	"title": {}, "what_changed": {}, "what_to_test": {},
+	"expected_outcome": {}, "limitations": {}, "source_reference": {},
+}
+
 const (
 	SchemaVersion = 1
 
-	maxFeedbackBytes  = 64 * 1024
-	maxAnnotations    = 200
-	maxGeneralNotes   = 10_000
-	maxAnnotationNote = 2_000
+	maxFeedbackBytes     = 64 * 1024
+	maxContextBytes      = 16 * 1024
+	maxContextFieldBytes = 4_000
+	maxAnnotations       = 200
+	maxGeneralNotes      = 10_000
+	maxAnnotationNote    = 2_000
 
 	firstRound             = 1
 	snapshotIDHexSize      = 16
@@ -56,6 +64,7 @@ const (
 	imageOverlay      = "overlay"
 	annotationPoint   = "point"
 	annotationRect    = "rectangle"
+	contextFallback   = "No implementation context was provided for this round."
 )
 
 type Image struct {
@@ -74,6 +83,15 @@ type Snapshot struct {
 	Mask      Image  `json:"mask"`
 }
 
+type ImplementationContext struct {
+	Title           string `json:"title,omitempty"`
+	WhatChanged     string `json:"what_changed,omitempty"`
+	WhatToTest      string `json:"what_to_test,omitempty"`
+	ExpectedOutcome string `json:"expected_outcome,omitempty"`
+	Limitations     string `json:"limitations,omitempty"`
+	SourceReference string `json:"source_reference,omitempty"`
+}
+
 type Annotation struct {
 	ID     string `json:"id"`
 	Image  string `json:"image"`
@@ -86,14 +104,15 @@ type Annotation struct {
 }
 
 type Feedback struct {
-	Version          int          `json:"version"`
-	SessionID        string       `json:"session_id"`
-	Round            int          `json:"round"`
-	Snapshot         Snapshot     `json:"snapshot"`
-	PreviousFeedback string       `json:"previous_feedback,omitempty"`
-	Annotations      []Annotation `json:"annotations,omitempty"`
-	Notes            string       `json:"notes,omitempty"`
-	Decision         string       `json:"decision"`
+	Version          int                   `json:"version"`
+	SessionID        string                `json:"session_id"`
+	Round            int                   `json:"round"`
+	Snapshot         Snapshot              `json:"snapshot"`
+	Context          ImplementationContext `json:"context"`
+	PreviousFeedback string                `json:"previous_feedback,omitempty"`
+	Annotations      []Annotation          `json:"annotations,omitempty"`
+	Notes            string                `json:"notes,omitempty"`
+	Decision         string                `json:"decision"`
 }
 
 type FeedbackRequest struct {
@@ -103,12 +122,13 @@ type FeedbackRequest struct {
 }
 
 type Result struct {
-	Version      int      `json:"version"`
-	SessionID    string   `json:"session_id"`
-	Round        int      `json:"round"`
-	Decision     string   `json:"decision"`
-	FeedbackPath string   `json:"feedback_path"`
-	Snapshot     Snapshot `json:"snapshot"`
+	Version      int                   `json:"version"`
+	SessionID    string                `json:"session_id"`
+	Round        int                   `json:"round"`
+	Decision     string                `json:"decision"`
+	FeedbackPath string                `json:"feedback_path"`
+	Snapshot     Snapshot              `json:"snapshot"`
+	Context      ImplementationContext `json:"context"`
 }
 
 type completion struct {
@@ -123,6 +143,7 @@ type Session struct {
 	feedbackMu     sync.Mutex
 	completionOnce sync.Once
 	snapshot       Snapshot
+	context        ImplementationContext
 	completed      chan completion
 	imageData      map[string][]byte
 }
@@ -134,6 +155,27 @@ func NewSession(
 	threshold uint8,
 	perceptualThreshold float64,
 ) (*Session, error) {
+	return NewSessionWithContext(
+		referencePath,
+		actualPath,
+		outputRoot,
+		previousFeedback,
+		threshold,
+		perceptualThreshold,
+		ImplementationContext{},
+	)
+}
+
+func NewSessionWithContext(
+	referencePath, actualPath, outputRoot, previousFeedback string,
+	threshold uint8,
+	perceptualThreshold float64,
+	context ImplementationContext,
+) (*Session, error) {
+	context, err := normalizeContext(context)
+	if err != nil {
+		return nil, err
+	}
 	if referencePath == "" || actualPath == "" {
 		return nil, errors.New("reference and actual images are required")
 	}
@@ -257,8 +299,9 @@ func NewSession(
 		Version    int                       `json:"version"`
 		Round      int                       `json:"round"`
 		Snapshot   Snapshot                  `json:"snapshot"`
+		Context    ImplementationContext     `json:"context"`
 		Comparison imagediff.ImageComparison `json:"comparison"`
-	}{SchemaVersion, round, snapshot, comparison}
+	}{SchemaVersion, round, snapshot, context, comparison}
 	manifestData, err := json.MarshalIndent(manifest, "", jsonIndent)
 	if err != nil {
 		cleanupOnError()
@@ -286,13 +329,104 @@ func NewSession(
 	}
 	return &Session{
 		root: root, feedback: filepath.Join(root, feedbackFileName), previous: previousCopy,
-		snapshot: snapshot, completed: make(chan completion, 1), imageData: imageData,
+		snapshot: snapshot, context: context, completed: make(chan completion, 1), imageData: imageData,
 	}, nil
 }
 
-func (s *Session) Snapshot() Snapshot           { return s.snapshot }
-func (s *Session) Root() string                 { return s.root }
-func (s *Session) Completed() <-chan completion { return s.completed }
+func LoadContext(path string) (ImplementationContext, error) {
+	if path == "" {
+		return normalizeContext(ImplementationContext{})
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return ImplementationContext{}, fmt.Errorf("read context file: %w", err)
+	}
+	defer func() { _ = file.Close() }()
+	data, err := io.ReadAll(io.LimitReader(file, maxContextBytes+1))
+	if err != nil {
+		return ImplementationContext{}, fmt.Errorf("read context file: %w", err)
+	}
+	if len(data) > maxContextBytes {
+		return ImplementationContext{}, fmt.Errorf("context file exceeds %d bytes", maxContextBytes)
+	}
+	if len(bytes.TrimSpace(data)) == 0 {
+		return normalizeContext(ImplementationContext{})
+	}
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	var fields map[string]json.RawMessage
+	if err := decoder.Decode(&fields); err != nil {
+		return ImplementationContext{}, fmt.Errorf("decode context file: %w", err)
+	}
+	if fields == nil {
+		return ImplementationContext{}, errors.New("context file must contain one JSON object")
+	}
+	var context ImplementationContext
+	for name, raw := range fields {
+		if _, ok := contextFieldNames[name]; !ok {
+			return ImplementationContext{}, fmt.Errorf("context file contains unknown field %q", name)
+		}
+		if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+			return ImplementationContext{}, fmt.Errorf("context field %s must be a string", name)
+		}
+		var value string
+		if err := json.Unmarshal(raw, &value); err != nil {
+			return ImplementationContext{}, fmt.Errorf("context field %s must be a string: %w", name, err)
+		}
+		switch name {
+		case "title":
+			context.Title = value
+		case "what_changed":
+			context.WhatChanged = value
+		case "what_to_test":
+			context.WhatToTest = value
+		case "expected_outcome":
+			context.ExpectedOutcome = value
+		case "limitations":
+			context.Limitations = value
+		case "source_reference":
+			context.SourceReference = value
+		}
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		return ImplementationContext{}, errors.New("context file must contain one JSON object")
+	}
+	return normalizeContext(context)
+}
+
+func normalizeContext(context ImplementationContext) (ImplementationContext, error) {
+	context.Title = strings.TrimSpace(context.Title)
+	context.WhatChanged = strings.TrimSpace(context.WhatChanged)
+	context.WhatToTest = strings.TrimSpace(context.WhatToTest)
+	context.ExpectedOutcome = strings.TrimSpace(context.ExpectedOutcome)
+	context.Limitations = strings.TrimSpace(context.Limitations)
+	context.SourceReference = strings.TrimSpace(context.SourceReference)
+	fields := []struct {
+		name  string
+		value string
+	}{
+		{"title", context.Title},
+		{"what_changed", context.WhatChanged},
+		{"what_to_test", context.WhatToTest},
+		{"expected_outcome", context.ExpectedOutcome},
+		{"limitations", context.Limitations},
+		{"source_reference", context.SourceReference},
+	}
+	for _, field := range fields {
+		if len(field.value) > maxContextFieldBytes {
+			return ImplementationContext{}, fmt.Errorf("context field %s exceeds %d bytes", field.name, maxContextFieldBytes)
+		}
+	}
+	if context.Title == "" && context.WhatChanged == "" && context.WhatToTest == "" &&
+		context.ExpectedOutcome == "" && context.Limitations == "" && context.SourceReference == "" {
+		context.Title = contextFallback
+	}
+	return context, nil
+}
+
+func (s *Session) Snapshot() Snapshot             { return s.snapshot }
+func (s *Session) Context() ImplementationContext { return s.context }
+func (s *Session) Root() string                   { return s.root }
+func (s *Session) Completed() <-chan completion   { return s.completed }
 
 func (s *Session) Submit(request FeedbackRequest) (Result, error) {
 	s.feedbackMu.Lock()
@@ -314,10 +448,10 @@ func (s *Session) Submit(request FeedbackRequest) (Result, error) {
 	}
 	feedback := Feedback{
 		Version: SchemaVersion, SessionID: s.snapshot.ID, Round: s.round(), Snapshot: s.snapshot,
-		PreviousFeedback: s.previous,
-		Annotations:      annotations,
-		Notes:            request.Notes,
-		Decision:         request.Decision,
+		Context: s.context, PreviousFeedback: s.previous,
+		Annotations: annotations,
+		Notes:       request.Notes,
+		Decision:    request.Decision,
 	}
 	data, err := json.MarshalIndent(feedback, "", jsonIndent)
 	if err != nil {
@@ -341,6 +475,7 @@ func (s *Session) Submit(request FeedbackRequest) (Result, error) {
 		Decision:     feedback.Decision,
 		FeedbackPath: s.feedback,
 		Snapshot:     s.snapshot,
+		Context:      s.context,
 	}
 	return result, nil
 }

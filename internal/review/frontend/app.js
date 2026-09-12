@@ -45,6 +45,13 @@ const decisionConsequence = document.getElementById('decision-consequence');
 const decisionStatus = document.getElementById('decision-status');
 const decisionBack = document.getElementById('decision-back');
 const decisionConfirm = document.getElementById('decision-confirm');
+const contextHeading = document.getElementById('context-heading');
+const contextDetails = document.getElementById('implementation-context');
+const contextSummary = document.getElementById('context-title');
+const contextSections = new Map(
+  Array.from(document.querySelectorAll('[data-context-section]'))
+    .map((section) => [section.dataset.contextSection, section]),
+);
 const annotations = [];
 const viewImages = new Map();
 let activeView = 'actual';
@@ -66,6 +73,25 @@ let reviewRound = 1;
 let pendingDecision = '';
 let decisionInvoker = null;
 let decisionSubmitting = false;
+
+function updateContextDisclosureLabel() {
+  contextSummary.textContent = contextDetails.open
+    ? 'Hide implementation context'
+    : 'Show implementation context';
+}
+
+function renderImplementationContext(context = {}) {
+  contextHeading.textContent = context.title || 'No implementation context was provided for this round.';
+  updateContextDisclosureLabel();
+  contextSections.forEach((section, field) => {
+    const value = typeof context[field] === 'string' ? context[field] : '';
+    section.hidden = !value;
+    const target = section.querySelector('[data-context-field]');
+    if (target) target.textContent = value;
+  });
+}
+
+contextDetails.addEventListener('toggle', updateContextDisclosureLabel);
 
 function imageForView(view) {
   if (!viewImages.has(view)) {
@@ -801,6 +827,7 @@ async function initialize() {
     if (!response.ok) throw new Error('Unable to load review session.');
     const session = await response.json();
     reviewRound = session.round;
+    renderImplementationContext(session.context);
     draftStorageKey = `${draftStoragePrefix}${session.session_id}`;
     restoreDraft();
     updateAnnotationModeControls();
