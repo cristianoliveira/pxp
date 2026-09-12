@@ -1,7 +1,7 @@
 ---
 id: TASK-0009
 title: Enforce coverage and function complexity guardrails
-status: doing
+status: done
 depends_on: []
 priority: normal
 tags: [quality, coverage, complexity]
