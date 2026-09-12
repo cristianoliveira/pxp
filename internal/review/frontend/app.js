@@ -558,9 +558,12 @@ canvas.addEventListener('focus', () => {
 canvas.addEventListener('blur', redrawCanvas);
 
 document.addEventListener('keydown', (event) => {
+  if (isTextEntryTarget(event.target)) {
+    clearReturnShortcut();
+    return;
+  }
   if (
     event.defaultPrevented
-    || isTextEntryTarget(event.target)
     || event.isComposing
     || event.ctrlKey
     || event.metaKey
@@ -583,6 +586,8 @@ document.addEventListener('keydown', (event) => {
 
   clearReturnShortcut();
 });
+
+document.addEventListener('focusin', clearReturnShortcut);
 
 async function submitDecision(decision) {
   const notes = notesInput.value;

@@ -113,6 +113,15 @@ async function checkReturnToCanvas(page, url) {
   assert.equal(await page.locator('#notes').inputValue(), 'gc remains text');
 
   await returnButton.focus();
+  await page.keyboard.press('g');
+  await page.locator('#notes').focus();
+  await page.keyboard.press('c');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'notes');
+  await returnButton.focus();
+  await page.keyboard.press('c');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'return-to-canvas');
+
+  await returnButton.focus();
   await page.evaluate(() => {
     document.activeElement.dispatchEvent(new KeyboardEvent('keydown', {
       key: 'g', bubbles: true, isComposing: true,
