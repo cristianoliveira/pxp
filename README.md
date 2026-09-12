@@ -76,6 +76,19 @@ This prints the metrics and writes `actual.diff.png`, `overlay.png`, and `visual
 Open the report, pick something to fix, then capture again and compare with the same settings.
 Keep the previous capture so you can check whether the change helped.
 
+For a local, annotated human review loop, use `pxp review`:
+
+```bash
+pxp review reference.png actual-v1.png --out .pxp-review --json > round-1.json
+# After the human submits notes and the agent fixes the UI:
+pxp review reference.png actual-v2.png --out .pxp-review \
+  --previous-feedback "$(jq -r .feedback_path round-1.json)" --json > round-2.json
+```
+
+The browser shows reference, actual, and overlay images. Submit feedback to
+request another round or Approve to end the loop. Pins and rectangles are
+persisted in original-image pixel coordinates, with immutable snapshot hashes.
+
 For a closer look:
 
 ```bash

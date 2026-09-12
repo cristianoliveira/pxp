@@ -74,6 +74,7 @@ func newCommand(compare imageComparer) *cobra.Command {
 		String("visual-context-prompt", "", "extra advisory focus for visual context analysis")
 	command.AddCommand(newProbeCommand())
 	command.AddCommand(newScanCommand())
+	command.AddCommand(newReviewCommand())
 	return command
 }
 
