@@ -61,4 +61,6 @@ Default budget: **five measured refinement iterations**, unless the user sets an
 ## 5. Human review (final)
 
 - Produce a HTML report with a diff overlay and metrics.
+- For an annotated, multi-round human handoff, use the `pxp-review-loop`
+  skill and `pxp review`; keep Submit feedback distinct from Approve.
 - A form for feedback, on submit download a report for you to continue.

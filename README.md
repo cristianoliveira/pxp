@@ -22,6 +22,35 @@ Optional visual descriptions can add context, but they don't change the measurem
 
 ## Install
 
+### Homebrew
+
+On macOS, install the latest release from the tap:
+
+```bash
+brew tap cristianoliveira/tap
+brew install pxp
+```
+
+### Nix
+
+Run the packaged release directly from Cristian's Nix packages:
+
+```bash
+nix run github:cristianoliveira/nixpkgs#pxp -- --help
+nix profile install github:cristianoliveira/nixpkgs#pxp
+```
+
+Or use the repository's development flake from a local checkout:
+
+```bash
+nix run .#pxp -- --help
+nix build .#pxp
+```
+
+### GitHub Releases
+
+Download an archive from [GitHub Releases](https://github.com/cristianoliveira/pxp/releases) for your OS (`linux`, `darwin` for macOS, or `windows`) and CPU (`amd64` or `arm64`). Extract it and put `pxp` (or `pxp.exe`) on your `PATH`. Each release includes `checksums.txt` with SHA-256 hashes for the archives.
+
 From a local checkout, with Go 1.25.5 or newer:
 
 ```bash
@@ -35,13 +64,6 @@ go build -o bin/pxp ./cmd/pxp
 ./bin/pxp --help
 ```
 
-With Nix:
-
-```bash
-nix run .#pxp -- --help
-nix build .#pxp
-```
-
 ## Try it
 
 Capture your UI and compare it with the reference:
@@ -53,6 +75,19 @@ pxp reference.png actual.png --overlay overlay.png --report visual-diff.html
 This prints the metrics and writes `actual.diff.png`, `overlay.png`, and `visual-diff.html`.
 Open the report, pick something to fix, then capture again and compare with the same settings.
 Keep the previous capture so you can check whether the change helped.
+
+For a local, annotated human review loop, use `pxp review`:
+
+```bash
+pxp review reference.png actual-v1.png --out .pxp-review --json > round-1.json
+# After the human submits notes and the agent fixes the UI:
+pxp review reference.png actual-v2.png --out .pxp-review \
+  --previous-feedback "$(jq -r .feedback_path round-1.json)" --json > round-2.json
+```
+
+The browser shows reference, actual, and overlay images. Submit feedback to
+request another round or Approve to end the loop. Pins and rectangles are
+persisted in original-image pixel coordinates, with immutable snapshot hashes.
 
 For a closer look:
 
@@ -86,6 +121,17 @@ Set `--max-*` limits if you need a pass/fail check, using tolerances that make s
 
 The [PXP skill](skills/pxp/SKILL.md) describes the workflow: build the real component, capture a baseline, compare, and make a limited number of changes.
 It also asks the agent to report what still differs, rather than call it done just because the score improved.
+
+## Releasing
+
+Push a version tag to run tests, build binaries for all supported platforms, and publish the archives and checksums as GitHub Release assets:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Tags containing a hyphen (for example, `v0.1.0-rc.1`) create prereleases. The workflow also stores the files as a GitHub Actions artifact for seven days.
 
 ## Development
 

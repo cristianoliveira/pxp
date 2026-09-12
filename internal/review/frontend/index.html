@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>pxp visual review</title>
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <h1>pxp visual review</h1>
+  <p>Click or drag on the actual image to add an annotation. Coordinates are stored in original pixels.</p>
+  <section class="images">
+    <figure>
+      <figcaption>Reference</figcaption>
+      <img src="/image/reference.png" alt="Reference screenshot">
+    </figure>
+    <figure>
+      <figcaption>Actual (annotate here)</figcaption>
+      <canvas id="canvas" aria-label="Actual screenshot annotation canvas"></canvas>
+    </figure>
+    <figure>
+      <figcaption>Overlay</figcaption>
+      <img src="/image/overlay.png" alt="Difference overlay">
+    </figure>
+  </section>
+  <div class="controls">
+    <label>Image
+      <select id="image">
+        <option value="actual">actual</option>
+        <option value="reference">reference</option>
+        <option value="overlay">overlay</option>
+      </select>
+    </label>
+    <label>Type
+      <select id="type">
+        <option value="point">point</option>
+        <option value="rectangle">rectangle</option>
+      </select>
+    </label>
+    <label>Annotation note
+      <input id="annotation-note" maxlength="2000" size="40">
+    </label>
+  </div>
+  <ol id="annotations"></ol>
+  <label for="notes">General notes</label>
+  <textarea id="notes" maxlength="10000"></textarea>
+  <div class="controls">
+    <button id="submit" type="button">Submit feedback</button>
+    <button id="approve" type="button">Approve</button>
+    <span id="status" role="status"></span>
+  </div>
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

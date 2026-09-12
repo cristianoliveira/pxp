@@ -39,37 +39,6 @@ type exportMetadataSize struct {
 	Height float64 `json:"height"`
 }
 
-func inputBounds(bounds diff.Bounds, inputs *diff.ImageInputs) *diff.InputBounds {
-	if inputs == nil {
-		return nil
-	}
-	return &diff.InputBounds{
-		Reference: boundsWithCropOrigin(bounds, inputs.Reference.Crop),
-		Actual:    boundsWithCropOrigin(bounds, inputs.Actual.Crop),
-	}
-}
-
-func boundsWithCropOrigin(bounds diff.Bounds, crop *diff.Bounds) diff.Bounds {
-	if crop == nil {
-		return bounds
-	}
-	bounds.X += crop.X
-	bounds.Y += crop.Y
-	return bounds
-}
-
-func parseOptionalCrop(cmd *cobra.Command, flagName string) (*diff.Bounds, error) {
-	value, _ := cmd.Flags().GetString(flagName)
-	crop, err := parseImageRegion(value)
-	if err != nil {
-		return nil, fmt.Errorf("invalid --%s: %w", flagName, err)
-	}
-	if crop != nil && (crop.Width < 1 || crop.Height < 1) {
-		return nil, fmt.Errorf("invalid --%s: width and height must be positive", flagName)
-	}
-	return crop, nil
-}
-
 func addInputPreparationFlags(command *cobra.Command) {
 	command.Flags().
 		String("reference-crop", "", "crop reference before operation: x,y,width,height")
@@ -90,6 +59,7 @@ func prepareCommandImageInputs(
 	if err != nil {
 		return preparedImageInputs{}, cli.NewUsageError(err)
 	}
+
 	referenceMetadataPath, _ := cmd.Flags().GetString("reference-metadata")
 	if referenceCrop != nil && referenceMetadataPath != "" {
 		return preparedImageInputs{}, cli.NewUsageError(
@@ -100,6 +70,7 @@ func prepareCommandImageInputs(
 	if err != nil {
 		return preparedImageInputs{}, err
 	}
+
 	return prepareImageInputs(
 		referencePath,
 		actualPath,
@@ -122,6 +93,7 @@ func prepareImageInputs(
 	if err != nil {
 		return preparedImageInputs{}, fmt.Errorf("decode actual: %w", err)
 	}
+
 	if referenceMetadata != nil {
 		if int(referenceMetadata.ExportBounds.Width) != referenceWidth ||
 			int(referenceMetadata.ExportBounds.Height) != referenceHeight {
@@ -137,6 +109,7 @@ func prepareImageInputs(
 		}
 		referenceCrop = cropFromExportMetadata(*referenceMetadata)
 	}
+
 	if referenceCrop == nil && actualCrop == nil {
 		return preparedImageInputs{
 			referencePath: referencePath,
@@ -144,6 +117,7 @@ func prepareImageInputs(
 			cleanup:       func() {},
 		}, nil
 	}
+
 	if err := validateCrop(referenceCrop, referenceWidth, referenceHeight); err != nil {
 		return preparedImageInputs{}, cli.NewUsageError(
 			fmt.Errorf("invalid --reference-crop: %w", err),
@@ -154,14 +128,7 @@ func prepareImageInputs(
 			fmt.Errorf("invalid --actual-crop: %w", err),
 		)
 	}
-	metadata := &diff.ImageInputs{
-		Reference: diff.ImageInput{
-			Width:  referenceWidth,
-			Height: referenceHeight,
-			Crop:   referenceCrop,
-		},
-		Actual: diff.ImageInput{Width: actualWidth, Height: actualHeight, Crop: actualCrop},
-	}
+
 	referenceCompareWidth, referenceCompareHeight := croppedDimensions(
 		referenceWidth,
 		referenceHeight,
@@ -184,17 +151,32 @@ func prepareImageInputs(
 			),
 		)
 	}
+
 	tempDir, err := os.MkdirTemp("", "pxp-crops-*")
 	if err != nil {
 		return preparedImageInputs{}, err
 	}
 	cleanup := func() { _ = os.RemoveAll(tempDir) }
+
+	metadata := &diff.ImageInputs{
+		Reference: diff.ImageInput{
+			Width:  referenceWidth,
+			Height: referenceHeight,
+			Crop:   referenceCrop,
+		},
+		Actual: diff.ImageInput{
+			Width:  actualWidth,
+			Height: actualHeight,
+			Crop:   actualCrop,
+		},
+	}
 	prepared := preparedImageInputs{
 		referencePath: referencePath,
 		actualPath:    actualPath,
 		metadata:      metadata,
 		cleanup:       cleanup,
 	}
+
 	if referenceCrop != nil {
 		prepared.referencePath = filepath.Join(tempDir, "reference.png")
 		//nolint:lll // keep this expression together
@@ -210,7 +192,20 @@ func prepareImageInputs(
 			return preparedImageInputs{}, fmt.Errorf("invalid --actual-crop: %w", err)
 		}
 	}
+
 	return prepared, nil
+}
+
+func parseOptionalCrop(cmd *cobra.Command, flagName string) (*diff.Bounds, error) {
+	value, _ := cmd.Flags().GetString(flagName)
+	crop, err := parseImageRegion(value)
+	if err != nil {
+		return nil, fmt.Errorf("invalid --%s: %w", flagName, err)
+	}
+	if crop != nil && (crop.Width < 1 || crop.Height < 1) {
+		return nil, fmt.Errorf("invalid --%s: width and height must be positive", flagName)
+	}
+	return crop, nil
 }
 
 func loadExportMetadata(path string) (*exportMetadata, error) {
@@ -251,6 +246,25 @@ func cropFromExportMetadata(metadata exportMetadata) *diff.Bounds {
 		Width:  int(math.Round(metadata.NodeBounds.Width)),
 		Height: int(math.Round(metadata.NodeBounds.Height)),
 	}
+}
+
+func inputBounds(bounds diff.Bounds, inputs *diff.ImageInputs) *diff.InputBounds {
+	if inputs == nil {
+		return nil
+	}
+	return &diff.InputBounds{
+		Reference: boundsWithCropOrigin(bounds, inputs.Reference.Crop),
+		Actual:    boundsWithCropOrigin(bounds, inputs.Actual.Crop),
+	}
+}
+
+func boundsWithCropOrigin(bounds diff.Bounds, crop *diff.Bounds) diff.Bounds {
+	if crop == nil {
+		return bounds
+	}
+	bounds.X += crop.X
+	bounds.Y += crop.Y
+	return bounds
 }
 
 func croppedDimensions(width, height int, crop *diff.Bounds) (int, int) {
