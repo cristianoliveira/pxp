@@ -21,8 +21,11 @@ The current CI workflow uploads Go coverage but does not fail on coverage loss. 
 - [ ] Wire the canonical command into CI and document the equivalent local invocation; avoid a CI-only check.
 - [ ] Decide explicitly whether coverage and complexity belong in the normal watcher/pre-commit gate or in an advanced quality gate, and keep the lifecycle commands consistent with that decision.
 - [ ] Add deterministic boundary tests or fixtures proving passing and failing coverage/complexity cases.
+- [ ] Provide a runnable browser-test harness for `e2e/review_browser_check.js` and have the watcher execute the behavioral e2e checks, not only syntax validation.
 - [ ] Record the initial baseline and identify any existing hotspots that require remediation or an explicit temporary exemption.
 
 ## Notes
 Do not silently lower thresholds to accommodate existing code. Prefer a diff/new-code policy when enforcing a whole-repository threshold would block unrelated work.
+
+The watcher currently validates the committed e2e helper's JavaScript syntax with `node --check`; it does not yet run browser behavior because the repository has no pinned Playwright runner or stable review fixture URL. Replace this interim check when the harness is added.
 
