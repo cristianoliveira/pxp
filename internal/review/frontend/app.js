@@ -1,22 +1,22 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const image = document.getElementById('image');
-const type = document.getElementById('type');
-const note = document.getElementById('annotation-note');
-const list = document.getElementById('annotations');
+const imageSelect = document.getElementById('image');
+const annotationTypeSelect = document.getElementById('type');
+const annotationNote = document.getElementById('annotation-note');
+const annotationList = document.getElementById('annotations');
 const status = document.getElementById('status');
 const annotations = [];
-let start = null;
+let startPoint = null;
 
-const actual = new Image();
-actual.onload = () => {
-  canvas.width = actual.naturalWidth;
-  canvas.height = actual.naturalHeight;
-  ctx.drawImage(actual, 0, 0);
+const actualImage = new Image();
+actualImage.onload = () => {
+  canvas.width = actualImage.naturalWidth;
+  canvas.height = actualImage.naturalHeight;
+  ctx.drawImage(actualImage, 0, 0);
 };
-actual.src = '/image/actual.png';
+actualImage.src = '/image/actual.png';
 
-function point(event) {
+function canvasPointFromEvent(event) {
   const rect = canvas.getBoundingClientRect();
   const style = getComputedStyle(canvas);
   const left = parseFloat(style.borderLeftWidth) || 0;
@@ -44,9 +44,9 @@ function point(event) {
   };
 }
 
-function redraw() {
-  if (!actual.complete) return;
-  ctx.drawImage(actual, 0, 0);
+function redrawCanvas() {
+  if (!actualImage.complete) return;
+  ctx.drawImage(actualImage, 0, 0);
   ctx.strokeStyle = '#ef4444';
   ctx.fillStyle = '#ef4444';
   annotations.forEach((annotation) => {
@@ -65,53 +65,53 @@ function redraw() {
   });
 }
 
-function refresh() {
-  list.replaceChildren();
+function renderAnnotations() {
+  annotationList.replaceChildren();
   annotations.forEach((annotation, index) => {
     const item = document.createElement('li');
     item.textContent = `${index + 1}. ${annotation.image} ${annotation.type}` +
       ` @ ${annotation.x},${annotation.y}` +
       (annotation.width ? `, ${annotation.width}x${annotation.height}` : '') +
       (annotation.note ? ` — ${annotation.note}` : '');
-    list.appendChild(item);
+    annotationList.appendChild(item);
   });
-  redraw();
+  redrawCanvas();
 }
 
 canvas.addEventListener('pointerdown', (event) => {
-  start = point(event);
+  startPoint = canvasPointFromEvent(event);
   canvas.setPointerCapture(event.pointerId);
 });
 
 canvas.addEventListener('pointerup', (event) => {
-  if (!start) return;
-  const end = point(event);
+  if (!startPoint) return;
+  const endPoint = canvasPointFromEvent(event);
   const annotation = {
-    image: image.value,
-    type: type.value,
-    x: start.x,
-    y: start.y,
-    note: note.value,
+    image: imageSelect.value,
+    type: annotationTypeSelect.value,
+    x: startPoint.x,
+    y: startPoint.y,
+    note: annotationNote.value,
   };
 
-  if (type.value === 'rectangle') {
-    annotation.x = Math.min(start.x, end.x);
-    annotation.y = Math.min(start.y, end.y);
-    annotation.width = Math.abs(end.x - start.x) + 1;
-    annotation.height = Math.abs(end.y - start.y) + 1;
+  if (annotationTypeSelect.value === 'rectangle') {
+    annotation.x = Math.min(startPoint.x, endPoint.x);
+    annotation.y = Math.min(startPoint.y, endPoint.y);
+    annotation.width = Math.abs(endPoint.x - startPoint.x) + 1;
+    annotation.height = Math.abs(endPoint.y - startPoint.y) + 1;
     if (annotation.width < 2 || annotation.height < 2) {
-      start = null;
+      startPoint = null;
       return;
     }
   }
 
   annotations.push(annotation);
-  start = null;
-  note.value = '';
-  refresh();
+  startPoint = null;
+  annotationNote.value = '';
+  renderAnnotations();
 });
 
-async function send(decision) {
+async function submitDecision(decision) {
   const notes = document.getElementById('notes').value;
   if (decision === 'approved' && (annotations.length || notes.trim())) {
     status.className = 'error';
@@ -146,5 +146,5 @@ async function send(decision) {
   }
 }
 
-document.getElementById('submit').onclick = () => send('submitted');
-document.getElementById('approve').onclick = () => send('approved');
+document.getElementById('submit').onclick = () => submitDecision('submitted');
+document.getElementById('approve').onclick = () => submitDecision('approved');

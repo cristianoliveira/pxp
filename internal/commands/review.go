@@ -44,18 +44,45 @@ func newReviewCommand() *cobra.Command {
 	return command
 }
 
-func runReviewCommand(cmd *cobra.Command, args []string) error {
-	perceptualThreshold, _ := cmd.Flags().GetFloat64("perceptual-threshold")
+type reviewOptions struct {
+	outputRoot          string
+	previousFeedback    string
+	threshold           uint8
+	perceptualThreshold float64
+}
+
+func reviewOptionsFrom(command *cobra.Command) (reviewOptions, error) {
+	perceptualThreshold, _ := command.Flags().GetFloat64("perceptual-threshold")
 	if perceptualThreshold < 0 || math.IsNaN(perceptualThreshold) ||
 		math.IsInf(perceptualThreshold, 0) {
-		return cli.NewUsageError(
+		return reviewOptions{}, cli.NewUsageError(
 			fmt.Errorf("--perceptual-threshold must be a finite non-negative number"),
 		)
 	}
-	out, _ := cmd.Flags().GetString("out")
-	previous, _ := cmd.Flags().GetString("previous-feedback")
-	threshold, _ := cmd.Flags().GetUint8("threshold")
-	session, err := review.NewSession(args[0], args[1], out, previous, threshold, perceptualThreshold)
+	outputRoot, _ := command.Flags().GetString("out")
+	previousFeedback, _ := command.Flags().GetString("previous-feedback")
+	threshold, _ := command.Flags().GetUint8("threshold")
+	return reviewOptions{
+		outputRoot:          outputRoot,
+		previousFeedback:    previousFeedback,
+		threshold:           threshold,
+		perceptualThreshold: perceptualThreshold,
+	}, nil
+}
+
+func runReviewCommand(cmd *cobra.Command, args []string) error {
+	options, err := reviewOptionsFrom(cmd)
+	if err != nil {
+		return err
+	}
+	session, err := review.NewSession(
+		args[0],
+		args[1],
+		options.outputRoot,
+		options.previousFeedback,
+		options.threshold,
+		options.perceptualThreshold,
+	)
 	if err != nil {
 		return err
 	}
