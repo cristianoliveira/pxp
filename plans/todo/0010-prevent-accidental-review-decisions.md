@@ -1,7 +1,7 @@
 ---
 id: TASK-0010
 title: Prevent accidental review decisions
-status: todo
+status: doing
 depends_on: []
 priority: high
 tags: []
