@@ -1,7 +1,7 @@
 ---
 id: TASK-0015
 title: Plan incremental complexity and function-length refactors
-status: todo
+status: doing
 depends_on: []
 priority: normal
 tags: []
@@ -23,6 +23,20 @@ TASK-0009 established compatibility-oriented whole-repository caps: cyclomatic c
 - [ ] For each increment, add characterization/property tests before refactoring and preserve observable CLI, output, image, and review-loop behavior.
 - [ ] Keep quality checks deterministic and runnable locally/CI; report trend metrics and remaining exemptions after each increment.
 - [ ] Identify the first small refactor slice suitable for separate implementation authorization; this planning task must not change runtime code or thresholds.
+
+## Current implementation slice
+
+Baseline before edits: 78.3% scoped statement coverage; `golangci-lint` clean
+under the existing caps (cyclomatic complexity 40, function length 203 lines /
+127 statements). The inventory identified `validateRequest` in
+`internal/review/review.go` at complexity 30 and 44 lines, with existing
+handler/session tests covering its public behavior.
+
+This slice extracts decision, request-limit, annotation-list, and individual
+annotation validation helpers. The orchestrator is now complexity 3 and 9
+lines; no threshold or observable error contract changes are made. Focused
+characterization coverage exercises valid point/rectangle requests and every
+existing rejection boundary. Post-change scoped coverage is 78.7%.
 
 ## Notes
 Related: TASK-0009 established the current guardrails. This task plans later refactors only; no threshold change is authorized by creating it. Prefer one cohesive hotspot per implementation task and require focused plus full regression evidence.

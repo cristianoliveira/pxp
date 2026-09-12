@@ -504,6 +504,16 @@ func (s *Session) round() int {
 }
 
 func validateRequest(request FeedbackRequest, width, height int) error {
+	if err := validateDecision(request); err != nil {
+		return err
+	}
+	if err := validateRequestLimits(request); err != nil {
+		return err
+	}
+	return validateAnnotations(request.Annotations, width, height)
+}
+
+func validateDecision(request FeedbackRequest) error {
 	if request.Decision != decisionSubmitted && request.Decision != decisionApproved {
 		return errors.New("decision must be submitted or approved")
 	}
@@ -514,36 +524,51 @@ func validateRequest(request FeedbackRequest, width, height int) error {
 	if request.Decision == decisionApproved && (hasNotes || len(request.Annotations) > 0) {
 		return errors.New("approval cannot include notes or annotations")
 	}
+	return nil
+}
+
+func validateRequestLimits(request FeedbackRequest) error {
 	if len(request.Notes) > maxGeneralNotes {
 		return fmt.Errorf("notes exceed %d characters", maxGeneralNotes)
 	}
 	if len(request.Annotations) > maxAnnotations {
 		return fmt.Errorf("too many annotations (maximum %d)", maxAnnotations)
 	}
-	for index, annotation := range request.Annotations {
-		if annotation.Image != imageReference &&
-			annotation.Image != imageActual &&
-			annotation.Image != imageOverlay {
-			return fmt.Errorf("annotation %d has invalid image %q", index+1, annotation.Image)
+	return nil
+}
+
+func validateAnnotations(annotations []Annotation, width, height int) error {
+	for index, annotation := range annotations {
+		if err := validateAnnotation(annotation, index, width, height); err != nil {
+			return err
 		}
-		if annotation.Type != annotationPoint && annotation.Type != annotationRect {
-			return fmt.Errorf("annotation %d has invalid type %q", index+1, annotation.Type)
-		}
-		if annotation.X < 0 || annotation.Y < 0 || annotation.X >= width || annotation.Y >= height {
-			return fmt.Errorf("annotation %d starts outside %dx%d image", index+1, width, height)
-		}
-		if annotation.Type == annotationPoint && (annotation.Width != 0 || annotation.Height != 0) {
-			return fmt.Errorf("annotation %d point must not have dimensions", index+1)
-		}
-		outsideRectangle := annotation.Width <= 0 || annotation.Height <= 0 ||
-			annotation.X+annotation.Width > width ||
-			annotation.Y+annotation.Height > height
-		if annotation.Type == annotationRect && outsideRectangle {
-			return fmt.Errorf("annotation %d rectangle is outside %dx%d image", index+1, width, height)
-		}
-		if len(annotation.Note) > maxAnnotationNote {
-			return fmt.Errorf("annotation %d note exceeds %d characters", index+1, maxAnnotationNote)
-		}
+	}
+	return nil
+}
+
+func validateAnnotation(annotation Annotation, index, width, height int) error {
+	if annotation.Image != imageReference &&
+		annotation.Image != imageActual &&
+		annotation.Image != imageOverlay {
+		return fmt.Errorf("annotation %d has invalid image %q", index+1, annotation.Image)
+	}
+	if annotation.Type != annotationPoint && annotation.Type != annotationRect {
+		return fmt.Errorf("annotation %d has invalid type %q", index+1, annotation.Type)
+	}
+	if annotation.X < 0 || annotation.Y < 0 || annotation.X >= width || annotation.Y >= height {
+		return fmt.Errorf("annotation %d starts outside %dx%d image", index+1, width, height)
+	}
+	if annotation.Type == annotationPoint && (annotation.Width != 0 || annotation.Height != 0) {
+		return fmt.Errorf("annotation %d point must not have dimensions", index+1)
+	}
+	outsideRectangle := annotation.Width <= 0 || annotation.Height <= 0 ||
+		annotation.X+annotation.Width > width ||
+		annotation.Y+annotation.Height > height
+	if annotation.Type == annotationRect && outsideRectangle {
+		return fmt.Errorf("annotation %d rectangle is outside %dx%d image", index+1, width, height)
+	}
+	if len(annotation.Note) > maxAnnotationNote {
+		return fmt.Errorf("annotation %d note exceeds %d characters", index+1, maxAnnotationNote)
 	}
 	return nil
 }
