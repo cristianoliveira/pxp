@@ -149,7 +149,7 @@ func TestServerLifecycleIsLoopbackOnly(t *testing.T) {
 	server := NewServer(session)
 	url, err := server.Start()
 	require.NoError(t, err)
-	defer server.Close()
+	defer func() { _ = server.Close() }()
 	require.Contains(t, url, "http://127.0.0.1:")
 	response, err := http.Post(url+"/api/feedback", "application/json", bytes.NewBufferString(`{"decision":"approved"}`))
 	require.NoError(t, err)

@@ -37,8 +37,11 @@ linters:
         linters:
           - goconst
           - lll
-      # The self-contained HTML template is kept readable as a single template.
+      # The self-contained HTML templates are kept readable as single templates.
       - path: internal/report/report\.go$
+        linters:
+          - lll
+      - path: internal/review/review\.go$
         linters:
           - lll
 

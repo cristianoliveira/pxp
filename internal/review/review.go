@@ -104,11 +104,16 @@ type Session struct {
 
 // NewSession creates a new immutable comparison snapshot. The input images are
 // copied before comparison so later edits cannot change what the reviewer saw.
-func NewSession(referencePath, actualPath, outputRoot, previousFeedback string, threshold uint8, perceptualThreshold float64) (*Session, error) {
+func NewSession(
+	referencePath, actualPath, outputRoot, previousFeedback string,
+	threshold uint8,
+	perceptualThreshold float64,
+) (*Session, error) {
 	if referencePath == "" || actualPath == "" {
 		return nil, errors.New("reference and actual images are required")
 	}
-	if perceptualThreshold < 0 || math.IsNaN(perceptualThreshold) || math.IsInf(perceptualThreshold, 0) {
+	if perceptualThreshold < 0 || math.IsNaN(perceptualThreshold) ||
+		math.IsInf(perceptualThreshold, 0) {
 		return nil, errors.New("perceptual threshold must be a finite non-negative number")
 	}
 	if outputRoot == "" {
@@ -138,7 +143,13 @@ func NewSession(referencePath, actualPath, outputRoot, previousFeedback string, 
 	}
 	if reference.Width != actual.Width || reference.Height != actual.Height {
 		cleanupOnError()
-		return nil, fmt.Errorf("image dimensions differ: reference is %dx%d, actual is %dx%d", reference.Width, reference.Height, actual.Width, actual.Height)
+		return nil, fmt.Errorf(
+			"image dimensions differ: reference is %dx%d, actual is %dx%d",
+			reference.Width,
+			reference.Height,
+			actual.Width,
+			actual.Height,
+		)
 	}
 	images, err := imageio.LoadDecodedImages(reference.Path, actual.Path)
 	if err != nil {
@@ -165,7 +176,13 @@ func NewSession(referencePath, actualPath, outputRoot, previousFeedback string, 
 		cleanupOnError()
 		return nil, fmt.Errorf("write review overlay: %w", err)
 	}
-	overlayInfo, err := immutableImage(root, "overlay.png", overlayPath, reference.Width, reference.Height)
+	overlayInfo, err := immutableImage(
+		root,
+		"overlay.png",
+		overlayPath,
+		reference.Width,
+		reference.Height,
+	)
 	if err != nil {
 		cleanupOnError()
 		return nil, err
@@ -176,7 +193,11 @@ func NewSession(referencePath, actualPath, outputRoot, previousFeedback string, 
 		return nil, err
 	}
 
-	snapshotID := hashStrings(reference.SHA256, actual.SHA256, fmt.Sprintf("%dx%d", comparison.Width, comparison.Height))[:16]
+	snapshotID := hashStrings(
+		reference.SHA256,
+		actual.SHA256,
+		fmt.Sprintf("%dx%d", comparison.Width, comparison.Height),
+	)[:16]
 	previousCopy := ""
 	if previousFeedback != "" {
 		previousCopy, err = copyPreviousFeedback(root, previousFeedback)
@@ -218,12 +239,19 @@ func NewSession(referencePath, actualPath, outputRoot, previousFeedback string, 
 		cleanupOnError()
 		return nil, err
 	}
-	if err := artifact.WriteFile(filepath.Join(root, "snapshot.json"), append(manifestData, '\n'), 0o600); err != nil {
+	manifestPath := filepath.Join(root, "snapshot.json")
+	if err := artifact.WriteFile(manifestPath, append(manifestData, '\n'), 0o600); err != nil {
 		cleanupOnError()
 		return nil, fmt.Errorf("write snapshot manifest: %w", err)
 	}
 	imageData := make(map[string][]byte, 4)
-	for _, image := range []Image{snapshot.Reference, snapshot.Actual, snapshot.Overlay, snapshot.Mask} {
+	snapshotImages := []Image{
+		snapshot.Reference,
+		snapshot.Actual,
+		snapshot.Overlay,
+		snapshot.Mask,
+	}
+	for _, image := range snapshotImages {
 		data, readErr := os.ReadFile(image.Path)
 		if readErr != nil {
 			cleanupOnError()
@@ -247,7 +275,11 @@ func (s *Session) Submit(request FeedbackRequest) (Result, error) {
 	if _, err := os.Stat(s.feedback); err == nil {
 		return Result{}, errors.New("review round already completed")
 	}
-	if err := validateRequest(request, s.snapshot.Reference.Width, s.snapshot.Reference.Height); err != nil {
+	if err := validateRequest(
+		request,
+		s.snapshot.Reference.Width,
+		s.snapshot.Reference.Height,
+	); err != nil {
 		return Result{}, err
 	}
 	annotations := make([]Annotation, len(request.Annotations))
@@ -257,7 +289,10 @@ func (s *Session) Submit(request FeedbackRequest) (Result, error) {
 	}
 	feedback := Feedback{
 		Version: SchemaVersion, SessionID: s.snapshot.ID, Round: s.round(), Snapshot: s.snapshot,
-		PreviousFeedback: s.previous, Annotations: annotations, Notes: request.Notes, Decision: request.Decision,
+		PreviousFeedback: s.previous,
+		Annotations:      annotations,
+		Notes:            request.Notes,
+		Decision:         request.Decision,
 	}
 	data, err := json.MarshalIndent(feedback, "", "  ")
 	if err != nil {
@@ -274,7 +309,14 @@ func (s *Session) Submit(request FeedbackRequest) (Result, error) {
 	if err := file.Close(); err != nil {
 		return Result{}, fmt.Errorf("persist feedback: %w", err)
 	}
-	result := Result{Version: SchemaVersion, SessionID: feedback.SessionID, Round: feedback.Round, Decision: feedback.Decision, FeedbackPath: s.feedback, Snapshot: s.snapshot}
+	result := Result{
+		Version:      SchemaVersion,
+		SessionID:    feedback.SessionID,
+		Round:        feedback.Round,
+		Decision:     feedback.Decision,
+		FeedbackPath: s.feedback,
+		Snapshot:     s.snapshot,
+	}
 	return result, nil
 }
 
@@ -319,7 +361,9 @@ func validateRequest(request FeedbackRequest, width, height int) error {
 		return fmt.Errorf("too many annotations (maximum %d)", maxAnnotations)
 	}
 	for index, annotation := range request.Annotations {
-		if annotation.Image != "reference" && annotation.Image != "actual" && annotation.Image != "overlay" {
+		if annotation.Image != "reference" &&
+			annotation.Image != "actual" &&
+			annotation.Image != "overlay" {
 			return fmt.Errorf("annotation %d has invalid image %q", index+1, annotation.Image)
 		}
 		if annotation.Type != "point" && annotation.Type != "rectangle" {
@@ -331,7 +375,10 @@ func validateRequest(request FeedbackRequest, width, height int) error {
 		if annotation.Type == "point" && (annotation.Width != 0 || annotation.Height != 0) {
 			return fmt.Errorf("annotation %d point must not have dimensions", index+1)
 		}
-		if annotation.Type == "rectangle" && (annotation.Width <= 0 || annotation.Height <= 0 || annotation.X+annotation.Width > width || annotation.Y+annotation.Height > height) {
+		outsideRectangle := annotation.Width <= 0 || annotation.Height <= 0 ||
+			annotation.X+annotation.Width > width ||
+			annotation.Y+annotation.Height > height
+		if annotation.Type == "rectangle" && outsideRectangle {
 			return fmt.Errorf("annotation %d rectangle is outside %dx%d image", index+1, width, height)
 		}
 		if len(annotation.Note) > maxAnnotationNote {
@@ -357,7 +404,13 @@ func copyImage(root, name, source string) (Image, error) {
 	if err := os.Chmod(target, 0o444); err != nil {
 		return Image{}, err
 	}
-	return Image{Name: strings.TrimSuffix(name, filepath.Ext(name)), Path: target, SHA256: hashBytes(data), Width: width, Height: height}, nil
+	return Image{
+		Name:   strings.TrimSuffix(name, filepath.Ext(name)),
+		Path:   target,
+		SHA256: hashBytes(data),
+		Width:  width,
+		Height: height,
+	}, nil
 }
 
 func immutableImage(root, name, source string, width, height int) (Image, error) {
@@ -368,7 +421,13 @@ func immutableImage(root, name, source string, width, height int) (Image, error)
 	if err := os.Chmod(source, 0o444); err != nil {
 		return Image{}, err
 	}
-	return Image{Name: strings.TrimSuffix(name, filepath.Ext(name)), Path: filepath.Join(root, name), SHA256: hashBytes(data), Width: width, Height: height}, nil
+	return Image{
+		Name:   strings.TrimSuffix(name, filepath.Ext(name)),
+		Path:   filepath.Join(root, name),
+		SHA256: hashBytes(data),
+		Width:  width,
+		Height: height,
+	}, nil
 }
 
 func copyPreviousFeedback(root, source string) (string, error) {
@@ -395,7 +454,10 @@ func copyPreviousFeedback(root, source string) (string, error) {
 }
 
 func validFeedbackHeader(feedback Feedback) bool {
-	return feedback.Version == SchemaVersion && feedback.Round > 0 && feedback.SessionID != "" && (feedback.Decision == "submitted" || feedback.Decision == "approved")
+	return feedback.Version == SchemaVersion &&
+		feedback.Round > 0 &&
+		feedback.SessionID != "" &&
+		(feedback.Decision == "submitted" || feedback.Decision == "approved")
 }
 
 func hashBytes(data []byte) string { sum := sha256.Sum256(data); return hex.EncodeToString(sum[:]) }
@@ -430,7 +492,13 @@ func (s *Server) Start() (string, error) {
 		return "", fmt.Errorf("listen on localhost: %w", err)
 	}
 	s.listener = listener
-	s.httpServer = &http.Server{Handler: s.handler(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 30 * time.Second}
+	s.httpServer = &http.Server{
+		Handler:           s.handler(),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       30 * time.Second,
+	}
 	go func() { _ = s.httpServer.Serve(listener) }()
 	return "http://" + listener.Addr().String(), nil
 }
@@ -466,10 +534,18 @@ func (s *Server) handler() http.Handler {
 	mux.HandleFunc("/", s.handleIndex)
 	mux.HandleFunc("/api/session", s.handleSession)
 	mux.HandleFunc("/api/feedback", s.handleFeedback)
-	mux.HandleFunc("/image/reference.png", func(w http.ResponseWriter, r *http.Request) { s.handleImage(w, r, s.snapshot().Reference.Path) })
-	mux.HandleFunc("/image/actual.png", func(w http.ResponseWriter, r *http.Request) { s.handleImage(w, r, s.snapshot().Actual.Path) })
-	mux.HandleFunc("/image/overlay.png", func(w http.ResponseWriter, r *http.Request) { s.handleImage(w, r, s.snapshot().Overlay.Path) })
-	mux.HandleFunc("/image/mask.png", func(w http.ResponseWriter, r *http.Request) { s.handleImage(w, r, s.snapshot().Mask.Path) })
+	mux.HandleFunc("/image/reference.png", func(w http.ResponseWriter, r *http.Request) {
+		s.handleImage(w, r, s.snapshot().Reference.Path)
+	})
+	mux.HandleFunc("/image/actual.png", func(w http.ResponseWriter, r *http.Request) {
+		s.handleImage(w, r, s.snapshot().Actual.Path)
+	})
+	mux.HandleFunc("/image/overlay.png", func(w http.ResponseWriter, r *http.Request) {
+		s.handleImage(w, r, s.snapshot().Overlay.Path)
+	})
+	mux.HandleFunc("/image/mask.png", func(w http.ResponseWriter, r *http.Request) {
+		s.handleImage(w, r, s.snapshot().Mask.Path)
+	})
 	return securityHeaders(mux)
 }
 func (s *Server) snapshot() Snapshot { return s.session.snapshot }
@@ -486,7 +562,12 @@ func (s *Server) handleSession(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	writeJSON(w, map[string]any{"version": SchemaVersion, "session_id": s.snapshot().ID, "round": s.session.round(), "snapshot": s.snapshot()})
+	writeJSON(w, map[string]any{
+		"version":    SchemaVersion,
+		"session_id": s.snapshot().ID,
+		"round":      s.session.round(),
+		"snapshot":   s.snapshot(),
+	})
 }
 func (s *Server) handleImage(w http.ResponseWriter, r *http.Request, path string) {
 	if r.Method != http.MethodGet {
@@ -542,10 +623,14 @@ func securityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("Referrer-Policy", "no-referrer")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'")
+		w.Header().Set("Content-Security-Policy", contentSecurityPolicy)
 		next.ServeHTTP(w, r)
 	})
 }
+
+const contentSecurityPolicy = "default-src 'self'; " +
+	"img-src 'self'; style-src 'self' 'unsafe-inline'; " +
+	"script-src 'self' 'unsafe-inline'; connect-src 'self'"
 
 const reviewHTML = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>pxp visual review</title><style>body{font:16px system-ui,sans-serif;max-width:1200px;margin:2rem auto;padding:0 1rem;color:#202124} .images{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}.images img{max-width:100%;border:1px solid #bbb;background:#eee} canvas{display:block;max-width:100%;height:auto;border:2px solid #2563eb;cursor:crosshair}.controls{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin:1rem 0} textarea{width:100%;min-height:6rem} button{padding:.6rem 1rem} #status{min-height:1.5rem}.error{color:#b91c1c}.success{color:#166534} #annotations li{margin:.3rem 0}</style></head>
