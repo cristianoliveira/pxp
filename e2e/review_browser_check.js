@@ -114,6 +114,43 @@ async function checkKeyboardViewsAndLifo(page, url) {
   return {created, afterRemove};
 }
 
+async function checkCanvasViewShortcuts(page, url) {
+  await resetDraft(page, url);
+  await page.locator('#canvas').focus();
+  await page.keyboard.press('Enter');
+  const currentText = (await listText(page))[0];
+  const coordinate = currentText.match(/@ ([^—]+)/)?.[1];
+  assert.ok(coordinate, `missing current annotation coordinate: ${currentText}`);
+
+  await page.keyboard.press('Shift+R');
+  assert.equal(await page.locator('#view-status').textContent(), 'Viewing Reference');
+  assert.equal(await page.locator('#canvas').getAttribute('aria-label'), 'Reference screenshot annotation canvas');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'canvas');
+  assert.equal((await listText(page))[0], currentText);
+
+  await page.keyboard.press('Enter');
+  assert.match((await listText(page))[0], new RegExp(`Reference point @ ${coordinate}`));
+  await page.keyboard.press('Shift+O');
+  assert.equal(await page.locator('#view-status').textContent(), 'Viewing Overlay');
+  await page.keyboard.press('Shift+C');
+  assert.equal(await page.locator('#view-status').textContent(), 'Viewing Current');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'canvas');
+
+  await resetDraft(page, url);
+  await page.locator('#type').selectOption('rectangle');
+  await page.locator('#canvas').focus();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Shift+R');
+  assert.equal(await page.locator('#view-status').textContent(), 'Viewing Current');
+  assert.equal(await page.locator('#interaction-status').textContent(), 'Finish or cancel the rectangle before switching views.');
+  assert.equal(await page.locator('#annotations li').count(), 0);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Shift+R');
+  assert.equal(await page.locator('#view-status').textContent(), 'Viewing Reference');
+
+  return {coordinate, annotations: await listText(page)};
+}
+
 async function checkAnnotationModes(page, url) {
   await resetDraft(page, url);
   await page.locator('#type').selectOption('rectangle');
@@ -285,12 +322,13 @@ async function runReviewBrowserChecks(page, options) {
   assert.ok(options && options.url, 'runReviewBrowserChecks requires options.url');
   const tabOrder = await checkTabOrder(page, options.url);
   const modes = await checkAnnotationModes(page, options.url);
+  const viewShortcuts = await checkCanvasViewShortcuts(page, options.url);
   const returnToCanvas = await checkReturnToCanvas(page, options.url);
   const inline = await checkInlineAnnotationNote(page, options.url);
   const keyboard = await checkKeyboardViewsAndLifo(page, options.url);
   const editing = await checkEditCancelAndRectangleEscape(page, options.url);
   const draft = await checkDraftAndValidation(page, options.url);
-  return {tabOrder, modes, returnToCanvas, inline, keyboard, editing, draft};
+  return {tabOrder, modes, viewShortcuts, returnToCanvas, inline, keyboard, editing, draft};
 }
 
 module.exports = {runReviewBrowserChecks};
