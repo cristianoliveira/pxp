@@ -62,8 +62,19 @@ jobs:
       - name: Verify binary help
         run: ./pxp --help
 
-      - name: Run tests with coverage
-        run: go test ./... -coverprofile=coverage.out
+      - name: Install golangci-lint for the quality gate
+        env:
+          GOBIN: ${{ runner.temp }}/bin
+        run: |
+          mkdir -p "$GOBIN"
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.8.0
+          echo "$GOBIN" >> "$GITHUB_PATH"
+
+      - name: Run quality gate
+        run: make quality
+
+      - name: Run quality policy boundary tests
+        run: make quality-test
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v7

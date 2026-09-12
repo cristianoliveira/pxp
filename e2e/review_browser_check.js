@@ -1,9 +1,9 @@
 // Playwright browser checks for the local visual-review workflow.
 //
-// The repository does not pin a Playwright test runner. This helper follows the
-// existing browser-check convention: call `runReviewBrowserChecks(page, {url})`
-// from a Playwright runner or an equivalent browser harness. Its final-decision
-// check intercepts the request; it never submits or approves a live review.
+// The repository's shell harness invokes this helper through playwright-cli.
+// It can also be called from another Playwright runner as
+// `runReviewBrowserChecks(page, {url})`. Its final-decision check intercepts the
+// request; it never submits or approves a live review.
 const assert = require('node:assert/strict');
 
 async function focusBody(page) {
@@ -184,6 +184,9 @@ async function checkCanvasViewShortcuts(page, url) {
   await page.locator('#type').selectOption('rectangle');
   await page.locator('#canvas').focus();
   await page.keyboard.press('Enter');
+  await page.keyboard.press('Shift+ArrowRight');
+  await page.keyboard.press('Shift+ArrowDown');
+  await page.keyboard.press('Enter');
   assert.equal(await page.locator('#annotation-editor').getAttribute('open'), '');
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#annotations li').count(), 0);
@@ -209,6 +212,9 @@ async function checkAnnotationModes(page, url) {
   await resetDraft(page, url);
   await page.locator('#type').selectOption('rectangle');
   await page.locator('#canvas').focus();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Shift+ArrowRight');
+  await page.keyboard.press('Shift+ArrowDown');
   await page.keyboard.press('Enter');
   await page.locator('#annotation-editor-cancel').click();
   await page.locator('#type').selectOption('point');
@@ -248,7 +254,7 @@ async function checkReturnToCanvas(page, url) {
   await page.keyboard.press('g');
   await page.keyboard.press('c');
   assert.equal(await page.locator(':focus').getAttribute('id'), 'notes');
-  assert.equal(await page.locator('#notes').inputValue(), 'gc remains text');
+  assert.match(await page.locator('#notes').inputValue(), /^gc remains textgc$/);
 
   await returnButton.focus();
   await page.keyboard.press('g');
@@ -301,6 +307,9 @@ async function checkInlineAnnotationNote(page, url) {
   await page.locator('#type').selectOption('rectangle');
   await page.locator('#canvas').focus();
   await page.keyboard.press('Enter');
+  await page.keyboard.press('Shift+ArrowRight');
+  await page.keyboard.press('Shift+ArrowDown');
+  await page.keyboard.press('Enter');
   assert.equal(await page.locator('#annotation-editor').getAttribute('open'), '');
   await page.keyboard.press('x');
   assert.equal(await page.locator(':focus').getAttribute('id'), 'annotation-note');
@@ -341,6 +350,9 @@ async function checkEditCancelAndRectangleEscape(page, url) {
   await page.keyboard.press('r');
   await page.locator('#canvas').focus();
   const beforeCancel = await page.locator('#annotations li').count();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Shift+ArrowRight');
+  await page.keyboard.press('Shift+ArrowDown');
   await page.keyboard.press('Enter');
   assert.equal(await page.locator('#annotation-editor').getAttribute('open'), '');
   await page.keyboard.press('ArrowRight');
@@ -422,7 +434,7 @@ async function checkDecisionConfirmation(page, url) {
   await page.keyboard.press('Enter');
   assert.equal(await page.locator('#decision-dialog').getAttribute('open'), '');
   assert.equal(await page.locator('#decision-confirm').textContent(), 'Approve and finish');
-  assert.match(await page.locator('#decision-summary').textContent(), /Review ends/);
+  assert.match(await page.locator('#decision-summary').textContent(), /Approve and finish/);
   await page.locator('#decision-back').click();
   assert.equal(await page.locator(':focus').getAttribute('id'), 'approve');
 

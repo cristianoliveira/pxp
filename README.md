@@ -139,3 +139,25 @@ Tags containing a hyphen (for example, `v0.1.0-rc.1`) create prereleases. The wo
 make test
 make build
 ```
+
+The advanced quality gate is the canonical local and CI policy command:
+
+```bash
+make quality
+```
+
+It runs the internal packages and smoke tests with coverage and checks a
+minimum of 78.0% statement coverage. The command package has no testable
+statements and is excluded from the coverage profile; generated code is also
+excluded. It also runs `golangci-lint` with complexity capped at 40 and
+function size capped at 203 lines or 127 statements. These limits match the
+baseline recorded when the policy was introduced; existing hotspots are
+intentionally retained until they are refactored. The quality gate is an advanced CI gate, not a normal watcher or
+pre-commit hook, so local edit feedback stays fast. Use `make quality-test` to
+exercise deterministic passing and failing coverage, complexity, and function-
+length boundary fixtures.
+
+The watcher runs the behavioral browser harness in addition to Go checks. It
+requires the pinned project tooling (`playwright-cli` 0.1.9 and Chromium) and
+uses `scripts/run-review-browser-check.sh`; `node --check` alone is not a
+behavioral substitute.

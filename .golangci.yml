@@ -21,9 +21,22 @@ linters:
     - misspell       # Spell checking
     - lll            # Enforce maximum line length
 
+    # Complexity and function-size guardrails. These thresholds match the
+    # initial repository baseline; new code must not exceed the baseline.
+    - cyclop         # Check cyclomatic complexity
+    - funlen         # Check function length
+
   settings:
     lll:
       line-length: 100
+
+    cyclop:
+      max-complexity: 40
+      package-average: 0
+
+    funlen:
+      lines: 203
+      statements: 127
 
     # Duplication settings
     dupl:

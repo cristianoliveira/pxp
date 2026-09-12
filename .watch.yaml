@@ -1,0 +1,59 @@
+# Funzzy watcher for the Go CLI.
+# Run `fzz check` to validate or `fzz watch` to start it.
+
+on:
+  socket: .watch.sock
+  change:
+    - "**/*.go"
+    - "go.mod"
+    - "go.sum"
+    - ".golangci.yml"
+    - "Makefile"
+    - "flake.nix"
+    - "skills/**/*.md"
+    - "cmd/**/*.md"
+    - "e2e/**/*.js"
+    - "scripts/**/*.sh"
+  ignore:
+    - "bin/**"
+    - "dist/**"
+    - "coverage.out"
+    - ".tmp/**"
+    - ".git/**"
+    - ".watch.sock"
+  debounce: 1s
+  respect_gitignore: true
+
+execution:
+  concurrency: 3
+  output: show-on-failure
+  timeout: 10m
+  recovery_policy: skip
+
+jobs:
+  - name: format
+    run: |
+      test -z "$(gofmt -l .)" || {
+        echo "Go files need formatting; run 'gofmt -w .'"
+        gofmt -d .
+        exit 1
+      }
+    parallel: checks
+
+  - name: vet
+    run: go vet ./...
+    parallel: checks
+
+  - name: lint
+    run: golangci-lint run
+    parallel: checks
+
+  - name: test
+    run: go test ./...
+    parallel: checks
+
+  - name: e2e
+    run: scripts/run-review-browser-check.sh
+
+  - name: install locally
+    run: go install ./cmd/pxp
