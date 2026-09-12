@@ -2,6 +2,8 @@
 
 `pxp` emits structured results on stdout and diagnostics on stderr.
 
+The [review-loop vision and goals](review-loop-vision.md) describe the intended human–agent review experience, not the current command contract.
+
 ## Output
 
 - TOON is the default structured format.
