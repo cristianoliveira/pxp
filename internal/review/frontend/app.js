@@ -203,13 +203,14 @@ function focusAnnotationAction(annotationId, action) {
 
 function renderAnnotations() {
   annotationList.replaceChildren();
-  annotations.forEach((annotation, index) => {
+  annotations.slice().reverse().forEach((annotation, displayIndex) => {
     const item = document.createElement('li');
     const selectButton = document.createElement('button');
     const editButton = document.createElement('button');
     const removeButton = document.createElement('button');
-    const key = annotationKey(annotation, index);
-    const description = `${index + 1}. ${sourceLabel(annotation.image)} ${annotation.type}` +
+    const originalIndex = annotations.indexOf(annotation);
+    const key = annotationKey(annotation, originalIndex);
+    const description = `${displayIndex + 1}. ${sourceLabel(annotation.image)} ${annotation.type}` +
       ` @ ${annotation.x},${annotation.y}` +
       (annotation.width ? `, ${annotation.width}x${annotation.height}` : '') +
       (annotation.note ? ` — ${annotation.note}` : '');
@@ -224,14 +225,14 @@ function renderAnnotations() {
     editButton.type = 'button';
     editButton.dataset.annotationId = key;
     editButton.dataset.annotationEdit = '';
-    editButton.setAttribute('aria-label', `Edit annotation ${index + 1}`);
+    editButton.setAttribute('aria-label', `Edit annotation ${displayIndex + 1}`);
     editButton.textContent = 'Edit note';
     editButton.addEventListener('click', () => beginAnnotationEdit(annotation, key));
 
     removeButton.type = 'button';
     removeButton.dataset.annotationId = key;
     removeButton.dataset.annotationRemove = '';
-    removeButton.setAttribute('aria-label', `Remove annotation ${index + 1}`);
+    removeButton.setAttribute('aria-label', `Remove annotation ${displayIndex + 1}`);
     removeButton.textContent = 'Remove';
     removeButton.addEventListener('click', () => removeAnnotation(annotation, key));
 
@@ -289,7 +290,7 @@ function removeAnnotation(annotation, key) {
   if (selectedAnnotationId === key) selectedAnnotationId = '';
   saveDraft();
   renderAnnotations();
-  const nextAnnotation = annotations[index] || annotations[index - 1];
+  const nextAnnotation = annotations[index - 1] || annotations[index];
   if (nextAnnotation) {
     focusAnnotationAction(annotationKey(nextAnnotation, annotations.indexOf(nextAnnotation)), 'select');
   } else {
@@ -481,7 +482,7 @@ async function submitDecision(decision) {
     const response = await fetch('/api/feedback', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({annotations, notes, decision}),
+      body: JSON.stringify({annotations: annotations.slice().reverse(), notes, decision}),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'feedback was rejected');
