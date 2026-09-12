@@ -1,7 +1,7 @@
 ---
 id: TASK-0006
 title: POC local annotated visual review loop
-status: doing
+status: done
 depends_on: []
 priority: normal
 tags: []
