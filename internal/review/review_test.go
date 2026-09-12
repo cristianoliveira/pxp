@@ -7,6 +7,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -46,6 +47,37 @@ func TestSessionPersistsImmutableSnapshotAndFeedback(t *testing.T) {
 	require.Equal(t, "submitted", mustReadFeedback(t, result.FeedbackPath).Decision)
 	_, err = session.Submit(FeedbackRequest{Decision: "approved"})
 	require.Error(t, err)
+}
+
+func TestHandlerServesEmbeddedFrontendAssets(t *testing.T) {
+	dir := t.TempDir()
+	reference, actual := writePNG(t, dir, "reference.png", color.Black, color.White)
+	session, err := NewSession(reference, actual, dir, "", 0, 0.1)
+	require.NoError(t, err)
+	server := httptest.NewServer(sessionHandler(session))
+	defer server.Close()
+
+	page, err := http.Get(server.URL + "/")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, page.StatusCode)
+	pageBody, err := io.ReadAll(page.Body)
+	require.NoError(t, err)
+	require.NoError(t, page.Body.Close())
+	require.Contains(t, string(pageBody), "/assets/app.js")
+
+	for _, asset := range []struct {
+		path        string
+		contentType string
+	}{
+		{path: "/assets/style.css", contentType: "text/css; charset=utf-8"},
+		{path: "/assets/app.js", contentType: "text/javascript; charset=utf-8"},
+	} {
+		response, getErr := http.Get(server.URL + asset.path)
+		require.NoError(t, getErr)
+		require.Equal(t, http.StatusOK, response.StatusCode)
+		require.Equal(t, asset.contentType, response.Header.Get("Content-Type"))
+		require.NoError(t, response.Body.Close())
+	}
 }
 
 func TestHandlerUsesOriginalPixelCoordinatesAndExplicitDecision(t *testing.T) {

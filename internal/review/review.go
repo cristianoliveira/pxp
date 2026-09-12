@@ -534,6 +534,12 @@ func (s *Server) handler() http.Handler {
 	mux.HandleFunc("/", s.handleIndex)
 	mux.HandleFunc("/api/session", s.handleSession)
 	mux.HandleFunc("/api/feedback", s.handleFeedback)
+	mux.HandleFunc("/assets/style.css", func(w http.ResponseWriter, r *http.Request) {
+		s.handleFrontendAsset(w, r, "style.css", "text/css; charset=utf-8")
+	})
+	mux.HandleFunc("/assets/app.js", func(w http.ResponseWriter, r *http.Request) {
+		s.handleFrontendAsset(w, r, "app.js", "text/javascript; charset=utf-8")
+	})
 	mux.HandleFunc("/image/reference.png", func(w http.ResponseWriter, r *http.Request) {
 		s.handleImage(w, r, s.snapshot().Reference.Path)
 	})
@@ -554,8 +560,31 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	data, err := frontendFile("index.html")
+	if err != nil {
+		http.Error(w, "review page unavailable", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = io.WriteString(w, reviewHTML)
+	_, _ = w.Write(data)
+}
+func (s *Server) handleFrontendAsset(
+	w http.ResponseWriter,
+	r *http.Request,
+	name, contentType string,
+) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	data, err := frontendFile(name)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	_, _ = w.Write(data)
 }
 func (s *Server) handleSession(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -629,20 +658,4 @@ func securityHeaders(next http.Handler) http.Handler {
 }
 
 const contentSecurityPolicy = "default-src 'self'; " +
-	"img-src 'self'; style-src 'self' 'unsafe-inline'; " +
-	"script-src 'self' 'unsafe-inline'; connect-src 'self'"
-
-const reviewHTML = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>pxp visual review</title><style>body{font:16px system-ui,sans-serif;max-width:1200px;margin:2rem auto;padding:0 1rem;color:#202124} .images{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}.images img{max-width:100%;border:1px solid #bbb;background:#eee} canvas{display:block;max-width:100%;height:auto;border:2px solid #2563eb;cursor:crosshair}.controls{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin:1rem 0} textarea{width:100%;min-height:6rem} button{padding:.6rem 1rem} #status{min-height:1.5rem}.error{color:#b91c1c}.success{color:#166534} #annotations li{margin:.3rem 0}</style></head>
-<body><h1>pxp visual review</h1><p>Click or drag on the actual image to add an annotation. Coordinates are stored in original pixels.</p><section class="images"><figure><figcaption>Reference</figcaption><img src="/image/reference.png" alt="Reference screenshot"></figure><figure><figcaption>Actual (annotate here)</figcaption><canvas id="canvas" aria-label="Actual screenshot annotation canvas"></canvas></figure><figure><figcaption>Overlay</figcaption><img src="/image/overlay.png" alt="Difference overlay"></figure></section>
-<div class="controls"><label>Image <select id="image"><option value="actual">actual</option><option value="reference">reference</option><option value="overlay">overlay</option></select></label><label>Type <select id="type"><option value="point">point</option><option value="rectangle">rectangle</option></select></label><label>Annotation note <input id="annotation-note" maxlength="2000" size="40"></label></div><ol id="annotations"></ol><label for="notes">General notes</label><textarea id="notes" maxlength="10000"></textarea><div class="controls"><button id="submit" type="button">Submit feedback</button><button id="approve" type="button">Approve</button><span id="status" role="status"></span></div>
-<script>
-const canvas=document.getElementById('canvas'), ctx=canvas.getContext('2d'), image=document.getElementById('image'), type=document.getElementById('type'), note=document.getElementById('annotation-note'), list=document.getElementById('annotations'), status=document.getElementById('status'); const annotations=[]; let start=null;
-const actual=new Image(); actual.onload=()=>{canvas.width=actual.naturalWidth;canvas.height=actual.naturalHeight;ctx.drawImage(actual,0,0);}; actual.src='/image/actual.png';
-function point(event){const r=canvas.getBoundingClientRect(),style=getComputedStyle(canvas),left=parseFloat(style.borderLeftWidth)||0,top=parseFloat(style.borderTopWidth)||0,right=parseFloat(style.borderRightWidth)||0,bottom=parseFloat(style.borderBottomWidth)||0,contentWidth=r.width-left-right,contentHeight=r.height-top-bottom; return {x:Math.max(0,Math.min(canvas.width-1,Math.floor((event.clientX-r.left-left)*canvas.width/contentWidth))),y:Math.max(0,Math.min(canvas.height-1,Math.floor((event.clientY-r.top-top)*canvas.height/contentHeight)))};}
-function redraw(){if(!actual.complete)return;ctx.drawImage(actual,0,0);ctx.strokeStyle='#ef4444';ctx.fillStyle='#ef4444';annotations.forEach(a=>{if(a.type==='point'){ctx.beginPath();ctx.arc(a.x,a.y,5,0,Math.PI*2);ctx.fill();}else{ctx.strokeRect(a.x,a.y,a.width,a.height);}});}
-function refresh(){list.replaceChildren();annotations.forEach((a,i)=>{const li=document.createElement('li');li.textContent=(i+1)+'. '+a.image+' '+a.type+' @ '+a.x+','+a.y+(a.width?', '+a.width+'x'+a.height:'')+(a.note?' — '+a.note:'');list.appendChild(li);});redraw();}
-canvas.addEventListener('pointerdown',e=>{start=point(e);canvas.setPointerCapture(e.pointerId);}); canvas.addEventListener('pointerup',e=>{if(!start)return;const end=point(e);let a={image:image.value,type:type.value,x:start.x,y:start.y,note:note.value};if(type.value==='rectangle'){a.x=Math.min(start.x,end.x);a.y=Math.min(start.y,end.y);a.width=Math.abs(end.x-start.x)+1;a.height=Math.abs(end.y-start.y)+1;if(a.width<2||a.height<2){start=null;return;}}annotations.push(a);start=null;note.value='';refresh();});
-async function send(decision){const notes=document.getElementById('notes').value;if(decision==='approved'&&(annotations.length||notes.trim())){status.className='error';status.textContent='Remove notes and annotations before approving.';return;}if(decision==='submitted'&&!annotations.length&&!notes.trim()){status.className='error';status.textContent='Add a note or annotation before submitting.';return;}status.className='';status.textContent='Saving…';try{const response=await fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({annotations,notes,decision})});const data=await response.json();if(!response.ok)throw new Error(data.error||'feedback was rejected');status.className='success';status.textContent=decision==='approved'?'Approved. You may close this page.':'Feedback saved. You may close this page.';document.getElementById('submit').disabled=true;document.getElementById('approve').disabled=true;}catch(error){status.className='error';status.textContent=error.message;}}
-document.getElementById('submit').onclick=()=>send('submitted');document.getElementById('approve').onclick=()=>send('approved');
-</script></body></html>`
+	"img-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'"
