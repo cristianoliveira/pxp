@@ -34,6 +34,7 @@ const viewButtons = document.querySelectorAll('[data-view]');
 const viewStatus = document.getElementById('view-status');
 const interactionStatus = document.getElementById('interaction-status');
 const annotationTypeSelect = document.getElementById('type');
+const modeButtons = document.querySelectorAll('[data-annotation-mode]');
 const annotationNote = document.getElementById('annotation-note');
 const annotationList = document.getElementById('annotations');
 const notesInput = document.getElementById('notes');
@@ -117,6 +118,26 @@ function updateViewControls() {
   viewStatus.textContent = `Viewing ${sourceLabel(activeView)}`;
   canvas.setAttribute('aria-label', `${sourceLabel(activeView)} screenshot annotation canvas`);
   announceKeyboardPoint(`Use Arrow keys to move on the ${sourceLabel(activeView)} view.`);
+}
+
+function annotationTypeLabel(type) {
+  return type === annotationRectangle ? 'Rectangle' : 'Pin';
+}
+
+function updateAnnotationModeControls() {
+  modeButtons.forEach((button) => {
+    button.setAttribute('aria-pressed', String(button.dataset.annotationMode === annotationTypeSelect.value));
+  });
+}
+
+function setAnnotationType(type, announce = true) {
+  if (!validAnnotationTypes.has(type)) return;
+  const changed = annotationTypeSelect.value !== type;
+  annotationTypeSelect.value = type;
+  if (changed) keyboardRectangleStart = null;
+  updateAnnotationModeControls();
+  saveDraft();
+  if (announce) announceKeyboardPoint(`${annotationTypeLabel(type)} mode selected.`);
 }
 
 function clampPoint(point) {
@@ -497,6 +518,21 @@ canvas.addEventListener('keydown', (event) => {
     && !event.ctrlKey
     && !event.metaKey
     && !event.altKey
+    && !event.shiftKey
+    && !event.isComposing
+  ) {
+    const modeShortcut = event.key.toLowerCase();
+    if (modeShortcut === 'p' || modeShortcut === 'r') {
+      event.preventDefault();
+      setAnnotationType(modeShortcut === 'p' ? annotationPoint : annotationRectangle);
+      return;
+    }
+  }
+  if (
+    event.key.length === 1
+    && !event.ctrlKey
+    && !event.metaKey
+    && !event.altKey
     && !event.isComposing
     && !keyboardRectangleStart
   ) {
@@ -632,6 +668,7 @@ async function initialize() {
     const session = await response.json();
     draftStorageKey = `${draftStoragePrefix}${session.session_id}`;
     restoreDraft();
+    updateAnnotationModeControls();
     renderAnnotations();
   } catch (error) {
     status.className = errorClass;
@@ -643,7 +680,10 @@ async function initialize() {
 viewButtons.forEach((button) => {
   button.addEventListener('click', () => setView(button.dataset.view));
 });
-annotationTypeSelect.addEventListener('change', saveDraft);
+modeButtons.forEach((button) => {
+  button.addEventListener('click', () => setAnnotationType(button.dataset.annotationMode));
+});
+annotationTypeSelect.addEventListener('change', () => setAnnotationType(annotationTypeSelect.value));
 annotationNote.addEventListener('input', () => {
   if (editingAnnotationId) {
     const annotation = annotations.find((item, index) => annotationKey(item, index) === editingAnnotationId);

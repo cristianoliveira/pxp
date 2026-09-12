@@ -45,15 +45,40 @@ async function addBlankPin(page) {
 }
 
 async function addCurrentPins(page) {
+  await page.locator('#canvas').focus();
+  await addBlankPin(page);
+  await page.keyboard.press('Shift+ArrowRight');
+  await addBlankPin(page);
+  await page.keyboard.press('Shift+ArrowRight');
+  await addBlankPin(page);
+}
+
+async function checkTabOrder(page, url) {
+  await resetDraft(page, url);
   await focusBody(page);
-  await tab(page, 1);
-  await page.keyboard.press('Enter');
-  await tab(page, 3);
-  await addBlankPin(page);
-  await page.keyboard.press('Shift+ArrowRight');
-  await addBlankPin(page);
-  await page.keyboard.press('Shift+ArrowRight');
-  await addBlankPin(page);
+  const expected = [
+    'Reference',
+    'Current',
+    'Overlay',
+    'canvas',
+    'Return to canvas',
+    'Pin',
+    'Rectangle',
+    'Type',
+    'Note',
+    'General note',
+  ];
+  const actual = [];
+  for (const name of expected) {
+    await page.keyboard.press('Tab');
+    actual.push(await page.locator(':focus').getAttribute('id') || await page.locator(':focus').innerText());
+    if (name === 'canvas') assert.equal(actual.at(-1), 'canvas');
+    else if (name === 'General note') assert.equal(await page.locator(':focus').getAttribute('id'), 'notes');
+    else if (name === 'Type' || name === 'Note') assert.equal(await page.locator(':focus').getAttribute('id'), name === 'Type' ? 'type' : 'annotation-note');
+    else if (name === 'Return to canvas') assert.equal(await page.locator(':focus').getAttribute('aria-label'), name);
+    else assert.equal(await page.locator(':focus').textContent(), name);
+  }
+  return actual;
 }
 
 async function viewWithKeyboard(page, name) {
@@ -79,9 +104,7 @@ async function checkKeyboardViewsAndLifo(page, url) {
   await viewWithKeyboard(page, 'Overlay');
   await viewWithKeyboard(page, 'Current');
 
-  await focusBody(page);
-  await tab(page, 9);
-  assert.equal(await page.locator(':focus').getAttribute('aria-label'), 'Remove annotation 1');
+  await page.getByRole('button', {name: 'Remove annotation 1', exact: true}).focus();
   await page.keyboard.press('Enter');
   const afterRemove = await listText(page);
   assert.equal(afterRemove.length, 2);
@@ -173,16 +196,14 @@ async function checkEditCancelAndRectangleEscape(page, url) {
   await resetDraft(page, url);
   await addCurrentPins(page);
 
-  await focusBody(page);
-  await tab(page, 8);
+  await page.getByRole('button', {name: 'Edit annotation 1', exact: true}).focus();
   await page.keyboard.press('Enter');
   await page.keyboard.press('Control+A');
   await page.keyboard.type('saved note');
   await page.keyboard.press('Enter');
   assert.match((await listText(page))[0], /saved note/);
 
-  await focusBody(page);
-  await tab(page, 11);
+  await page.getByRole('button', {name: 'Edit annotation 2', exact: true}).focus();
   await page.keyboard.press('Enter');
   await page.keyboard.press('Control+A');
   await page.keyboard.type('cancelled note');
@@ -190,8 +211,7 @@ async function checkEditCancelAndRectangleEscape(page, url) {
   assert.doesNotMatch((await listText(page))[1], /cancelled note/);
   assert.equal(await page.locator(':focus').textContent(), 'Edit note');
 
-  await focusBody(page);
-  await tab(page, 9);
+  await page.getByRole('button', {name: 'Remove annotation 1', exact: true}).focus();
   await page.keyboard.press('Enter');
   assert.equal((await page.locator('#annotations li').count()), 2);
   assert.match(await page.locator(':focus').textContent(), /@ 297,238/);
@@ -241,12 +261,13 @@ async function checkDraftAndValidation(page, url) {
 
 async function runReviewBrowserChecks(page, options) {
   assert.ok(options && options.url, 'runReviewBrowserChecks requires options.url');
+  const tabOrder = await checkTabOrder(page, options.url);
   const returnToCanvas = await checkReturnToCanvas(page, options.url);
   const inline = await checkInlineAnnotationNote(page, options.url);
   const keyboard = await checkKeyboardViewsAndLifo(page, options.url);
   const editing = await checkEditCancelAndRectangleEscape(page, options.url);
   const draft = await checkDraftAndValidation(page, options.url);
-  return {returnToCanvas, inline, keyboard, editing, draft};
+  return {tabOrder, returnToCanvas, inline, keyboard, editing, draft};
 }
 
 module.exports = {runReviewBrowserChecks};

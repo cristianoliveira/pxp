@@ -38,6 +38,10 @@
         <canvas id="canvas" role="img" tabindex="0" aria-describedby="keyboard-help" aria-label="Current screenshot annotation canvas"></canvas>
         <div class="canvas-controls">
           <button id="return-to-canvas" type="button" class="return-canvas" aria-label="Return to canvas" title="Return to canvas">↩</button>
+          <div class="mode-picker" role="group" aria-label="Annotation mode">
+            <button type="button" data-annotation-mode="point" aria-pressed="true">Pin</button>
+            <button type="button" data-annotation-mode="rectangle" aria-pressed="false">Rectangle</button>
+          </div>
         </div>
         <p id="keyboard-help" class="hint">Keyboard: use Tab to reach the view buttons; focus the image and use Arrow keys to move the cursor (Shift+Arrow moves farther), then press Enter to place a pin or start/finish a rectangle. With the canvas focused, type a key to edit the selected annotation note; Enter saves and Escape cancels. Press Escape to cancel a rectangle. From other controls, press G then C or use Return to canvas to restore focus.</p>
         <p id="interaction-status" role="status" aria-live="polite"></p>

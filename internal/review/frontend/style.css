@@ -172,6 +172,18 @@ button[aria-pressed="true"] {
   margin: 10px auto 0;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.mode-picker {
+  display: flex;
+  gap: 4px;
+}
+
+.mode-picker button {
+  padding: 6px 10px;
+  font-size: 12px;
 }
 
 .return-canvas {
