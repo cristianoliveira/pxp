@@ -27,7 +27,7 @@ fi
 mkdir -p "$PROOF_DIR"
 cp "$ROOT_DIR/tests/smoke/fixtures/image-diff/real-ui-reference.png" "$PROOF_DIR/reference.png"
 cp "$ROOT_DIR/tests/smoke/fixtures/image-diff/real-ui-implementation.png" "$PROOF_DIR/actual.png"
-go build -o "$PROOF_DIR/pxp" ./cmd/pxp
+(cd "$ROOT_DIR" && go build -o "$PROOF_DIR/pxp" ./cmd/pxp)
 "$PROOF_DIR/pxp" review "$PROOF_DIR/reference.png" "$PROOF_DIR/actual.png" \
   --out "$PROOF_DIR/review" --json >"$PROOF_DIR/stdout" 2>"$PROOF_DIR/stderr" &
 PID=$!

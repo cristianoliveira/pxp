@@ -28,35 +28,45 @@ if PXP_COVERAGE_PROFILE="$TMP_DIR/fail.cover" PXP_USE_EXISTING_COVERAGE=1 \
   exit 1
 fi
 
-mkdir -p "$TMP_DIR/complexity"
-cat >"$TMP_DIR/complexity/go.mod" <<EOF
+mkdir -p "$TMP_DIR/complexity-pass" "$TMP_DIR/complexity-fail"
+for fixture_dir in "$TMP_DIR/complexity-pass" "$TMP_DIR/complexity-fail"; do
+  cat >"$fixture_dir/go.mod" <<EOF
 module example.com/quality-fixture
 
 go 1.25
 EOF
-cat >"$TMP_DIR/complexity/pass.go" <<'EOF'
+done
+cat >"$TMP_DIR/complexity-pass/pass.go" <<'EOF'
 package fixture
 
 func Small() int {
 	return 1
 }
 EOF
+pass_output=$(cd "$TMP_DIR/complexity-pass" && golangci-lint run --config "$ROOT_DIR/.golangci.yml" --issues-exit-code 0 ./... 2>&1)
+if grep -qE 'cyclop|funlen' <<<"$pass_output"; then
+  printf '%s\n' "$pass_output" >&2
+  echo 'quality test: expected isolated passing complexity fixture' >&2
+  exit 1
+fi
+echo 'quality: complexity/function-length passing boundary passed'
+
 {
   printf 'package fixture\n\nfunc TooComplex(value int) int {\n'
   for index in $(seq 1 41); do
     printf '\tif value == %d { return %d }\n' "$index" "$index"
   done
   printf '\treturn 0\n}\n'
-} >"$TMP_DIR/complexity/fail.go"
+} >"$TMP_DIR/complexity-fail/fail.go"
 {
   printf 'package fixture\n\nfunc TooLong(value int) int {\n'
   for index in $(seq 1 220); do
     printf '\tvalue += %d\n' "$index"
   done
   printf '\treturn value\n}\n'
-} >"$TMP_DIR/complexity/long.go"
+} >"$TMP_DIR/complexity-fail/long.go"
 
-lint_output=$(cd "$TMP_DIR/complexity" && golangci-lint run --config "$ROOT_DIR/.golangci.yml" --issues-exit-code 0 ./... 2>&1)
+lint_output=$(cd "$TMP_DIR/complexity-fail" && golangci-lint run --config "$ROOT_DIR/.golangci.yml" --issues-exit-code 0 ./... 2>&1)
 if grep -q cyclop <<<"$lint_output"; then
   echo 'quality: complexity failure boundary passed'
 else
