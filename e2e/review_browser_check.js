@@ -77,10 +77,14 @@ async function checkImplementationContext(page, url) {
   assert.equal(await page.locator('[data-context-field="what_changed"]').textContent(), 'First line\nSecond line');
   assert.equal(await page.locator('[data-context-field="what_to_test"]').textContent(), '<script>not executable</script>');
   assert.equal(await page.locator('script').count(), 1);
-  assert.equal(await page.locator('#implementation-context').getAttribute('open'), '');
-  await page.locator('#implementation-context summary').click();
   assert.equal(await page.locator('#implementation-context').getAttribute('open'), null);
+  assert.equal(await page.locator('#context-title').textContent(), 'Show implementation context');
+  await page.locator('#implementation-context summary').click();
+  assert.equal(await page.locator('#implementation-context').getAttribute('open'), '');
+  assert.equal(await page.locator('#context-title').textContent(), 'Hide implementation context');
   await page.locator('#implementation-context summary').press('Enter');
+  assert.equal(await page.locator('#implementation-context').getAttribute('open'), null);
+  await page.locator('#implementation-context summary').press('Space');
   assert.equal(await page.locator('#implementation-context').getAttribute('open'), '');
   await page.unroute('**/api/session');
   return {title: await page.locator('#context-heading').textContent()};
@@ -106,7 +110,10 @@ async function checkTabOrder(page, url) {
   for (const name of expected) {
     await page.keyboard.press('Tab');
     actual.push(await page.locator(':focus').getAttribute('id') || await page.locator(':focus').innerText());
-    if (name === 'Implementation context') assert.equal(await page.locator(':focus').getAttribute('id'), 'context-title');
+    if (name === 'Implementation context') {
+      assert.equal(await page.locator(':focus').getAttribute('id'), 'context-title');
+      assert.equal(await page.locator(':focus').textContent(), 'Show implementation context');
+    }
     else if (name === 'canvas') assert.equal(actual.at(-1), 'canvas');
     else if (name === 'General note') assert.equal(await page.locator(':focus').getAttribute('id'), 'notes');
     else if (name === 'Type' || name === 'Note') assert.equal(await page.locator(':focus').getAttribute('id'), name === 'Type' ? 'type' : 'annotation-note');

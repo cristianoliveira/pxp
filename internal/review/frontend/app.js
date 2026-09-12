@@ -46,6 +46,8 @@ const decisionStatus = document.getElementById('decision-status');
 const decisionBack = document.getElementById('decision-back');
 const decisionConfirm = document.getElementById('decision-confirm');
 const contextHeading = document.getElementById('context-heading');
+const contextDetails = document.getElementById('implementation-context');
+const contextSummary = document.getElementById('context-title');
 const contextSections = new Map(
   Array.from(document.querySelectorAll('[data-context-section]'))
     .map((section) => [section.dataset.contextSection, section]),
@@ -72,8 +74,15 @@ let pendingDecision = '';
 let decisionInvoker = null;
 let decisionSubmitting = false;
 
+function updateContextDisclosureLabel() {
+  contextSummary.textContent = contextDetails.open
+    ? 'Hide implementation context'
+    : 'Show implementation context';
+}
+
 function renderImplementationContext(context = {}) {
   contextHeading.textContent = context.title || 'No implementation context was provided for this round.';
+  updateContextDisclosureLabel();
   contextSections.forEach((section, field) => {
     const value = typeof context[field] === 'string' ? context[field] : '';
     section.hidden = !value;
@@ -81,6 +90,8 @@ function renderImplementationContext(context = {}) {
     if (target) target.textContent = value;
   });
 }
+
+contextDetails.addEventListener('toggle', updateContextDisclosureLabel);
 
 function imageForView(view) {
   if (!viewImages.has(view)) {
