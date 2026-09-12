@@ -100,7 +100,8 @@ small,
   border-radius: 24px;
   padding: 7px 12px;
   font-size: 13px;
-  white-space: nowrap;
+  max-width: 100%;
+  white-space: normal;
 }
 
 nav {
