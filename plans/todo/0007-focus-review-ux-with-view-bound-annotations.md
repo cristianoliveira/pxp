@@ -1,7 +1,7 @@
 ---
 id: TASK-0007
 title: Focus review UX with view-bound annotations
-status: todo
+status: doing
 depends_on: []
 priority: high
 tags: []
