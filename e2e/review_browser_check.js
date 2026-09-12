@@ -91,6 +91,41 @@ async function checkKeyboardViewsAndLifo(page, url) {
   return {created, afterRemove};
 }
 
+async function checkReturnToCanvas(page, url) {
+  await resetDraft(page, url);
+  const returnButton = page.getByRole('button', {name: 'Return to canvas', exact: true});
+  await returnButton.focus();
+  await page.keyboard.press('g');
+  await page.keyboard.press('c');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'canvas');
+  assert.equal(await page.locator('#interaction-status').textContent(), 'Focus returned to canvas.');
+
+  await returnButton.focus();
+  await page.keyboard.press('Control+g');
+  await page.keyboard.press('c');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'return-to-canvas');
+
+  await page.locator('#notes').focus();
+  await page.locator('#notes').fill('gc remains text');
+  await page.keyboard.press('g');
+  await page.keyboard.press('c');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'notes');
+  assert.equal(await page.locator('#notes').inputValue(), 'gc remains text');
+
+  await returnButton.focus();
+  await page.evaluate(() => {
+    document.activeElement.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'g', bubbles: true, isComposing: true,
+    }));
+  });
+  await page.keyboard.press('c');
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'return-to-canvas');
+
+  await returnButton.click();
+  assert.equal(await page.locator(':focus').getAttribute('id'), 'canvas');
+  return {status: await page.locator('#interaction-status').textContent()};
+}
+
 async function checkInlineAnnotationNote(page, url) {
   await resetDraft(page, url);
   await page.locator('#canvas').focus();
@@ -197,11 +232,12 @@ async function checkDraftAndValidation(page, url) {
 
 async function runReviewBrowserChecks(page, options) {
   assert.ok(options && options.url, 'runReviewBrowserChecks requires options.url');
+  const returnToCanvas = await checkReturnToCanvas(page, options.url);
   const inline = await checkInlineAnnotationNote(page, options.url);
   const keyboard = await checkKeyboardViewsAndLifo(page, options.url);
   const editing = await checkEditCancelAndRectangleEscape(page, options.url);
   const draft = await checkDraftAndValidation(page, options.url);
-  return {inline, keyboard, editing, draft};
+  return {returnToCanvas, inline, keyboard, editing, draft};
 }
 
 module.exports = {runReviewBrowserChecks};

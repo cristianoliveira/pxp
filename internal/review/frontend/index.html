@@ -34,9 +34,10 @@
         <div class="stage-label">
           <strong id="view-status" role="status" aria-live="polite">Viewing Current</strong>
           <span class="muted">Click or use the keyboard to annotate</span>
+          <button id="return-to-canvas" type="button" class="return-canvas">Return to canvas</button>
         </div>
         <canvas id="canvas" role="img" tabindex="0" aria-describedby="keyboard-help" aria-label="Current screenshot annotation canvas"></canvas>
-        <p id="keyboard-help" class="hint">Keyboard: use Tab to reach the view buttons; focus the image and use Arrow keys to move the cursor (Shift+Arrow moves farther), then press Enter to place a pin or start/finish a rectangle. With the canvas focused, type a key to edit the selected annotation note; Enter saves and Escape cancels. Press Escape to cancel a rectangle.</p>
+        <p id="keyboard-help" class="hint">Keyboard: use Tab to reach the view buttons; focus the image and use Arrow keys to move the cursor (Shift+Arrow moves farther), then press Enter to place a pin or start/finish a rectangle. With the canvas focused, type a key to edit the selected annotation note; Enter saves and Escape cancels. Press Escape to cancel a rectangle. From other controls, press G then C or use Return to canvas to restore focus.</p>
         <p id="interaction-status" role="status" aria-live="polite"></p>
       </div>
     </section>

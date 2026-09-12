@@ -53,6 +53,8 @@ let editingTriggerId = '';
 let nextDraftID = 1;
 let draftStorageKey = '';
 let viewLoadVersion = 0;
+let returnToCanvasAnnouncement = false;
+let returnShortcutTimer = 0;
 
 function imageForView(view) {
   if (!viewImages.has(view)) {
@@ -76,6 +78,35 @@ function sourceLabel(source) {
 
 function announceKeyboardPoint(message) {
   interactionStatus.textContent = message;
+}
+
+function isTextEntryTarget(target) {
+  return target instanceof HTMLInputElement
+    || target instanceof HTMLTextAreaElement
+    || target instanceof HTMLSelectElement
+    || target?.isContentEditable;
+}
+
+function focusCanvas() {
+  returnToCanvasAnnouncement = true;
+  canvas.focus();
+  if (returnToCanvasAnnouncement) {
+    returnToCanvasAnnouncement = false;
+    announceKeyboardPoint('Focus returned to canvas.');
+  }
+}
+
+function clearReturnShortcut() {
+  window.clearTimeout(returnShortcutTimer);
+  returnShortcutTimer = 0;
+}
+
+function armReturnShortcut() {
+  clearReturnShortcut();
+  returnShortcutTimer = window.setTimeout(() => {
+    returnShortcutTimer = 0;
+  }, 1000);
+  announceKeyboardPoint('Press C to return focus to the canvas.');
 }
 
 function updateViewControls() {
@@ -515,11 +546,43 @@ canvas.addEventListener('focus', () => {
       y: Math.floor((canvas.height - 1) / 2),
     });
   }
-  announceKeyboardPoint(`Focus is on the ${sourceLabel(activeView)} image.`);
+  if (returnToCanvasAnnouncement) {
+    returnToCanvasAnnouncement = false;
+    announceKeyboardPoint('Focus returned to canvas.');
+  } else {
+    announceKeyboardPoint(`Focus is on the ${sourceLabel(activeView)} image.`);
+  }
   redrawCanvas();
 });
 
 canvas.addEventListener('blur', redrawCanvas);
+
+document.addEventListener('keydown', (event) => {
+  if (
+    event.defaultPrevented
+    || isTextEntryTarget(event.target)
+    || event.isComposing
+    || event.ctrlKey
+    || event.metaKey
+    || event.altKey
+    || event.shiftKey
+  ) return;
+
+  if (event.key.toLowerCase() === 'g') {
+    event.preventDefault();
+    armReturnShortcut();
+    return;
+  }
+
+  if (returnShortcutTimer && event.key.toLowerCase() === 'c') {
+    event.preventDefault();
+    clearReturnShortcut();
+    focusCanvas();
+    return;
+  }
+
+  clearReturnShortcut();
+});
 
 async function submitDecision(decision) {
   const notes = notesInput.value;
@@ -599,6 +662,7 @@ annotationNote.addEventListener('keydown', (event) => {
   }
 });
 notesInput.addEventListener('input', saveDraft);
+document.getElementById('return-to-canvas').onclick = focusCanvas;
 document.getElementById('submit').onclick = () => submitDecision(decisionSubmitted);
 document.getElementById('approve').onclick = () => submitDecision(decisionApproved);
 

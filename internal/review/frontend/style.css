@@ -167,6 +167,13 @@ button[aria-pressed="true"] {
   font-weight: 600;
 }
 
+.return-canvas {
+  margin-left: auto;
+  padding: 6px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 canvas {
   display: block;
   width: 100%;
