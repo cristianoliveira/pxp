@@ -1,6 +1,6 @@
 # pxp - Pixel Perfect
 
-You give a coding agent a screenshot and ask it to build the UI. The result looks close, but the spacing is off, a color doesn't match, and now you need to explain what to fix.
+You give a coding agent a screenshot and ask it to build the UI. The result looks close, but the spacing is off, a color doesn't match, and now you need to explain what to fix in plain english, good luck.
 
 `pxp` compares the reference PNG with a screenshot of your implementation.
 It shows where they differ, gives you numbers to compare between changes, and generates an overlay and an HTML report you can inspect yourself.
