@@ -33,6 +33,19 @@ The human reviews one large image, switches between Reference / Current / Overla
 - [ ] Submitted feedback is persisted against the immutable round. A subsequent review retains previous-feedback linkage and does not move earlier annotations onto new screenshots.
 - [ ] UI makes agent-waiting state and distinct Submit feedback / Approve outcomes clear. General notes remain supported.
 
+## Accessibility and keyboard acceptance
+User explicitly requested accessibility readiness and identified as a heavy keyboard user. This is required scope, not optional polish.
+
+- [ ] Complete the review without a pointer: switch views, create a pin or rectangle on each view, enter/edit/remove notes, navigate existing annotations, submit feedback, and approve an empty draft.
+- [ ] Use semantic labeled controls, logical Tab/Shift+Tab order, visible unobscured focus, and Enter/Space activation. View controls expose their active state; if implemented as tabs, follow tablist arrow-key conventions.
+- [ ] Provide a discoverable keyboard placement workflow, not a mouse-only canvas: a focusable placement cursor with arrow-key movement and explicit commit/cancel, or labeled original-pixel coordinate inputs for pin and rectangle geometry. State image bounds and validate invalid/out-of-bounds geometry without losing draft input.
+- [ ] A canceled placement creates no annotation. Escape cancels an active placement/editor and restores focus to its trigger; there are no keyboard traps. After adding/deleting a note, focus moves to a sensible surviving control. Switching views does not unexpectedly steal focus.
+- [ ] Show keyboard instructions near the relevant controls or in accessible help. Shortcuts must not fire while typing notes or coordinates, interfere with browser/assistive-technology commands, or accidentally submit/approve. Single-character global shortcuts, if added, must be disableable/remappable or active only within the relevant focused component.
+- [ ] Inputs have persistent programmatic labels; errors are associated with affected inputs. Waiting, validation failure, save failure, submission, and approval states are announced accessibly without moving focus or announcing every cursor step.
+- [ ] Annotation list exposes source view, note text, and geometry as text, not only canvas markers. Active view, selection, and errors do not rely on color alone.
+- [ ] Target WCAG 2.2 AA for the review controls: readable contrast, visible focus, usable target sizes, and no loss of controls at 200% zoom or a narrow viewport. Screenshot evidence can retain its two-dimensional presentation; surrounding controls must remain usable.
+- [ ] QA completes and records a keyboard-only journey including both annotation types, view switching, editing/removal, rejection/correction, and explicit decisions. Include a screen-reader smoke check of labels, active view, feedback list, and status announcements; report any unverified accessibility boundaries rather than claiming full conformance.
+
 ## Delivery and ownership
 1. Mony (lead): confirm implementation ownership and integration scope; keep this task open until evidence satisfies acceptance.
 2. Dave (dev): inspect current contracts; add failing tests for view-bound feedback and failure paths, then implement Focus layout and annotation interactions. Preserve runtime architecture and existing CLI contracts.
