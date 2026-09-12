@@ -30,6 +30,8 @@ pxp review reference.png actual.png --out .pxp-review
 
 ## Local annotated review loop
 
+The [review-loop vision and goals](review-loop-vision.md) define the intended human–agent experience and product acceptance boundaries.
+
 `pxp review` copies both PNGs into an immutable round directory, creates the
 mask and directional overlay, and starts a short-lived server bound to
 `127.0.0.1`. Open the URL printed on stderr. The page shows reference, actual,

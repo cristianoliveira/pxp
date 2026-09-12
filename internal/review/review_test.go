@@ -114,6 +114,31 @@ func TestHandlerUsesOriginalPixelCoordinatesAndExplicitDecision(t *testing.T) {
 	require.NoError(t, response.Body.Close())
 }
 
+func TestFeedbackPreservesEachSourceViewAndPixelGeometry(t *testing.T) {
+	dir := t.TempDir()
+	reference, actual := writePNG(t, dir, "reference.png", color.Black, color.White)
+	session, err := NewSession(reference, actual, dir, "", 0, 0.1)
+	require.NoError(t, err)
+
+	result, err := session.Submit(FeedbackRequest{
+		Decision: "submitted",
+		Annotations: []Annotation{
+			{Image: "reference", Type: "point", X: 0, Y: 1},
+			{Image: "actual", Type: "rectangle", X: 1, Y: 0, Width: 2, Height: 2},
+			{Image: "overlay", Type: "point", X: 2, Y: 1},
+		},
+	})
+	require.NoError(t, err)
+
+	feedback := mustReadFeedback(t, result.FeedbackPath)
+	require.Equal(t, []string{"reference", "actual", "overlay"}, []string{
+		feedback.Annotations[0].Image,
+		feedback.Annotations[1].Image,
+		feedback.Annotations[2].Image,
+	})
+	require.Equal(t, Annotation{ID: "note-0002", Image: "actual", Type: "rectangle", X: 1, Y: 0, Width: 2, Height: 2}, feedback.Annotations[1])
+}
+
 func TestHandlerRejectsInvalidDecisionPayloads(t *testing.T) {
 	dir := t.TempDir()
 	reference, actual := writePNG(t, dir, "reference.png", color.Black, color.White)
@@ -131,6 +156,24 @@ func TestHandlerRejectsInvalidDecisionPayloads(t *testing.T) {
 		require.Equal(t, http.StatusBadRequest, response.StatusCode)
 		require.NoError(t, response.Body.Close())
 	}
+}
+
+func TestHandlerRejectsUnknownAnnotationSource(t *testing.T) {
+	dir := t.TempDir()
+	reference, actual := writePNG(t, dir, "reference.png", color.Black, color.White)
+	session, err := NewSession(reference, actual, dir, "", 0, 0.1)
+	require.NoError(t, err)
+	server := httptest.NewServer(sessionHandler(session))
+	defer server.Close()
+
+	response, err := http.Post(
+		server.URL+"/api/feedback",
+		"application/json",
+		bytes.NewBufferString(`{"decision":"submitted","annotations":[{"image":"current","type":"point","x":0,"y":0}]}`),
+	)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, response.StatusCode)
+	require.NoError(t, response.Body.Close())
 }
 
 func TestHandlerRejectsOutOfBoundsAndUnknownFields(t *testing.T) {

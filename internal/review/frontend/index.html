@@ -3,52 +3,87 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>pxp visual review</title>
+  <title>Focus mode · pxp visual review</title>
   <link rel="stylesheet" href="/assets/style.css">
 </head>
-<body>
-  <h1>pxp visual review</h1>
-  <p>Click or drag on the actual image to add an annotation. Coordinates are stored in original pixels.</p>
-  <section class="images">
-    <figure>
-      <figcaption>Reference</figcaption>
-      <img src="/image/reference.png" alt="Reference screenshot">
-    </figure>
-    <figure>
-      <figcaption>Actual (annotate here)</figcaption>
-      <canvas id="canvas" aria-label="Actual screenshot annotation canvas"></canvas>
-    </figure>
-    <figure>
-      <figcaption>Overlay</figcaption>
-      <img src="/image/overlay.png" alt="Difference overlay">
-    </figure>
-  </section>
-  <div class="controls">
-    <label>Image
-      <select id="image">
-        <option value="actual">actual</option>
-        <option value="reference">reference</option>
-        <option value="overlay">overlay</option>
-      </select>
-    </label>
-    <label>Type
-      <select id="type">
-        <option value="point">point</option>
-        <option value="rectangle">rectangle</option>
-      </select>
-    </label>
-    <label>Annotation note
-      <input id="annotation-note" maxlength="2000" size="40">
-    </label>
-  </div>
-  <ol id="annotations"></ol>
-  <label for="notes">General notes</label>
-  <textarea id="notes" maxlength="10000"></textarea>
-  <div class="controls">
-    <button id="submit" type="button">Submit feedback</button>
-    <button id="approve" type="button">Approve</button>
-    <span id="status" role="status"></span>
-  </div>
+<body class="focus">
+  <header>
+    <div>
+      <div class="eyebrow">pxp / human review</div>
+      <h1>Focus mode</h1>
+      <p class="muted">One canvas. More room to inspect the details.</p>
+    </div>
+    <span class="badge">● Agent waiting for your review</span>
+  </header>
+
+  <main class="layout">
+    <section class="card evidence-card" aria-labelledby="evidence-title">
+      <div class="toolbar">
+        <div>
+          <strong id="evidence-title">Round 1</strong>
+          <div class="muted">Immutable screenshot snapshot</div>
+        </div>
+        <div id="view-buttons" class="tools" role="group" aria-label="Image view">
+          <button type="button" data-view="reference" aria-pressed="false">Reference</button>
+          <button type="button" data-view="actual" aria-pressed="true">Current</button>
+          <button type="button" data-view="overlay" aria-pressed="false">Overlay</button>
+        </div>
+      </div>
+
+      <div class="evidence-stage">
+        <div class="stage-label">
+          <strong id="view-status" role="status" aria-live="polite">Viewing Current</strong>
+          <span class="muted">Click or use the keyboard to annotate</span>
+        </div>
+        <canvas id="canvas" role="img" tabindex="0" aria-describedby="keyboard-help" aria-label="Current screenshot annotation canvas"></canvas>
+        <div class="canvas-controls">
+          <button id="return-to-canvas" type="button" class="return-canvas" aria-label="Return to canvas" title="Return to canvas">↩</button>
+          <div class="mode-picker" role="group" aria-label="Annotation mode">
+            <button type="button" data-annotation-mode="point" aria-pressed="true">Pin</button>
+            <button type="button" data-annotation-mode="rectangle" aria-pressed="false">Rectangle</button>
+          </div>
+        </div>
+        <p id="keyboard-help" class="hint">Keyboard: use Tab to reach the view buttons; focus the image and use Arrow keys to move the cursor (Shift+Arrow moves farther), then press Enter to place a pin or start/finish a rectangle. With the canvas focused, type a key to edit the selected annotation note; Enter saves and Escape cancels. Press Escape to cancel a rectangle. From other controls, press G then C or use Return to canvas to restore focus.</p>
+        <p id="interaction-status" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <aside class="card feedback-card" aria-labelledby="feedback-title">
+      <div class="section">
+        <div class="eyebrow">Your feedback</div>
+        <h2 id="feedback-title">What needs to change?</h2>
+
+        <section class="annotation-form" aria-labelledby="annotation-title">
+          <h3 id="annotation-title">Add annotation</h3>
+          <div class="field-grid">
+            <label for="type">Type</label>
+            <select id="type">
+              <option value="point">Pin</option>
+              <option value="rectangle">Rectangle</option>
+            </select>
+            <label for="annotation-note">Note</label>
+            <input id="annotation-note" maxlength="2000" placeholder="Describe this detail…">
+          </div>
+        </section>
+
+        <ol id="annotations" aria-label="Annotations"></ol>
+
+        <label for="notes">General note</label>
+        <textarea id="notes" maxlength="10000" placeholder="Describe the desired result…"></textarea>
+        <p class="muted draft-status">Draft saved locally in this browser.</p>
+
+        <div class="actions">
+          <button id="submit" type="button" class="primary">Submit feedback →</button>
+          <small>Hand notes to the agent for another round.</small>
+          <button id="approve" type="button">Approve this round</button>
+          <small>Finish review without requesting changes.</small>
+        </div>
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="bottom">Closing this tab is not approval. Reopen this page to resume your draft. Submitting starts the next agent round; approval ends review.</footer>
   <script src="/assets/app.js" defer></script>
 </body>
 </html>
