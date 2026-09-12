@@ -20,7 +20,7 @@ Callers provide domain values and choose a format. This package does not know im
 
 # Boundary flows
 
-- Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/output/printer.go:Printer.Structured` via `internal/commands/command.go:NewCommand`; value: `imagediff.ImageComparison`.
+- Information flow: `internal/imageio/imageio.go:CompareImagesWithThresholds` -> `internal/output/printer.go:Printer.Structured` via `internal/commands/command.go:NewCommand`; value: `imagediff.ImageComparison`.
 
 # Placement
 

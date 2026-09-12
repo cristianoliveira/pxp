@@ -19,7 +19,7 @@ It owns presentation and safe embedding. It consumes comparison values and paths
 
 # Boundary flows
 
-- Information flow: `internal/imagediff/image.go:CompareImagesWithThresholds` -> `internal/report/report.go:Render` via `internal/commands/command.go:NewCommand`; value: `imagediff.ImageComparison`.
+- Information flow: `internal/imageio/imageio.go:CompareImagesWithThresholds` -> `internal/report/report.go:Render` via `internal/commands/command.go:NewCommand`; value: `imagediff.ImageComparison`.
 
 # Placement
 
