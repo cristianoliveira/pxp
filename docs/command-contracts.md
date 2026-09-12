@@ -26,6 +26,7 @@ pxp reference.png actual.png --json
 pxp probe reference.png actual.png --at 20,20 --format json
 pxp scan reference.png actual.png --row 20 --format json
 pxp review reference.png actual.png --out .pxp-review
+pxp review reference.png actual.png --out .pxp-review --open --json
 ```
 
 ## Local annotated review loop
@@ -34,9 +35,12 @@ The [review-loop vision and goals](review-loop-vision.md) define the intended hu
 
 `pxp review` copies both PNGs into an immutable round directory, creates the
 mask and directional overlay, and starts a short-lived server bound to
-`127.0.0.1`. Open the URL printed on stderr. The page shows reference, actual,
-and overlay images. Click or drag on the actual image to add point or rectangle
-notes; display scaling is converted back to original image pixels.
+`127.0.0.1`. The command prints the URL on stderr and waits in the foreground.
+With `--open`, it attempts a platform default-browser opener after the server is
+ready; opener failure is nonfatal and the printed URL remains the manual
+fallback. The page shows reference, actual, and overlay images. Click or drag
+on the actual image to add point or rectangle notes; display scaling is
+converted back to original image pixels.
 
 Use **Submit feedback** to finish a round with `decision: submitted`, or use
 **Approve** to finish with `decision: approved`. Submitted feedback must include
@@ -63,4 +67,6 @@ collaboration, freehand drawing, live editing, or automatic agent edits. Keep
 review artifact directories private and treat feedback as local project data.
 
 The result remains machine-readable when a validation gate fails. The process
-exit code is the signal for automation.
+exit code is the signal for automation. Consume stdout after the foreground
+command exits; do not background the server or ask the human to announce
+completion in chat.
