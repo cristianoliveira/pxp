@@ -6,9 +6,7 @@ const errorClass = 'error';
 const successClass = 'success';
 const annotationColor = '#ef4444';
 const selectedAnnotationColor = '#f59e0b';
-const pointRadius = 5;
-const selectedPointRadius = 7;
-const markerSize = 22;
+const canvasMarkerSize = 16;
 const fullCircleRadians = Math.PI * 2;
 const rectangleSizeOffset = 1;
 const minimumRectangleSize = 2;
@@ -293,14 +291,16 @@ function drawAnnotation(annotation) {
 
   const anchorX = annotation.x;
   const anchorY = annotation.y;
-  const halfMarker = markerSize / 2;
+  const halfMarker = canvasMarkerSize / 2;
   ctx.fillStyle = selected ? selectedAnnotationColor : annotationColor;
-  ctx.fillRect(anchorX - halfMarker, anchorY - halfMarker, markerSize, markerSize);
+  ctx.beginPath();
+  ctx.arc(anchorX, anchorY, halfMarker, 0, fullCircleRadians);
+  ctx.fill();
   ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 2;
-  ctx.strokeRect(anchorX - halfMarker, anchorY - halfMarker, markerSize, markerSize);
+  ctx.stroke();
   ctx.fillStyle = '#ffffff';
-  ctx.font = '700 11px system-ui, sans-serif';
+  ctx.font = '700 9px system-ui, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(String(displayNumber), anchorX, anchorY);
@@ -341,6 +341,8 @@ function toggleAnnotationNote(key) {
 function selectAnnotation(annotation, key) {
   selectedAnnotationId = key;
   renderAnnotations();
+  const selectButton = annotationList.querySelector(`[data-annotation-select][data-annotation-id="${CSS.escape(key)}"]`);
+  if (selectButton) selectButton.focus();
   void setView(annotation.image).then((changed) => {
     if (!changed) return;
     keyboardPoint = clampPoint({x: annotation.x, y: annotation.y});
@@ -379,6 +381,7 @@ function renderAnnotations() {
     selectButton.dataset.annotationId = key;
     selectButton.dataset.annotationSelect = '';
     selectButton.setAttribute('aria-current', String(key === selectedAnnotationId));
+    selectButton.setAttribute('aria-label', `Select annotation ${displayIndex + 1}: ${annotationGeometryText(annotation)}`);
     selectButton.setAttribute('aria-describedby', `${markerID} ${noteID}`);
     selectButton.addEventListener('click', () => selectAnnotation(annotation, key));
 
@@ -407,6 +410,7 @@ function renderAnnotations() {
       expandButton.setAttribute('aria-controls', noteID);
       expandButton.setAttribute('aria-expanded', String(expanded));
       expandButton.textContent = expanded ? 'Show less' : 'Read full note';
+      expandButton.setAttribute('aria-label', `${expanded ? 'Collapse' : 'Read full'} note for annotation ${displayIndex + 1}`);
       expandButton.addEventListener('click', () => toggleAnnotationNote(key));
       cardMain.appendChild(expandButton);
     }

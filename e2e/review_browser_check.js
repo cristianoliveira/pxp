@@ -187,8 +187,17 @@ async function checkCompactPinNoteCards(page, url) {
   assert.equal(await page.locator('[data-annotation-card] button button').count(), 0);
   assert.equal(await page.locator('[data-annotation-marker]').count(), 2);
   assert.equal(await page.locator('[data-annotation-marker]').first().textContent(), '1');
+  assert.equal(await page.locator('[data-annotation-marker]').first().evaluate((element) => getComputedStyle(element).borderRadius), '50%');
+  assert.equal(await page.locator('[data-annotation-select]').first().getAttribute('aria-label'), 'Select annotation 1: Current point @ 297,238');
   assert.match(await page.locator('[data-annotation-card]').first().innerText(), /Current point @ 297,238/);
   assert.match(await page.locator('[data-annotation-card]').nth(1).innerText(), /Current point @ 287,238/);
+
+  const firstSelect = page.locator('[data-annotation-select]').first();
+  await firstSelect.focus();
+  await page.keyboard.press('Space');
+  await page.waitForTimeout(50);
+  assert.equal(await page.locator(':focus').getAttribute('data-annotation-select'), '');
+  assert.equal(await page.locator('[data-annotation-select]').first().getAttribute('aria-current'), 'true');
 
   const longCard = page.locator('[data-annotation-card]').nth(1);
   const longNoteElement = longCard.locator('.annotation-card-note');
@@ -208,13 +217,30 @@ async function checkCompactPinNoteCards(page, url) {
   await page.locator('#annotation-note').fill('Reference source note.');
   await page.locator('#annotation-editor-save').click();
   assert.match(await page.locator('[data-annotation-card]').first().innerText(), /Reference point/);
-  await page.locator('[data-annotation-select]').nth(1).click();
-  await page.waitForTimeout(50);
-  assert.equal(await page.locator('#view-status').textContent(), 'Viewing Current');
-  await page.locator('[data-annotation-select]').first().click();
+  await page.locator('[data-annotation-select]').first().focus();
+  await page.keyboard.press('Space');
   await page.waitForTimeout(50);
   assert.equal(await page.locator('#view-status').textContent(), 'Viewing Reference');
-  assert.equal(await page.locator('#interaction-status').textContent(), 'Reference annotation 3 selected at 297,238.');
+  assert.equal(await page.locator(':focus').getAttribute('data-annotation-select'), '');
+
+  await viewWithKeyboard(page, 'Overlay');
+  await page.locator('#canvas').focus();
+  await page.keyboard.press('Enter');
+  await page.locator('#annotation-note').fill('Overlay source note.');
+  await page.locator('#annotation-editor-save').click();
+  assert.match(await page.locator('[data-annotation-card]').first().innerText(), /Overlay point/);
+  await page.locator('[data-annotation-select]').nth(2).focus();
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(50);
+  assert.equal(await page.locator('#view-status').textContent(), 'Viewing Current');
+  await page.locator('[data-annotation-select]').nth(1).focus();
+  await page.keyboard.press('Space');
+  await page.waitForTimeout(50);
+  assert.equal(await page.locator('#view-status').textContent(), 'Viewing Reference');
+  await page.locator('[data-annotation-select]').first().focus();
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(50);
+  assert.equal(await page.locator('#view-status').textContent(), 'Viewing Overlay');
 
   await page.setViewportSize({width: 320, height: 640});
   await page.reload();
@@ -235,8 +261,8 @@ async function checkCompactPinNoteCards(page, url) {
   assert.equal(await page.locator(`[id="${expandedNoteID}"]`).getAttribute('id'), expandedNoteID);
 
   return {
-    cards: 3,
-    markerSize: 22,
+    cards: 4,
+    markerSize: 16,
     longNote: true,
     sourceNavigation: true,
     narrowLayout,
