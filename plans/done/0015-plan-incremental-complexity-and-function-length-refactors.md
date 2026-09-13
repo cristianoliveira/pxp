@@ -1,7 +1,7 @@
 ---
 id: TASK-0015
 title: Plan incremental complexity and function-length refactors
-status: doing
+status: done
 depends_on: []
 priority: normal
 tags: []
