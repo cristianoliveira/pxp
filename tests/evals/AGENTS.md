@@ -1,6 +1,6 @@
 # Purpose
 
-`tests/evals/` owns offline evaluation controls and retained evidence for the [agent-facing `pxp` workflow](skills/pxp/AGENTS.md).
+`tests/evals/` owns offline evaluation controls and retained evidence for the [agent-facing `pxp` workflow](../../skills/pxp/AGENTS.md).
 
 # Boundaries
 
@@ -8,8 +8,8 @@ This tree contains holdout inputs, accepted or alternative evidence, and indepen
 
 # Connections
 
-- [The `pxp` skill](skills/pxp/AGENTS.md): is evaluated against these controls.
-- [Evaluation packaging](skills/pxp/evals/AGENTS.md): prepares and validates skill-side inputs.
+- [The `pxp` skill](../../skills/pxp/AGENTS.md): is evaluated against these controls.
+- [Evaluation packaging](../../skills/pxp/evals/AGENTS.md): prepares and validates skill-side inputs.
 
 # Placement
 

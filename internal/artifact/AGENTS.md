@@ -8,10 +8,10 @@ It creates parent directories and writes bytes or open files with caller-selecte
 
 # Connections
 
-- [Image I/O](internal/imageio/AGENTS.md): uses file creation when encoding PNG artifacts.
-- [Annotation persistence](internal/annotationio/AGENTS.md): uses file creation for annotation JSON.
-- [Reports](internal/report/AGENTS.md): uses byte persistence for HTML reports.
-- [Review](internal/review/AGENTS.md): supports immutable review snapshot artifacts through its image and feedback workflows.
+- [Image I/O](../imageio/AGENTS.md): uses file creation when encoding PNG artifacts.
+- [Annotation persistence](../annotationio/AGENTS.md): uses file creation for annotation JSON.
+- [Reports](../report/AGENTS.md): uses byte persistence for HTML reports.
+- [Review](../review/AGENTS.md): supports immutable review snapshot artifacts through its image and feedback workflows.
 
 # Landmarks
 

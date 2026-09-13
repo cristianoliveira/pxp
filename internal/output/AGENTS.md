@@ -8,9 +8,9 @@ Callers provide domain values and choose a format. This package does not know im
 
 # Connections
 
-- [CLI runtime](internal/cli/AGENTS.md): selects and binds the printer to command streams.
-- [Command orchestration](internal/commands/AGENTS.md): supplies comparison and diagnostic values for rendering.
-- [Annotations](internal/annotations/AGENTS.md) and [reports](internal/report/AGENTS.md): consume [artifact](internal/artifact/AGENTS.md) for filesystem persistence.
+- [CLI runtime](../cli/AGENTS.md): selects and binds the printer to command streams.
+- [Command orchestration](../commands/AGENTS.md): supplies comparison and diagnostic values for rendering.
+- [Annotations](../annotations/AGENTS.md) and [reports](../report/AGENTS.md): consume [artifact](../artifact/AGENTS.md) for filesystem persistence.
 
 # Landmarks
 

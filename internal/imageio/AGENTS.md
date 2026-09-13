@@ -1,6 +1,6 @@
 # Purpose
 
-`internal/imageio` owns PNG decoding, dimension checks, and filesystem adapters around [deterministic image evidence](internal/imagediff/AGENTS.md).
+`internal/imageio` owns PNG decoding, dimension checks, and filesystem adapters around [deterministic image evidence](../imagediff/AGENTS.md).
 
 # Boundaries
 
@@ -8,10 +8,10 @@ It converts image files to in-memory comparison inputs and persists PNG outputs.
 
 # Connections
 
-- [Image comparison](internal/imagediff/AGENTS.md): provides decoded images and consumes its comparison, measurement, and overlay operations.
-- [Artifact persistence](internal/artifact/AGENTS.md): provides filesystem creation for PNG outputs.
-- [Command orchestration](internal/commands/AGENTS.md): invokes file-based comparison and inspection workflows.
-- [Review](internal/review/AGENTS.md): supplies decoded images and persists review snapshot images.
+- [Image comparison](../imagediff/AGENTS.md): provides decoded images and consumes its comparison, measurement, and overlay operations.
+- [Artifact persistence](../artifact/AGENTS.md): provides filesystem creation for PNG outputs.
+- [Command orchestration](../commands/AGENTS.md): invokes file-based comparison and inspection workflows.
+- [Review](../review/AGENTS.md): supplies decoded images and persists review snapshot images.
 
 # Landmarks
 

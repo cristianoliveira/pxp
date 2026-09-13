@@ -8,8 +8,8 @@ The controls are grader inputs, not skill content or production examples. Verifi
 
 # Connections
 
-- [Evaluation root](tests/evals/AGENTS.md): owns evaluation scope and placement policy.
-- [The `pxp` skill](skills/pxp/AGENTS.md): is evaluated against these controls.
+- [Evaluation root](../../AGENTS.md): owns evaluation scope and placement policy.
+- [The `pxp` skill](../../../../skills/pxp/AGENTS.md): is evaluated against these controls.
 
 # Placement
 

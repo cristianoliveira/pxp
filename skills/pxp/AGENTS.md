@@ -8,11 +8,11 @@ The skill owns workflow guidance and stable command usage. It does not own targe
 
 # Connections
 
-- [Executable commands](cmd/AGENTS.md): provide the CLI workflow invoked by the skill.
-- [Command orchestration](internal/commands/AGENTS.md): defines command options and artifact sequencing.
-- [Image comparison](internal/imagediff/AGENTS.md): provides measurements and advisory image evidence.
-- [Evaluation packaging](skills/pxp/evals/AGENTS.md): checks skill metadata and fixture packaging.
-- [Evaluation controls](tests/evals/AGENTS.md): owns independent holdout inputs and accepted evidence.
+- [Executable commands](../../cmd/AGENTS.md): provide the CLI workflow invoked by the skill.
+- [Command orchestration](../../internal/commands/AGENTS.md): defines command options and artifact sequencing.
+- [Image comparison](../../internal/imagediff/AGENTS.md): provides measurements and advisory image evidence.
+- [Evaluation packaging](evals/AGENTS.md): checks skill metadata and fixture packaging.
+- [Evaluation controls](../../tests/evals/AGENTS.md): owns independent holdout inputs and accepted evidence.
 
 # Placement
 

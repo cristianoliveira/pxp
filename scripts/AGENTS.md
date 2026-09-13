@@ -4,12 +4,12 @@
 
 # Boundaries
 
-Scripts are not runtime CLI capabilities. They may inspect or package repository inputs, but must preserve deterministic behavior and must not become a hidden replacement for [command orchestration](internal/commands/AGENTS.md).
+Scripts are not runtime CLI capabilities. They may inspect or package repository inputs, but must preserve deterministic behavior and must not become a hidden replacement for [command orchestration](../internal/commands/AGENTS.md).
 
 # Connections
 
-- [Skills](skills/AGENTS.md): owns agent workflow content that support scripts may package or validate.
-- [Evaluation controls](tests/evals/AGENTS.md): owns evaluation inputs and evidence.
+- [Skills](../skills/AGENTS.md): owns agent workflow content that support scripts may package or validate.
+- [Evaluation controls](../tests/evals/AGENTS.md): owns evaluation inputs and evidence.
 
 # Placement
 
