@@ -360,6 +360,7 @@ function renderAnnotations() {
     const marker = document.createElement('span');
     const meta = document.createElement('span');
     const note = document.createElement('span');
+    const cardMain = document.createElement('span');
     const actions = document.createElement('span');
     const originalIndex = annotations.indexOf(annotation);
     const key = annotationKey(annotation, originalIndex);
@@ -387,6 +388,7 @@ function renderAnnotations() {
     marker.setAttribute('aria-hidden', 'true');
     marker.textContent = String(displayIndex + 1);
 
+    cardMain.className = 'annotation-card-main';
     cardBody.className = 'annotation-card-body';
     meta.className = 'annotation-card-meta';
     meta.textContent = annotationGeometryText(annotation);
@@ -406,7 +408,7 @@ function renderAnnotations() {
       expandButton.setAttribute('aria-expanded', String(expanded));
       expandButton.textContent = expanded ? 'Show less' : 'Read full note';
       expandButton.addEventListener('click', () => toggleAnnotationNote(key));
-      cardBody.appendChild(expandButton);
+      cardMain.appendChild(expandButton);
     }
 
     editButton.type = 'button';
@@ -426,7 +428,8 @@ function renderAnnotations() {
     actions.className = 'annotation-card-actions';
     actions.append(editButton, removeButton);
     selectButton.append(marker, cardBody);
-    item.append(selectButton, actions);
+    cardMain.prepend(selectButton);
+    item.append(cardMain, actions);
     annotationList.appendChild(item);
   });
   redrawCanvas();

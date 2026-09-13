@@ -184,6 +184,7 @@ async function checkCompactPinNoteCards(page, url) {
   await addPin('Short follow-up note.');
 
   assert.equal(await page.locator('[data-annotation-card]').count(), 2);
+  assert.equal(await page.locator('[data-annotation-card] button button').count(), 0);
   assert.equal(await page.locator('[data-annotation-marker]').count(), 2);
   assert.equal(await page.locator('[data-annotation-marker]').first().textContent(), '1');
   assert.match(await page.locator('[data-annotation-card]').first().innerText(), /Current point @ 297,238/);
@@ -213,7 +214,7 @@ async function checkCompactPinNoteCards(page, url) {
   await page.locator('[data-annotation-select]').first().click();
   await page.waitForTimeout(50);
   assert.equal(await page.locator('#view-status').textContent(), 'Viewing Reference');
-  assert.equal(await page.locator('#interaction-status').textContent(), 'Reference annotation 3 selected at 287,238.');
+  assert.equal(await page.locator('#interaction-status').textContent(), 'Reference annotation 3 selected at 297,238.');
 
   await page.setViewportSize({width: 320, height: 640});
   await page.reload();

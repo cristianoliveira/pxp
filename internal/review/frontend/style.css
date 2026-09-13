@@ -343,6 +343,12 @@ textarea {
   background: #fff4d9;
 }
 
+.annotation-card-main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
 .annotation-card-select {
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr);
