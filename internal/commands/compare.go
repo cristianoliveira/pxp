@@ -23,195 +23,356 @@ import (
 //nolint:lll // keep this expression together
 type imageComparer func(referencePath, actualPath, maskPath string, threshold uint8, perceptualThreshold float64, region *diff.Bounds, ignored []diff.Bounds) (diff.ImageComparison, error)
 
+type comparisonOptions struct {
+	configuration             *comparisonConfiguration
+	output                    string
+	overlay                   string
+	report                    string
+	annotations               string
+	threshold                 uint8
+	perceptualThreshold       float64
+	maxRMSE                   float64
+	maxChangedRatio           float64
+	maxPerceptualChangedRatio float64
+	visualContextEnabled      bool
+	provider                  string
+	model                     string
+	visualContextPrompt       string
+	offsetRadius              int
+	movementRadius            int
+	regionGap                 int
+	minRegionPixels           int
+	maxRegions                int
+	full                      bool
+	region                    *diff.Bounds
+	regionValue               string
+	ignoredValues             []string
+	ignored                   []diff.Bounds
+}
+
 func runComparisonCommand(cmd *cobra.Command, args []string, compare imageComparer) error {
-	configuration, err := applyComparisonProfile(cmd)
+	options, err := readComparisonOptions(cmd, args)
 	if err != nil {
 		return err
 	}
-	output, _ := cmd.Flags().GetString("output")
-	if output == "" {
-		output = defaultMaskPath(args[1])
-	}
-	threshold, _ := cmd.Flags().GetUint8("threshold")
-	overlay, _ := cmd.Flags().GetString("overlay")
-	report, _ := cmd.Flags().GetString("report")
-	visualContextEnabled, _ := cmd.Flags().GetBool("visual-context")
-	provider, _ := cmd.Flags().GetString("visual-context-provider")
-	if err := validateVisualContextProvider(visualContextEnabled, provider); err != nil {
-		return cli.NewUsageError(err)
-	}
-	if err := validateComparisonArtifactPaths(args[0], args[1], output, overlay, report); err != nil {
-		return cli.NewUsageError(err)
-	}
-	offsetRadius, _ := cmd.Flags().GetInt("suggest-offset")
-	movementRadius, _ := cmd.Flags().GetInt("suggest-movement")
-	regionGap, _ := cmd.Flags().GetInt("region-gap")
-	minRegionPixels, _ := cmd.Flags().GetInt("min-region-pixels")
-	maxRegions, _ := cmd.Flags().GetInt("max-regions")
-	//nolint:lll // keep this expression together
-	if err := validateRegionControls(offsetRadius, movementRadius, regionGap, minRegionPixels, maxRegions); err != nil {
-		return cli.NewUsageError(err)
-	}
-	full, _ := cmd.Flags().GetBool("full")
-	perceptualThreshold, _ := cmd.Flags().GetFloat64("perceptual-threshold")
-	maxRMSE, _ := cmd.Flags().GetFloat64("max-rmse")
-	maxChangedRatio, _ := cmd.Flags().GetFloat64("max-changed-ratio")
-	maxPerceptualChangedRatio, _ := cmd.Flags().GetFloat64("max-perceptual-changed-ratio")
-	//nolint:lll // keep this expression together
-	if err := validateComparisonThresholds(perceptualThreshold, maxRMSE, maxChangedRatio, maxPerceptualChangedRatio); err != nil {
-		return cli.NewUsageError(err)
-	}
-	region, err := parseImageRegion(cmd.Flags().Lookup("region").Value.String())
-	if err != nil {
-		return cli.NewUsageError(err)
-	}
-	ignoredValues, _ := cmd.Flags().GetStringArray("ignore-region")
-	ignored, err := parseIgnoredRegions(ignoredValues)
-	if err != nil {
-		return cli.NewUsageError(err)
-	}
-	inputs, ignored, err := prepareComparisonInputs(cmd, args, ignored)
+	inputs, ignored, err := prepareComparisonInputs(cmd, args, options.ignored)
 	if err != nil {
 		return err
 	}
 	defer inputs.cleanup()
+
 	result, decoded, err := comparePreparedImages(
 		compare,
 		inputs,
-		output,
-		threshold,
-		perceptualThreshold,
-		region,
+		options.output,
+		options.threshold,
+		options.perceptualThreshold,
+		options.region,
 		ignored,
 	)
 	if err != nil {
 		return err
 	}
 	result.Inputs = inputs.metadata
-	annotationsPath, _ := cmd.Flags().GetString("annotations")
-	var annotationDocument *annotations.Document
-	if annotationsPath != "" {
-		annotationDocument, err = annotationio.Load(annotationsPath)
-		if err != nil {
-			return err
-		}
-		imageWidth, imageHeight, dimensionsErr := imageio.PNGDimensions(inputs.referencePath)
-		if dimensionsErr != nil {
-			return dimensionsErr
-		}
-		if err := annotationDocument.ValidateDimensions(imageWidth, imageHeight); err != nil {
-			return err
-		}
+
+	annotationDocument, err := loadAnnotationDocument(options.annotations, inputs.referencePath)
+	if err != nil {
+		return err
 	}
-	if overlay != "" {
-		if decoded == nil {
-			decoded, err = imageio.LoadDecodedImages(inputs.referencePath, inputs.actualPath)
-			if err != nil {
-				return err
-			}
-		}
-		overlayImage, overlayErr := decoded.Overlay(region, ignored)
-		if overlayErr != nil {
-			return overlayErr
-		}
-		if err := imageio.WritePNG(overlay, overlayImage); err != nil {
-			return err
-		}
-		result.Overlay = overlay
+	decoded, err = writeComparisonArtifacts(options, inputs, &result, decoded, ignored)
+	if err != nil {
+		return err
 	}
-	if offsetRadius > 0 {
-		if decoded == nil {
-			decoded, err = imageio.LoadDecodedImages(inputs.referencePath, inputs.actualPath)
-			if err != nil {
-				return err
-			}
-		}
-		suggestedOffset := decoded.SuggestOffset(offsetRadius, region, ignored)
-		if !math.IsInf(suggestedOffset.RMSE, 0) && !math.IsNaN(suggestedOffset.RMSE) {
-			result.SuggestedOffset = &suggestedOffset
-		}
-	}
-	result.Regions = groupImageRegions(result.Regions, regionGap)
-	result.Regions = filterImageRegions(result.Regions, minRegionPixels)
-	var regionCount int
-	var regionsTruncated bool
-	result.Regions, regionCount, regionsTruncated = limitImageRegions(
-		result.Regions,
-		maxRegions,
-		full,
+	regionCount, regionsTruncated, err := processComparisonRegions(
+		options,
+		inputs,
+		&result,
+		annotationDocument,
+		decoded,
+		ignored,
 	)
-	regionMetrics := make([]diff.RegionMetrics, len(result.Regions))
-	if len(result.Regions) > 0 {
-		regionBounds := make([]diff.Bounds, len(result.Regions))
-		for index := range result.Regions {
-			regionBounds[index] = result.Regions[index].Bounds
-		}
-		if decoded == nil {
-			decoded, err = imageio.LoadDecodedImages(inputs.referencePath, inputs.actualPath)
-			if err != nil {
-				return err
-			}
-		}
-		regionMetrics, err = decoded.MeasureRegions(
-			regionBounds,
-			threshold,
-			perceptualThreshold,
-			ignored,
-		)
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
-	for index := range result.Regions {
-		result.Regions[index].InputBounds = inputBounds(
-			result.Regions[index].Bounds,
-			inputs.metadata,
-		)
-		if annotationDocument != nil {
-			bounds := result.Regions[index].Bounds
-			result.Regions[index].Annotations = annotationDocument.Intersections(
-				annotations.Bounds{
-					X:      bounds.X,
-					Y:      bounds.Y,
-					Width:  bounds.Width,
-					Height: bounds.Height,
-				},
-			)
-		}
-		metrics := regionMetrics[index]
-		result.Regions[index].ChangedPixels = metrics.ChangedPixels
-		result.Regions[index].ChangedRatio = metrics.ChangedRatio
-		result.Regions[index].RMSE = metrics.RMSE
-		result.Regions[index].EdgeRMSE = metrics.EdgeRMSE
-		result.Regions[index].PerceptualRMSE = metrics.PerceptualRMSE
-		result.Regions[index].PerceptualChangedPixels = metrics.PerceptualChangedPixels
-		result.Regions[index].PerceptualChangedRatio = metrics.PerceptualChangedRatio
-		result.Regions[index].AntialiasedPixels = metrics.AntialiasedPixels
-		result.Regions[index].DominantColorPairs = metrics.DominantColorPairs
-		result.Regions[index].Classification = diff.ClassifyImageRegion(metrics)
-	}
-	if movementRadius > 0 && len(result.Regions) > 0 {
-		regionBounds := make([]diff.Bounds, len(result.Regions))
-		for index := range result.Regions {
-			regionBounds[index] = result.Regions[index].Bounds
-		}
-		result.MovedRegions = decoded.SuggestRegionMovements(regionBounds, movementRadius, ignored)
-	}
+
 	validation, validationErr := evaluateComparisonValidation(
 		result,
-		maxRMSE,
-		maxChangedRatio,
-		maxPerceptualChangedRatio,
+		options.maxRMSE,
+		options.maxChangedRatio,
+		options.maxPerceptualChangedRatio,
 	)
 	outputResult := outputEnvelope{
 		ImageComparison:  result,
 		RegionCount:      regionCount,
 		RegionsReturned:  len(result.Regions),
 		RegionsTruncated: regionsTruncated,
-		Configuration:    configuration,
+		Configuration:    options.configuration,
 		Validation:       validation,
 	}
-	if regionsTruncated {
+	return writeComparisonOutput(
+		cmd,
+		args,
+		options,
+		inputs,
+		outputResult,
+		validationErr,
+	)
+}
+
+func readComparisonOptions(cmd *cobra.Command, args []string) (comparisonOptions, error) {
+	configuration, err := applyComparisonProfile(cmd)
+	if err != nil {
+		return comparisonOptions{}, err
+	}
+	output, _ := cmd.Flags().GetString("output")
+	overlay, _ := cmd.Flags().GetString("overlay")
+	report, _ := cmd.Flags().GetString("report")
+	annotationsPath, _ := cmd.Flags().GetString("annotations")
+	threshold, _ := cmd.Flags().GetUint8("threshold")
+	visualContextEnabled, _ := cmd.Flags().GetBool("visual-context")
+	provider, _ := cmd.Flags().GetString("visual-context-provider")
+	model, _ := cmd.Flags().GetString("visual-context-model")
+	visualContextPrompt, _ := cmd.Flags().GetString("visual-context-prompt")
+	offsetRadius, _ := cmd.Flags().GetInt("suggest-offset")
+	movementRadius, _ := cmd.Flags().GetInt("suggest-movement")
+	regionGap, _ := cmd.Flags().GetInt("region-gap")
+	minRegionPixels, _ := cmd.Flags().GetInt("min-region-pixels")
+	maxRegions, _ := cmd.Flags().GetInt("max-regions")
+	full, _ := cmd.Flags().GetBool("full")
+	perceptualThreshold, _ := cmd.Flags().GetFloat64("perceptual-threshold")
+	maxRMSE, _ := cmd.Flags().GetFloat64("max-rmse")
+	maxChangedRatio, _ := cmd.Flags().GetFloat64("max-changed-ratio")
+	maxPerceptualChangedRatio, _ := cmd.Flags().GetFloat64("max-perceptual-changed-ratio")
+	ignoredValues, _ := cmd.Flags().GetStringArray("ignore-region")
+	options := comparisonOptions{
+		configuration:             configuration,
+		output:                    output,
+		overlay:                   overlay,
+		report:                    report,
+		annotations:               annotationsPath,
+		threshold:                 threshold,
+		visualContextEnabled:      visualContextEnabled,
+		provider:                  provider,
+		model:                     model,
+		visualContextPrompt:       visualContextPrompt,
+		offsetRadius:              offsetRadius,
+		movementRadius:            movementRadius,
+		regionGap:                 regionGap,
+		minRegionPixels:           minRegionPixels,
+		maxRegions:                maxRegions,
+		full:                      full,
+		perceptualThreshold:       perceptualThreshold,
+		maxRMSE:                   maxRMSE,
+		maxChangedRatio:           maxChangedRatio,
+		maxPerceptualChangedRatio: maxPerceptualChangedRatio,
+		regionValue:               cmd.Flags().Lookup("region").Value.String(),
+		ignoredValues:             ignoredValues,
+	}
+	if options.output == "" {
+		options.output = defaultMaskPath(args[1])
+	}
+	if err := validateComparisonOptions(&options, args); err != nil {
+		return comparisonOptions{}, cli.NewUsageError(err)
+	}
+	return options, nil
+}
+
+func validateComparisonOptions(options *comparisonOptions, args []string) error {
+	if err := validateVisualContextProvider(
+		options.visualContextEnabled,
+		options.provider,
+	); err != nil {
+		return err
+	}
+	if err := validateComparisonArtifactPaths(
+		args[0], args[1], options.output, options.overlay, options.report,
+	); err != nil {
+		return err
+	}
+	if err := validateRegionControls(
+		options.offsetRadius,
+		options.movementRadius,
+		options.regionGap,
+		options.minRegionPixels,
+		options.maxRegions,
+	); err != nil {
+		return err
+	}
+	if err := validateComparisonThresholds(
+		options.perceptualThreshold,
+		options.maxRMSE,
+		options.maxChangedRatio,
+		options.maxPerceptualChangedRatio,
+	); err != nil {
+		return err
+	}
+	var err error
+	options.region, err = parseImageRegion(options.regionValue)
+	if err != nil {
+		return err
+	}
+	options.ignored, err = parseIgnoredRegions(options.ignoredValues)
+	return err
+}
+
+func loadAnnotationDocument(path, referencePath string) (*annotations.Document, error) {
+	if path == "" {
+		return nil, nil
+	}
+	document, err := annotationio.Load(path)
+	if err != nil {
+		return nil, err
+	}
+	imageWidth, imageHeight, err := imageio.PNGDimensions(referencePath)
+	if err != nil {
+		return nil, err
+	}
+	if err := document.ValidateDimensions(imageWidth, imageHeight); err != nil {
+		return nil, err
+	}
+	return document, nil
+}
+
+func writeComparisonArtifacts(
+	options comparisonOptions,
+	inputs preparedImageInputs,
+	result *diff.ImageComparison,
+	decoded *diff.DecodedImages,
+	ignored []diff.Bounds,
+) (*diff.DecodedImages, error) {
+	if options.overlay != "" {
+		if err := ensureDecodedImages(&decoded, inputs); err != nil {
+			return nil, err
+		}
+		overlayImage, err := decoded.Overlay(options.region, ignored)
+		if err != nil {
+			return nil, err
+		}
+		if err := imageio.WritePNG(options.overlay, overlayImage); err != nil {
+			return nil, err
+		}
+		result.Overlay = options.overlay
+	}
+	if options.offsetRadius > 0 {
+		if err := ensureDecodedImages(&decoded, inputs); err != nil {
+			return nil, err
+		}
+		suggestedOffset := decoded.SuggestOffset(options.offsetRadius, options.region, ignored)
+		if !math.IsInf(suggestedOffset.RMSE, 0) && !math.IsNaN(suggestedOffset.RMSE) {
+			result.SuggestedOffset = &suggestedOffset
+		}
+	}
+	return decoded, nil
+}
+
+func ensureDecodedImages(decoded **diff.DecodedImages, inputs preparedImageInputs) error {
+	if *decoded != nil {
+		return nil
+	}
+	var err error
+	*decoded, err = imageio.LoadDecodedImages(inputs.referencePath, inputs.actualPath)
+	return err
+}
+
+func processComparisonRegions(
+	options comparisonOptions,
+	inputs preparedImageInputs,
+	result *diff.ImageComparison,
+	annotationDocument *annotations.Document,
+	decoded *diff.DecodedImages,
+	ignored []diff.Bounds,
+) (int, bool, error) {
+	result.Regions = groupImageRegions(result.Regions, options.regionGap)
+	result.Regions = filterImageRegions(result.Regions, options.minRegionPixels)
+	var regionCount int
+	var regionsTruncated bool
+	result.Regions, regionCount, regionsTruncated = limitImageRegions(
+		result.Regions,
+		options.maxRegions,
+		options.full,
+	)
+	regionMetrics, decoded, err := measureRegionMetrics(
+		options,
+		inputs,
+		result.Regions,
+		decoded,
+		ignored,
+	)
+	if err != nil {
+		return 0, false, err
+	}
+	for index := range result.Regions {
+		region := &result.Regions[index]
+		region.InputBounds = inputBounds(region.Bounds, inputs.metadata)
+		if annotationDocument != nil {
+			region.Annotations = annotationDocument.Intersections(annotations.Bounds{
+				X: region.Bounds.X, Y: region.Bounds.Y,
+				Width: region.Bounds.Width, Height: region.Bounds.Height,
+			})
+		}
+		applyRegionMetrics(region, regionMetrics[index])
+	}
+	if options.movementRadius > 0 && len(result.Regions) > 0 {
+		regionBounds := make([]diff.Bounds, len(result.Regions))
+		for index := range result.Regions {
+			regionBounds[index] = result.Regions[index].Bounds
+		}
+		result.MovedRegions = decoded.SuggestRegionMovements(
+			regionBounds, options.movementRadius, ignored,
+		)
+	}
+	return regionCount, regionsTruncated, nil
+}
+
+func measureRegionMetrics(
+	options comparisonOptions,
+	inputs preparedImageInputs,
+	regions []diff.Region,
+	decoded *diff.DecodedImages,
+	ignored []diff.Bounds,
+) ([]diff.RegionMetrics, *diff.DecodedImages, error) {
+	metrics := make([]diff.RegionMetrics, len(regions))
+	if len(regions) == 0 {
+		return metrics, decoded, nil
+	}
+	if err := ensureDecodedImages(&decoded, inputs); err != nil {
+		return nil, nil, err
+	}
+	regionBounds := make([]diff.Bounds, len(regions))
+	for index := range regions {
+		regionBounds[index] = regions[index].Bounds
+	}
+	metrics, err := decoded.MeasureRegions(
+		regionBounds,
+		options.threshold,
+		options.perceptualThreshold,
+		ignored,
+	)
+	return metrics, decoded, err
+}
+
+func applyRegionMetrics(region *diff.Region, metrics diff.RegionMetrics) {
+	region.ChangedPixels = metrics.ChangedPixels
+	region.ChangedRatio = metrics.ChangedRatio
+	region.RMSE = metrics.RMSE
+	region.EdgeRMSE = metrics.EdgeRMSE
+	region.PerceptualRMSE = metrics.PerceptualRMSE
+	region.PerceptualChangedPixels = metrics.PerceptualChangedPixels
+	region.PerceptualChangedRatio = metrics.PerceptualChangedRatio
+	region.AntialiasedPixels = metrics.AntialiasedPixels
+	region.DominantColorPairs = metrics.DominantColorPairs
+	region.Classification = diff.ClassifyImageRegion(metrics)
+}
+
+func writeComparisonOutput(
+	cmd *cobra.Command,
+	args []string,
+	options comparisonOptions,
+	inputs preparedImageInputs,
+	outputResult outputEnvelope,
+	validationErr error,
+) error {
+	if outputResult.RegionsTruncated {
 		outputResult.Hint = cli.FullHint(cmd, args)
 	}
 	if validationErr != nil {
@@ -220,14 +381,27 @@ func runComparisonCommand(cmd *cobra.Command, args []string, compare imageCompar
 		}
 		return cli.NewResultError(validationErr)
 	}
-	//nolint:lll // keep this expression together
-	if err := writeComparisonReport(report, inputs, output, overlay, threshold, perceptualThreshold, region, result); err != nil {
+	if err := writeComparisonReport(
+		options.report,
+		inputs,
+		options.output,
+		options.overlay,
+		options.threshold,
+		options.perceptualThreshold,
+		options.region,
+		outputResult.ImageComparison,
+	); err != nil {
 		return err
 	}
-	model, _ := cmd.Flags().GetString("visual-context-model")
-	visualContextPrompt, _ := cmd.Flags().GetString("visual-context-prompt")
-	//nolint:lll // keep this expression together
-	if err := addVisualContext(visualContextEnabled, provider, model, visualContextPrompt, inputs, result, &outputResult); err != nil {
+	if err := addVisualContext(
+		options.visualContextEnabled,
+		options.provider,
+		options.model,
+		options.visualContextPrompt,
+		inputs,
+		outputResult.ImageComparison,
+		&outputResult,
+	); err != nil {
 		return err
 	}
 	return writeStructured(cmd, outputResult)
