@@ -1,5 +1,7 @@
 # Quality guardrails
 
+For the staged plan to reduce legacy complexity limits, see [the cyclomatic complexity reduction roadmap](complexity-refactoring-roadmap.md).
+
 `make quality` is the canonical advanced quality gate. It is required in CI and
 is the local command to run before requesting review. It exits non-zero when
 coverage or complexity policy fails.
