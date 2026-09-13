@@ -51,11 +51,12 @@ type comparisonOptions struct {
 }
 
 func runComparisonCommand(cmd *cobra.Command, args []string, compare imageComparer) error {
-	options, err := readComparisonOptions(cmd, args)
+	referencePath, actualPath := args[0], args[1]
+	options, err := readComparisonOptions(cmd, referencePath, actualPath)
 	if err != nil {
 		return err
 	}
-	inputs, ignored, err := prepareComparisonInputs(cmd, args, options.ignored)
+	inputs, ignored, err := prepareComparisonInputs(cmd, referencePath, actualPath, options.ignored)
 	if err != nil {
 		return err
 	}
@@ -119,7 +120,10 @@ func runComparisonCommand(cmd *cobra.Command, args []string, compare imageCompar
 	)
 }
 
-func readComparisonOptions(cmd *cobra.Command, args []string) (comparisonOptions, error) {
+func readComparisonOptions(
+	cmd *cobra.Command,
+	referencePath, actualPath string,
+) (comparisonOptions, error) {
 	configuration, err := applyComparisonProfile(cmd)
 	if err != nil {
 		return comparisonOptions{}, err
@@ -129,6 +133,10 @@ func readComparisonOptions(cmd *cobra.Command, args []string) (comparisonOptions
 	report, _ := cmd.Flags().GetString("report")
 	annotationsPath, _ := cmd.Flags().GetString("annotations")
 	threshold, _ := cmd.Flags().GetUint8("threshold")
+	perceptualThreshold, _ := cmd.Flags().GetFloat64("perceptual-threshold")
+	maxRMSE, _ := cmd.Flags().GetFloat64("max-rmse")
+	maxChangedRatio, _ := cmd.Flags().GetFloat64("max-changed-ratio")
+	maxPerceptualChangedRatio, _ := cmd.Flags().GetFloat64("max-perceptual-changed-ratio")
 	visualContextEnabled, _ := cmd.Flags().GetBool("visual-context")
 	provider, _ := cmd.Flags().GetString("visual-context-provider")
 	model, _ := cmd.Flags().GetString("visual-context-model")
@@ -139,10 +147,7 @@ func readComparisonOptions(cmd *cobra.Command, args []string) (comparisonOptions
 	minRegionPixels, _ := cmd.Flags().GetInt("min-region-pixels")
 	maxRegions, _ := cmd.Flags().GetInt("max-regions")
 	full, _ := cmd.Flags().GetBool("full")
-	perceptualThreshold, _ := cmd.Flags().GetFloat64("perceptual-threshold")
-	maxRMSE, _ := cmd.Flags().GetFloat64("max-rmse")
-	maxChangedRatio, _ := cmd.Flags().GetFloat64("max-changed-ratio")
-	maxPerceptualChangedRatio, _ := cmd.Flags().GetFloat64("max-perceptual-changed-ratio")
+	regionValue := cmd.Flags().Lookup("region").Value.String()
 	ignoredValues, _ := cmd.Flags().GetStringArray("ignore-region")
 	options := comparisonOptions{
 		configuration:             configuration,
@@ -151,6 +156,10 @@ func readComparisonOptions(cmd *cobra.Command, args []string) (comparisonOptions
 		report:                    report,
 		annotations:               annotationsPath,
 		threshold:                 threshold,
+		perceptualThreshold:       perceptualThreshold,
+		maxRMSE:                   maxRMSE,
+		maxChangedRatio:           maxChangedRatio,
+		maxPerceptualChangedRatio: maxPerceptualChangedRatio,
 		visualContextEnabled:      visualContextEnabled,
 		provider:                  provider,
 		model:                     model,
@@ -161,23 +170,19 @@ func readComparisonOptions(cmd *cobra.Command, args []string) (comparisonOptions
 		minRegionPixels:           minRegionPixels,
 		maxRegions:                maxRegions,
 		full:                      full,
-		perceptualThreshold:       perceptualThreshold,
-		maxRMSE:                   maxRMSE,
-		maxChangedRatio:           maxChangedRatio,
-		maxPerceptualChangedRatio: maxPerceptualChangedRatio,
-		regionValue:               cmd.Flags().Lookup("region").Value.String(),
+		regionValue:               regionValue,
 		ignoredValues:             ignoredValues,
 	}
 	if options.output == "" {
-		options.output = defaultMaskPath(args[1])
+		options.output = defaultMaskPath(actualPath)
 	}
-	if err := validateComparisonOptions(&options, args); err != nil {
+	if err := validateComparisonOptions(&options, referencePath, actualPath); err != nil {
 		return comparisonOptions{}, cli.NewUsageError(err)
 	}
 	return options, nil
 }
 
-func validateComparisonOptions(options *comparisonOptions, args []string) error {
+func validateComparisonOptions(options *comparisonOptions, referencePath, actualPath string) error {
 	if err := validateVisualContextProvider(
 		options.visualContextEnabled,
 		options.provider,
@@ -185,7 +190,7 @@ func validateComparisonOptions(options *comparisonOptions, args []string) error 
 		return err
 	}
 	if err := validateComparisonArtifactPaths(
-		args[0], args[1], options.output, options.overlay, options.report,
+		referencePath, actualPath, options.output, options.overlay, options.report,
 	); err != nil {
 		return err
 	}
@@ -240,10 +245,13 @@ func writeComparisonArtifacts(
 	decoded *diff.DecodedImages,
 	ignored []diff.Bounds,
 ) (*diff.DecodedImages, error) {
+	if options.overlay == "" && options.offsetRadius <= 0 {
+		return decoded, nil
+	}
+	if err := ensureDecodedImages(&decoded, inputs); err != nil {
+		return nil, err
+	}
 	if options.overlay != "" {
-		if err := ensureDecodedImages(&decoded, inputs); err != nil {
-			return nil, err
-		}
 		overlayImage, err := decoded.Overlay(options.region, ignored)
 		if err != nil {
 			return nil, err
@@ -254,9 +262,6 @@ func writeComparisonArtifacts(
 		result.Overlay = options.overlay
 	}
 	if options.offsetRadius > 0 {
-		if err := ensureDecodedImages(&decoded, inputs); err != nil {
-			return nil, err
-		}
 		suggestedOffset := decoded.SuggestOffset(options.offsetRadius, options.region, ignored)
 		if !math.IsInf(suggestedOffset.RMSE, 0) && !math.IsNaN(suggestedOffset.RMSE) {
 			result.SuggestedOffset = &suggestedOffset
@@ -787,7 +792,7 @@ func evaluateComparisonValidation(
 
 func prepareComparisonInputs(
 	command *cobra.Command,
-	args []string,
+	referencePath, actualPath string,
 	ignored []diff.Bounds,
 ) (preparedImageInputs, []diff.Bounds, error) {
 	referenceCrop, err := parseOptionalCrop(command, "reference-crop")
@@ -809,8 +814,8 @@ func prepareComparisonInputs(
 		return preparedImageInputs{}, nil, err
 	}
 	inputs, err := prepareImageInputs(
-		args[0],
-		args[1],
+		referencePath,
+		actualPath,
 		referenceCrop,
 		actualCrop,
 		referenceMetadata,

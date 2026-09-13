@@ -18,7 +18,7 @@ func TestPrepareComparisonInputsRejectsConflictingCropBeforeFileAccess(t *testin
 	require.NoError(t, command.Flags().Set("reference-crop", "0,0,1,1"))
 	require.NoError(t, command.Flags().Set("reference-metadata", "missing.json"))
 
-	_, _, err := prepareComparisonInputs(command, []string{"missing-reference.png", "missing-actual.png"}, nil)
+	_, _, err := prepareComparisonInputs(command, "missing-reference.png", "missing-actual.png", nil)
 
 	require.Error(t, err)
 	assert.Equal(t, 2, clipkg.ExitCode(err))
