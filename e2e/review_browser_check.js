@@ -56,6 +56,19 @@ async function addCurrentPins(page) {
   await addBlankPin(page);
 }
 
+async function checkSimplifiedFocusLayout(page, url) {
+  await resetDraft(page, url);
+  assert.equal(await page.locator('header h1').count(), 0);
+  assert.equal(await page.locator('header p').count(), 0);
+  assert.doesNotMatch(await page.locator('body').innerText(), /Focus mode/);
+  assert.equal(await page.locator('#evidence-title').textContent(), 'Round 1');
+  assert.equal(await page.locator('#feedback-title').textContent(), 'What needs to change?');
+  assert.equal(await page.locator('#submit').textContent(), 'Submit feedback →');
+  assert.equal(await page.locator('#approve').textContent(), 'Approve this round');
+  assert.match(await page.locator('.badge').textContent(), /Agent waiting for your review/);
+  return {evidence: true, feedback: true, decisions: true};
+}
+
 async function checkImplementationContext(page, url) {
   await page.route('**/api/session', async (route) => {
     const response = await route.fetch();
@@ -458,6 +471,7 @@ async function checkDecisionConfirmation(page, url) {
 
 async function runReviewBrowserChecks(page, options) {
   assert.ok(options && options.url, 'runReviewBrowserChecks requires options.url');
+  const framing = await checkSimplifiedFocusLayout(page, options.url);
   const context = await checkImplementationContext(page, options.url);
   const tabOrder = await checkTabOrder(page, options.url);
   const modes = await checkAnnotationModes(page, options.url);
@@ -469,7 +483,7 @@ async function runReviewBrowserChecks(page, options) {
   const editing = await checkEditCancelAndRectangleEscape(page, options.url);
   const draft = await checkDraftAndValidation(page, options.url);
   const decisionConfirmation = await checkDecisionConfirmation(page, options.url);
-  return {context, tabOrder, modes, pointer, viewShortcuts, returnToCanvas, inline, keyboard, editing, draft, decisionConfirmation};
+  return {framing, context, tabOrder, modes, pointer, viewShortcuts, returnToCanvas, inline, keyboard, editing, draft, decisionConfirmation};
 }
 
 module.exports = {runReviewBrowserChecks};
