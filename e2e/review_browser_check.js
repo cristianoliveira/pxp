@@ -169,6 +169,80 @@ async function checkKeyboardViewsAndLifo(page, url) {
   return {created, afterRemove};
 }
 
+async function checkCompactPinNoteCards(page, url) {
+  await resetDraft(page, url);
+
+  const addPin = async (note) => {
+    await page.locator('#canvas').focus();
+    await page.keyboard.press('Enter');
+    await page.locator('#annotation-note').fill(note);
+    await page.locator('#annotation-editor-save').click();
+  };
+  const longNote = 'First line of the review note.\nSecond line keeps the context readable.\nThird line explains the expected result.\nA longer continuation makes the full-note control meaningful.';
+  await addPin(longNote);
+  await page.keyboard.press('Shift+ArrowRight');
+  await addPin('Short follow-up note.');
+
+  assert.equal(await page.locator('[data-annotation-card]').count(), 2);
+  assert.equal(await page.locator('[data-annotation-marker]').count(), 2);
+  assert.equal(await page.locator('[data-annotation-marker]').first().textContent(), '1');
+  assert.match(await page.locator('[data-annotation-card]').first().innerText(), /Current point @ 297,238/);
+  assert.match(await page.locator('[data-annotation-card]').nth(1).innerText(), /Current point @ 287,238/);
+
+  const longCard = page.locator('[data-annotation-card]').nth(1);
+  const longNoteElement = longCard.locator('.annotation-card-note');
+  const expand = longCard.locator('[data-annotation-expand]');
+  assert.equal(await expand.getAttribute('aria-expanded'), 'false');
+  assert.match(await longNoteElement.textContent(), /First line/);
+  await expand.click();
+  assert.equal(await longCard.locator('[data-annotation-expand]').getAttribute('aria-expanded'), 'true');
+  assert.equal(await longNoteElement.getAttribute('data-expanded'), 'true');
+  assert.match(await longNoteElement.textContent(), /longer continuation/);
+  await longCard.locator('[data-annotation-expand]').press('Enter');
+  assert.equal(await longCard.locator('[data-annotation-expand]').getAttribute('aria-expanded'), 'false');
+
+  await viewWithKeyboard(page, 'Reference');
+  await page.locator('#canvas').focus();
+  await page.keyboard.press('Enter');
+  await page.locator('#annotation-note').fill('Reference source note.');
+  await page.locator('#annotation-editor-save').click();
+  assert.match(await page.locator('[data-annotation-card]').first().innerText(), /Reference point/);
+  await page.locator('[data-annotation-select]').nth(1).click();
+  await page.waitForTimeout(50);
+  assert.equal(await page.locator('#view-status').textContent(), 'Viewing Current');
+  await page.locator('[data-annotation-select]').first().click();
+  await page.waitForTimeout(50);
+  assert.equal(await page.locator('#view-status').textContent(), 'Viewing Reference');
+  assert.equal(await page.locator('#interaction-status').textContent(), 'Reference annotation 3 selected at 287,238.');
+
+  await page.setViewportSize({width: 320, height: 640});
+  await page.reload();
+  await page.locator('[data-annotation-card]').first().waitFor();
+  const narrowLayout = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  assert.ok(narrowLayout.scrollWidth <= narrowLayout.viewport + 1, 'narrow layout must not overflow horizontally');
+  await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+  const largeTextLayout = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  assert.ok(largeTextLayout.scrollWidth <= largeTextLayout.viewport + 1, 'large text layout must not overflow horizontally');
+  const firstExpand = page.locator('[data-annotation-expand]').first();
+  const expandedNoteID = await firstExpand.getAttribute('aria-controls');
+  assert.equal(await page.locator(`[id="${expandedNoteID}"]`).getAttribute('id'), expandedNoteID);
+
+  return {
+    cards: 3,
+    markerSize: 22,
+    longNote: true,
+    sourceNavigation: true,
+    narrowLayout,
+    largeTextLayout,
+  };
+}
+
 async function checkCanvasViewShortcuts(page, url) {
   await resetDraft(page, url);
   await page.locator('#canvas').focus();
@@ -473,6 +547,7 @@ async function runReviewBrowserChecks(page, options) {
   assert.ok(options && options.url, 'runReviewBrowserChecks requires options.url');
   const framing = await checkSimplifiedFocusLayout(page, options.url);
   const context = await checkImplementationContext(page, options.url);
+  const compactCards = await checkCompactPinNoteCards(page, options.url);
   const tabOrder = await checkTabOrder(page, options.url);
   const modes = await checkAnnotationModes(page, options.url);
   const pointer = await checkPointerAnnotationEditor(page, options.url);
@@ -483,7 +558,7 @@ async function runReviewBrowserChecks(page, options) {
   const editing = await checkEditCancelAndRectangleEscape(page, options.url);
   const draft = await checkDraftAndValidation(page, options.url);
   const decisionConfirmation = await checkDecisionConfirmation(page, options.url);
-  return {framing, context, tabOrder, modes, pointer, viewShortcuts, returnToCanvas, inline, keyboard, editing, draft, decisionConfirmation};
+  return {framing, context, compactCards, tabOrder, modes, pointer, viewShortcuts, inline, keyboard, editing, draft, decisionConfirmation};
 }
 
 module.exports = {runReviewBrowserChecks};
