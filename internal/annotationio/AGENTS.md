@@ -1,6 +1,6 @@
 # Purpose
 
-`internal/annotationio` owns the JSON and filesystem adapter for [annotation documents](internal/annotations/AGENTS.md).
+`internal/annotationio` owns the JSON and filesystem adapter for [annotation documents](../annotations/AGENTS.md).
 
 # Boundaries
 
@@ -8,9 +8,9 @@ It translates the wire DTO into the annotation domain and persists validated doc
 
 # Connections
 
-- [Annotations](internal/annotations/AGENTS.md): provides the domain document that this adapter validates and serializes.
-- [Artifact persistence](internal/artifact/AGENTS.md): provides parent-directory creation and file creation.
-- [Command orchestration](internal/commands/AGENTS.md): consumes loaded documents at the comparison boundary.
+- [Annotations](../annotations/AGENTS.md): provides the domain document that this adapter validates and serializes.
+- [Artifact persistence](../artifact/AGENTS.md): provides parent-directory creation and file creation.
+- [Command orchestration](../commands/AGENTS.md): consumes loaded documents at the comparison boundary.
 
 # Landmarks
 

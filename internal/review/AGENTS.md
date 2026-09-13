@@ -8,10 +8,10 @@ It serves a review protocol and preserves pixel-coordinate evidence. It does not
 
 # Connections
 
-- [Command orchestration](internal/commands/AGENTS.md): starts and coordinates review rounds from CLI options.
-- [Image comparison](internal/imagediff/AGENTS.md): provides deterministic comparison and overlay data for a snapshot.
-- [Image I/O](internal/imageio/AGENTS.md): decodes source images and writes PNG snapshot artifacts.
-- [Artifact persistence](internal/artifact/AGENTS.md): provides filesystem creation used while materializing the round.
+- [Command orchestration](../commands/AGENTS.md): starts and coordinates review rounds from CLI options.
+- [Image comparison](../imagediff/AGENTS.md): provides deterministic comparison and overlay data for a snapshot.
+- [Image I/O](../imageio/AGENTS.md): decodes source images and writes PNG snapshot artifacts.
+- [Artifact persistence](../artifact/AGENTS.md): provides filesystem creation used while materializing the round.
 
 # Landmarks
 

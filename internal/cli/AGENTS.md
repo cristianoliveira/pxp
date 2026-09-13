@@ -4,13 +4,13 @@
 
 # Boundaries
 
-This package is runtime glue, not an image-analysis capability. It may depend on [structured output](internal/output/AGENTS.md), but it must not own comparison policy or provider behavior.
+This package is runtime glue, not an image-analysis capability. It may depend on [structured output](../output/AGENTS.md), but it must not own comparison policy or provider behavior.
 
 # Connections
 
-- [Output](internal/output/AGENTS.md): supplies the `output.Printer` used for structured diagnostics and results.
-- [Command orchestration](internal/commands/AGENTS.md): supplies command errors and receives shared CLI behavior.
-- [Executable composition](cmd/AGENTS.md): uses `RenderError` and `ExitCode` at process exit.
+- [Output](../output/AGENTS.md): supplies the `output.Printer` used for structured diagnostics and results.
+- [Command orchestration](../commands/AGENTS.md): supplies command errors and receives shared CLI behavior.
+- [Executable composition](../../cmd/AGENTS.md): uses `RenderError` and `ExitCode` at process exit.
 
 # Landmarks
 

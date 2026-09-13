@@ -4,14 +4,14 @@
 
 # Boundaries
 
-The package is the source of truth for measurements. It does not open files, encode PNGs, parse Cobra flags, call visual providers, render HTML, or decide command exit policy. File/path adapters live in [imageio](internal/imageio/AGENTS.md). JSON tags remain on result structs as the existing structured-output contract; removing them requires a coordinated output DTO migration and is explicitly deferred from TASK-0005.
+The package is the source of truth for measurements. It does not open files, encode PNGs, parse Cobra flags, call visual providers, render HTML, or decide command exit policy. File/path adapters live in [imageio](../imageio/AGENTS.md). JSON tags remain on result structs as the existing structured-output contract; removing them requires a coordinated output DTO migration and is explicitly deferred from TASK-0005.
 
 # Connections
 
-- [Annotations](internal/annotations/AGENTS.md): provides semantic intersections for region enrichment.
-- [Image I/O](internal/imageio/AGENTS.md): decodes image files and persists masks/overlays at the edge.
-- [Command orchestration](internal/commands/AGENTS.md): validates inputs and coordinates analysis.
-- [Visual context](internal/imagecontext/AGENTS.md): consumes region evidence as an advisory input, never as a metrics authority.
+- [Annotations](../annotations/AGENTS.md): provides semantic intersections for region enrichment.
+- [Image I/O](../imageio/AGENTS.md): decodes image files and persists masks/overlays at the edge.
+- [Command orchestration](../commands/AGENTS.md): validates inputs and coordinates analysis.
+- [Visual context](../imagecontext/AGENTS.md): consumes region evidence as an advisory input, never as a metrics authority.
 
 # Landmarks
 

@@ -8,8 +8,8 @@ It owns provider configuration, request/response serialization, selection, and t
 
 # Connections
 
-- [Command orchestration](internal/commands/AGENTS.md): enables and configures advisory descriptions after comparison.
-- [Image comparison](internal/imagediff/AGENTS.md): supplies region identity and bounds that providers describe.
+- [Command orchestration](../commands/AGENTS.md): enables and configures advisory descriptions after comparison.
+- [Image comparison](../imagediff/AGENTS.md): supplies region identity and bounds that providers describe.
 
 # Landmarks
 

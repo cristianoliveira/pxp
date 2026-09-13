@@ -8,12 +8,12 @@ It coordinates capabilities but does not implement image algorithms, provider pr
 
 # Connections
 
-- [Image comparison](internal/imagediff/AGENTS.md): performs deterministic measurements and image artifacts.
-- [Annotations](internal/annotations/AGENTS.md): loads and matches semantic region metadata.
-- [Visual context](internal/imagecontext/AGENTS.md): provides optional provider-backed descriptions.
-- [Reports](internal/report/AGENTS.md): renders HTML from comparison inputs and results.
-- [Output](internal/output/AGENTS.md): emits structured command results.
-- [CLI runtime](internal/cli/AGENTS.md): supplies shared printer and error policy.
+- [Image comparison](../imagediff/AGENTS.md): performs deterministic measurements and image artifacts.
+- [Annotations](../annotations/AGENTS.md): loads and matches semantic region metadata.
+- [Visual context](../imagecontext/AGENTS.md): provides optional provider-backed descriptions.
+- [Reports](../report/AGENTS.md): renders HTML from comparison inputs and results.
+- [Output](../output/AGENTS.md): emits structured command results.
+- [CLI runtime](../cli/AGENTS.md): supplies shared printer and error policy.
 
 # Landmarks
 

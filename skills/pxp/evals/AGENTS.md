@@ -8,8 +8,8 @@ These helpers validate packaging and evaluation inputs. They do not score model 
 
 # Connections
 
-- [The `pxp` skill](skills/pxp/AGENTS.md): is the subject whose contract and fixtures are checked.
-- [Evaluation controls](tests/evals/AGENTS.md): owns holdout implementations, controls, and accepted evidence.
+- [The `pxp` skill](../AGENTS.md): is the subject whose contract and fixtures are checked.
+- [Evaluation controls](../../../tests/evals/AGENTS.md): owns holdout implementations, controls, and accepted evidence.
 
 # Placement
 

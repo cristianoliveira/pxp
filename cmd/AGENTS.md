@@ -8,8 +8,8 @@ This layer creates the command, configures process-level behavior, renders termi
 
 # Connections
 
-- [Command orchestration](internal/commands/AGENTS.md): provides the Cobra command tree consumed by `main`.
-- [CLI runtime](internal/cli/AGENTS.md): provides error rendering and exit-code mapping used at process exit.
+- [Command orchestration](../internal/commands/AGENTS.md): provides the Cobra command tree consumed by `main`.
+- [CLI runtime](../internal/cli/AGENTS.md): provides error rendering and exit-code mapping used at process exit.
 
 # Landmarks
 

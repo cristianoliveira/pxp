@@ -1,6 +1,6 @@
 # Purpose
 
-`e2e/` owns browser-level checks for the review workflow exposed by [the review capability](internal/review/AGENTS.md).
+`e2e/` owns browser-level checks for the review workflow exposed by [the review capability](../internal/review/AGENTS.md).
 
 # Boundaries
 
@@ -8,8 +8,8 @@ These checks exercise the packaged CLI and browser protocol from outside the run
 
 # Connections
 
-- [Review](internal/review/AGENTS.md): provides the localhost review server and browser contract under test.
-- [Command orchestration](internal/commands/AGENTS.md): provides the CLI entrypoint used to launch review workflows.
+- [Review](../internal/review/AGENTS.md): provides the localhost review server and browser contract under test.
+- [Command orchestration](../internal/commands/AGENTS.md): provides the CLI entrypoint used to launch review workflows.
 
 # Placement
 
