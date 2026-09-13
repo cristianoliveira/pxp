@@ -127,6 +127,41 @@ func TestDiffImageCommandWritesDefaultMaskOutput(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestDiffImageCommandPreservesAnalysisArtifacts(t *testing.T) {
+	dir := t.TempDir()
+	reference := filepath.Join(dir, "reference.png")
+	actual := filepath.Join(dir, "actual.png")
+	mask := filepath.Join(dir, "mask.png")
+	overlay := filepath.Join(dir, "overlay.png")
+	referenceImage := image.NewRGBA(image.Rect(0, 0, 4, 3))
+	actualImage := image.NewRGBA(image.Rect(0, 0, 4, 3))
+	actualImage.Set(1, 1, image.White)
+	writeTestPNG(t, reference, referenceImage)
+	writeTestPNG(t, actual, actualImage)
+
+	result := executeCommand(
+		NewCommand(),
+		reference,
+		actual,
+		"--output", mask,
+		"--overlay", overlay,
+		"--suggest-offset", "1",
+		"--suggest-movement", "1",
+		"--region-gap", "1",
+		"--min-region-pixels", "1",
+		"--max-regions", "20",
+	)
+
+	require.NoError(t, result.Err)
+	var output outputEnvelope
+	require.NoError(t, json.Unmarshal([]byte(result.Stdout), &output))
+	assert.Equal(t, mask, output.Mask)
+	assert.Equal(t, overlay, output.Overlay)
+	require.NotEmpty(t, output.Regions)
+	assert.FileExists(t, mask)
+	assert.FileExists(t, overlay)
+}
+
 func TestDiffImageCommandWritesReportWithoutExplicitMaskOutput(t *testing.T) {
 	dir := t.TempDir()
 	reference := filepath.Join(dir, "reference.png")
