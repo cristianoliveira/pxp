@@ -1,7 +1,7 @@
 ---
 id: TASK-0018
 title: Add compact pin note cards to review loop
-status: todo
+status: doing
 depends_on: []
 priority: normal
 tags: [review, ux]
