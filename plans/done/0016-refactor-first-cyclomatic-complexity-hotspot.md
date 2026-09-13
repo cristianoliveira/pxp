@@ -1,7 +1,7 @@
 ---
 id: TASK-0016
 title: Refactor first cyclomatic complexity hotspot
-status: doing
+status: done
 depends_on: []
 priority: normal
 tags: []
