@@ -31,19 +31,106 @@ func TestValidateRequestPreservesDecisionAndAnnotationBoundaries(t *testing.T) {
 		request FeedbackRequest
 		wantErr string
 	}{
-		{name: "invalid decision", request: FeedbackRequest{Decision: "later"}, wantErr: "decision must be submitted or approved"},
-		{name: "submitted requires feedback", request: FeedbackRequest{Decision: decisionSubmitted}, wantErr: "submitted feedback requires a general note or annotation"},
-		{name: "approval rejects notes", request: FeedbackRequest{Decision: decisionApproved, Notes: "note"}, wantErr: "approval cannot include notes or annotations"},
-		{name: "general note limit", request: FeedbackRequest{Decision: decisionSubmitted, Notes: strings.Repeat("x", maxGeneralNotes+1)}, wantErr: "notes exceed 10000 characters"},
-		{name: "annotation count limit", request: FeedbackRequest{Decision: decisionSubmitted, Annotations: make([]Annotation, maxAnnotations+1)}, wantErr: "too many annotations (maximum 200)"},
-		{name: "annotation image", request: FeedbackRequest{Decision: decisionSubmitted, Annotations: []Annotation{{Image: "current", Type: annotationPoint, X: 0, Y: 0}}}, wantErr: `annotation 1 has invalid image "current"`},
-		{name: "annotation type", request: FeedbackRequest{Decision: decisionSubmitted, Annotations: []Annotation{{Image: imageActual, Type: "circle", X: 0, Y: 0}}}, wantErr: `annotation 1 has invalid type "circle"`},
-		{name: "annotation origin", request: FeedbackRequest{Decision: decisionSubmitted, Annotations: []Annotation{{Image: imageActual, Type: annotationPoint, X: 3, Y: 0}}}, wantErr: "annotation 1 starts outside 3x2 image"},
-		{name: "point dimensions", request: FeedbackRequest{Decision: decisionSubmitted, Annotations: []Annotation{{Image: imageActual, Type: annotationPoint, X: 0, Y: 0, Width: 1}}}, wantErr: "annotation 1 point must not have dimensions"},
-		{name: "rectangle bounds", request: FeedbackRequest{Decision: decisionSubmitted, Annotations: []Annotation{{Image: imageActual, Type: annotationRect, X: 1, Y: 1, Width: 3, Height: 1}}}, wantErr: "annotation 1 rectangle is outside 3x2 image"},
-		{name: "annotation note limit", request: FeedbackRequest{Decision: decisionSubmitted, Annotations: []Annotation{{Image: imageActual, Type: annotationPoint, X: 0, Y: 0, Note: strings.Repeat("x", maxAnnotationNote+1)}}}, wantErr: "annotation 1 note exceeds 2000 characters"},
-		{name: "valid point", request: FeedbackRequest{Decision: decisionSubmitted, Annotations: []Annotation{validPoint}}},
-		{name: "valid rectangle", request: FeedbackRequest{Decision: decisionSubmitted, Annotations: []Annotation{validRectangle}}},
+		{
+			name:    "invalid decision",
+			request: FeedbackRequest{Decision: "later"},
+			wantErr: "decision must be submitted or approved",
+		},
+		{
+			name:    "submitted requires feedback",
+			request: FeedbackRequest{Decision: decisionSubmitted},
+			wantErr: "submitted feedback requires a general note or annotation",
+		},
+		{
+			name:    "approval rejects notes",
+			request: FeedbackRequest{Decision: decisionApproved, Notes: "note"},
+			wantErr: "approval cannot include notes or annotations",
+		},
+		{
+			name: "general note limit",
+			request: FeedbackRequest{
+				Decision: decisionSubmitted,
+				Notes:    strings.Repeat("x", maxGeneralNotes+1),
+			},
+			wantErr: "notes exceed 10000 characters",
+		},
+		{
+			name: "annotation count limit",
+			request: FeedbackRequest{
+				Decision:    decisionSubmitted,
+				Annotations: make([]Annotation, maxAnnotations+1),
+			},
+			wantErr: "too many annotations (maximum 200)",
+		},
+		{
+			name: "annotation image",
+			request: FeedbackRequest{
+				Decision: decisionSubmitted,
+				Annotations: []Annotation{{
+					Image: "current", Type: annotationPoint, X: 0, Y: 0,
+				}},
+			},
+			wantErr: `annotation 1 has invalid image "current"`,
+		},
+		{
+			name: "annotation type",
+			request: FeedbackRequest{
+				Decision: decisionSubmitted,
+				Annotations: []Annotation{{
+					Image: imageActual, Type: "circle", X: 0, Y: 0,
+				}},
+			},
+			wantErr: `annotation 1 has invalid type "circle"`,
+		},
+		{
+			name: "annotation origin",
+			request: FeedbackRequest{
+				Decision: decisionSubmitted,
+				Annotations: []Annotation{{
+					Image: imageActual, Type: annotationPoint, X: 3, Y: 0,
+				}},
+			},
+			wantErr: "annotation 1 starts outside 3x2 image",
+		},
+		{
+			name: "point dimensions",
+			request: FeedbackRequest{
+				Decision: decisionSubmitted,
+				Annotations: []Annotation{{
+					Image: imageActual, Type: annotationPoint, X: 0, Y: 0, Width: 1,
+				}},
+			},
+			wantErr: "annotation 1 point must not have dimensions",
+		},
+		{
+			name: "rectangle bounds",
+			request: FeedbackRequest{
+				Decision: decisionSubmitted,
+				Annotations: []Annotation{{
+					Image: imageActual, Type: annotationRect, X: 1, Y: 1, Width: 3, Height: 1,
+				}},
+			},
+			wantErr: "annotation 1 rectangle is outside 3x2 image",
+		},
+		{
+			name: "annotation note limit",
+			request: FeedbackRequest{
+				Decision: decisionSubmitted,
+				Annotations: []Annotation{{
+					Image: imageActual, Type: annotationPoint, X: 0, Y: 0,
+					Note: strings.Repeat("x", maxAnnotationNote+1),
+				}},
+			},
+			wantErr: "annotation 1 note exceeds 2000 characters",
+		},
+		{
+			name:    "valid point",
+			request: FeedbackRequest{Decision: decisionSubmitted, Annotations: []Annotation{validPoint}},
+		},
+		{
+			name:    "valid rectangle",
+			request: FeedbackRequest{Decision: decisionSubmitted, Annotations: []Annotation{validRectangle}},
+		},
 	}
 
 	for _, test := range cases {
