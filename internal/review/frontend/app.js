@@ -8,6 +8,7 @@ const annotationColor = '#ef4444';
 const selectedAnnotationColor = '#f59e0b';
 const pointRadius = 5;
 const selectedPointRadius = 7;
+const markerSize = 22;
 const fullCircleRadians = Math.PI * 2;
 const rectangleSizeOffset = 1;
 const minimumRectangleSize = 2;
@@ -76,6 +77,7 @@ let reviewRound = 1;
 let pendingDecision = '';
 let decisionInvoker = null;
 let decisionSubmitting = false;
+const expandedAnnotationKeys = new Set();
 
 function updateContextDisclosureLabel() {
   contextSummary.textContent = contextDetails.open
@@ -280,23 +282,28 @@ function drawKeyboardCursor() {
 
 function drawAnnotation(annotation) {
   const index = annotations.indexOf(annotation);
+  const displayNumber = annotations.length - index;
   const selected = annotationKey(annotation, index) === selectedAnnotationId;
   ctx.strokeStyle = selected ? selectedAnnotationColor : annotationColor;
   ctx.fillStyle = selected ? selectedAnnotationColor : annotationColor;
   ctx.lineWidth = selected ? 3 : 2;
-  if (annotation.type === annotationPoint) {
-    ctx.beginPath();
-    ctx.arc(
-      annotation.x,
-      annotation.y,
-      selected ? selectedPointRadius : pointRadius,
-      0,
-      fullCircleRadians,
-    );
-    ctx.fill();
-    return;
+  if (annotation.type === annotationRectangle) {
+    ctx.strokeRect(annotation.x, annotation.y, annotation.width, annotation.height);
   }
-  ctx.strokeRect(annotation.x, annotation.y, annotation.width, annotation.height);
+
+  const anchorX = annotation.x;
+  const anchorY = annotation.y;
+  const halfMarker = markerSize / 2;
+  ctx.fillStyle = selected ? selectedAnnotationColor : annotationColor;
+  ctx.fillRect(anchorX - halfMarker, anchorY - halfMarker, markerSize, markerSize);
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(anchorX - halfMarker, anchorY - halfMarker, markerSize, markerSize);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '700 11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String(displayNumber), anchorX, anchorY);
 }
 
 function focusAnnotationAction(annotationId, action) {
@@ -307,6 +314,41 @@ function focusAnnotationAction(annotationId, action) {
   else canvas.focus();
 }
 
+function domAnnotationID(key) {
+  return String(key).replace(/[^a-zA-Z0-9_-]/g, '-');
+}
+
+function annotationGeometryText(annotation) {
+  const dimensions = annotation.width
+    ? `, ${annotation.width}x${annotation.height}`
+    : '';
+  return `${sourceLabel(annotation.image)} ${annotation.type}`
+    + ` @ ${annotation.x},${annotation.y}${dimensions}`;
+}
+
+function annotationNoteNeedsExpansion(note) {
+  return note.length > 180 || note.split('\n').length > 3;
+}
+
+function toggleAnnotationNote(key) {
+  if (expandedAnnotationKeys.has(key)) expandedAnnotationKeys.delete(key);
+  else expandedAnnotationKeys.add(key);
+  renderAnnotations();
+  const toggle = annotationList.querySelector(`[data-annotation-expand][data-annotation-id="${CSS.escape(key)}"]`);
+  if (toggle) toggle.focus();
+}
+
+function selectAnnotation(annotation, key) {
+  selectedAnnotationId = key;
+  renderAnnotations();
+  void setView(annotation.image).then((changed) => {
+    if (!changed) return;
+    keyboardPoint = clampPoint({x: annotation.x, y: annotation.y});
+    redrawCanvas();
+    announceKeyboardPoint(`${sourceLabel(annotation.image)} annotation ${annotations.indexOf(annotation) + 1} selected at ${annotation.x},${annotation.y}.`);
+  });
+}
+
 function renderAnnotations() {
   annotationList.replaceChildren();
   annotations.slice().reverse().forEach((annotation, displayIndex) => {
@@ -314,19 +356,60 @@ function renderAnnotations() {
     const selectButton = document.createElement('button');
     const editButton = document.createElement('button');
     const removeButton = document.createElement('button');
+    const cardBody = document.createElement('span');
+    const marker = document.createElement('span');
+    const meta = document.createElement('span');
+    const note = document.createElement('span');
+    const cardMain = document.createElement('span');
+    const actions = document.createElement('span');
     const originalIndex = annotations.indexOf(annotation);
     const key = annotationKey(annotation, originalIndex);
-    const description = `${displayIndex + 1}. ${sourceLabel(annotation.image)} ${annotation.type}` +
-      ` @ ${annotation.x},${annotation.y}` +
-      (annotation.width ? `, ${annotation.width}x${annotation.height}` : '') +
-      (annotation.note ? ` — ${annotation.note}` : '');
+    const domKey = domAnnotationID(key);
+    const cardID = `annotation-card-${domKey}`;
+    const markerID = `annotation-marker-${domKey}`;
+    const noteID = `annotation-note-${domKey}`;
+    const noteText = annotation.note || 'No note added yet.';
+    const expanded = expandedAnnotationKeys.has(key);
 
+    item.dataset.annotationCard = '';
+    item.dataset.annotationId = key;
+    item.id = cardID;
     selectButton.type = 'button';
+    selectButton.className = 'annotation-card-select';
     selectButton.dataset.annotationId = key;
     selectButton.dataset.annotationSelect = '';
     selectButton.setAttribute('aria-current', String(key === selectedAnnotationId));
-    selectButton.textContent = description;
+    selectButton.setAttribute('aria-describedby', `${markerID} ${noteID}`);
     selectButton.addEventListener('click', () => selectAnnotation(annotation, key));
+
+    marker.className = 'annotation-marker';
+    marker.id = markerID;
+    marker.dataset.annotationMarker = '';
+    marker.setAttribute('aria-hidden', 'true');
+    marker.textContent = String(displayIndex + 1);
+
+    cardMain.className = 'annotation-card-main';
+    cardBody.className = 'annotation-card-body';
+    meta.className = 'annotation-card-meta';
+    meta.textContent = annotationGeometryText(annotation);
+    note.className = 'annotation-card-note';
+    note.id = noteID;
+    note.dataset.expanded = String(expanded);
+    note.textContent = noteText;
+    cardBody.append(meta, note);
+
+    if (annotationNoteNeedsExpansion(noteText)) {
+      const expandButton = document.createElement('button');
+      expandButton.type = 'button';
+      expandButton.className = 'annotation-card-expand';
+      expandButton.dataset.annotationId = key;
+      expandButton.dataset.annotationExpand = '';
+      expandButton.setAttribute('aria-controls', noteID);
+      expandButton.setAttribute('aria-expanded', String(expanded));
+      expandButton.textContent = expanded ? 'Show less' : 'Read full note';
+      expandButton.addEventListener('click', () => toggleAnnotationNote(key));
+      cardMain.appendChild(expandButton);
+    }
 
     editButton.type = 'button';
     editButton.dataset.annotationId = key;
@@ -342,7 +425,11 @@ function renderAnnotations() {
     removeButton.textContent = 'Remove';
     removeButton.addEventListener('click', () => removeAnnotation(annotation, key));
 
-    item.append(selectButton, editButton, removeButton);
+    actions.className = 'annotation-card-actions';
+    actions.append(editButton, removeButton);
+    selectButton.append(marker, cardBody);
+    cardMain.prepend(selectButton);
+    item.append(cardMain, actions);
     annotationList.appendChild(item);
   });
   redrawCanvas();
