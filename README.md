@@ -73,11 +73,9 @@ pxp reference.png actual.png --overlay overlay.png --json > metrics.json
 ```
 
 This prints structured metrics and writes `actual.diff.png` and `overlay.png`.
-For human feedback, run `pxp review reference.png actual.png` and wait for the
-explicit Submit feedback or Approve decision. Keep the previous capture so you
-can check whether the change helped.
+Keep the previous capture so you can check whether the change helped.
 
-For a local, annotated human review loop, use `pxp review`:
+For annotated human review, run:
 
 ```bash
 pxp review reference.png actual-v1.png --out .pxp-review --json > round-1.json
@@ -86,9 +84,9 @@ pxp review reference.png actual-v2.png --out .pxp-review \
   --previous-feedback "$(jq -r .feedback_path round-1.json)" --json > round-2.json
 ```
 
-The browser shows reference, actual, and overlay images. Submit feedback to
-request another round or Approve to end the loop. Pins and rectangles are
-persisted in original-image pixel coordinates, with immutable snapshot hashes.
+The command waits for **Submit feedback** or **Approve**. Submit feedback to
+request another round. Approve to end the loop. Pins and rectangles use
+original-image pixel coordinates. Each round keeps immutable snapshot hashes.
 
 For a closer look:
 
@@ -132,40 +130,53 @@ It also asks the agent to report what still differs, rather than call it done ju
 
 ## Releasing
 
-Push a version tag to run tests, build binaries for all supported platforms, and publish the archives and checksums as GitHub Release assets:
+The current published release is `v0.1.0`. The release workflow runs when a
+`v*` tag is pushed. It tests the project, builds Linux, macOS, and Windows
+archives for `amd64` and `arm64`, and publishes SHA-256 checksums as GitHub
+Release assets. It keeps the build artifacts for seven days.
+
+Prepare `v0.2.0` with the checks below. Do not create the tag until the release
+is approved.
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+make test
+make quality
+git diff --check
 ```
 
-Tags containing a hyphen (for example, `v0.1.0-rc.1`) create prereleases. The workflow also stores the files as a GitHub Actions artifact for seven days.
+After approval, publish the release:
+
+```bash
+git tag -a v0.2.0 -m "Release v0.2.0"
+git push origin v0.2.0
+```
+
+A tag such as `v0.2.0-rc.1` creates a prerelease.
 
 ## Development
+
+### Everyday checks
+
+Run these checks while changing the code:
 
 ```bash
 make test
 make build
+make fmt
+make vet
 ```
 
-The advanced quality gate is the canonical local and CI policy command:
+### Advanced checks
+
+Run these checks before requesting release or compatibility review:
 
 ```bash
 make quality
+make quality-test
+make test-race
 ```
 
-It runs the internal packages and smoke tests with coverage and checks a
-minimum of 78.0% statement coverage. The command package has no testable
-statements and is excluded from the coverage profile; generated code is also
-excluded. It also runs `golangci-lint` with complexity capped at 40 and
-function size capped at 203 lines or 127 statements. These limits match the
-baseline recorded when the policy was introduced; existing hotspots are
-intentionally retained until they are refactored. The quality gate is an advanced CI gate, not a normal watcher or
-pre-commit hook, so local edit feedback stays fast. Use `make quality-test` to
-exercise deterministic passing and failing coverage, complexity, and function-
-length boundary fixtures.
-
-The watcher runs the behavioral browser harness in addition to Go checks. It
-requires the pinned project tooling (`playwright-cli` 0.1.9 and Chromium) and
-uses `scripts/run-review-browser-check.sh`; `node --check` alone is not a
-behavioral substitute.
+`make quality` requires at least 78.0% statement coverage. It also enforces a
+maximum cyclomatic complexity of 40 and a maximum function size of 203 lines or
+127 statements. The browser watcher uses `playwright-cli` 0.1.9 and Chromium.
+See [the quality guardrails](docs/quality-guardrails.md) for policy details.
