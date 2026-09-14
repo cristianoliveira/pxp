@@ -1,7 +1,7 @@
 ---
 id: TASK-0020
 title: Remove static HTML report flag in favor of review
-status: todo
+status: doing
 depends_on: []
 priority: normal
 tags: []
@@ -20,6 +20,20 @@ The primary interactive workflow is split between a static `--report` HTML artif
 - Report behavior and path collisions have command tests in `internal/commands/compare_test.go`.
 - README and `skills/pxp/SKILL.md` still recommend `--report` for interactive inspection.
 - `pxp review` already persists immutable screenshots, overlays, context, and feedback while owning the blocking human decision lifecycle.
+
+## Compatibility decision
+
+Inventory on 2026-09-14 found `--report` consumers in the comparison command
+flag/options/writer, command and smoke tests, the root and command README files,
+`docs/command-contracts.md` references, `skills/pxp/SKILL.md`, and the upload
+panel evaluation verifier. The `internal/report` package is only reachable
+through the comparison writer; no release workflow or external automation in
+this repository consumes its HTML output.
+
+This is a deliberate breaking removal. Legacy `--report` invocation will fail
+with a usage diagnostic that points to `pxp review <reference.png> <actual.png>`
+for interactive review and plain comparison for structured machine output. The
+flag will not be silently ignored or retained as an indefinite deprecation.
 
 ## Migration plan
 1. Inventory documented and code-level consumers of `--report`; determine whether any release or external automation compatibility window is required.
