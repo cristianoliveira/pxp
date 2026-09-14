@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Card alert</title>
+<link rel="icon" href="data:,">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { background: #000000; }
+
+  body {
+    position: relative;
+    width: 656px;
+    height: 344px;
+    font-family: "Segoe UI", -apple-system, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .card {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    bottom: 12px;
+    left: 8px;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 32px 24px 24px;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    padding-left: 4px;
+    margin-right: 20px;
+  }
+
+  .header-icon {
+    display: block;
+    width: 56px;
+    height: 56px;
+    color: #242424;
+    flex: none;
+  }
+
+  .titles { flex: 1; min-width: 0; margin-left: 29px; }
+
+  .title {
+    margin-top: -1px;
+    font-size: 29px;
+    font-weight: 700;
+    color: #242424;
+    line-height: 28px;
+  }
+
+  .metadata {
+    margin-top: 10px;
+    font-size: 24px;
+    color: #616161;
+    line-height: 22px;
+  }
+
+  .more {
+    position: absolute;
+    top: 59px;
+    right: 42px;
+    color: #424242;
+  }
+
+  .description {
+    margin-top: 30px;
+    font-size: 24.5px;
+    line-height: 32px;
+    color: #242424;
+  }
+
+  .actions {
+    display: flex;
+    gap: 24px;
+    margin-top: 23px;
+  }
+
+  .button {
+    display: flex;
+    align-items: center;
+    width: 188px;
+    height: 64px;
+    padding: 0 28px;
+    gap: 20px;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 24px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .button-circle { width: 32px; height: 32px; flex: none; }
+
+  .button-primary {
+    background: #0f6cbd;
+    border: none;
+    color: #ffffff;
+  }
+
+  .button-secondary {
+    background: #ffffff;
+    border: 2px solid #d1d1d1;
+    color: #242424;
+  }
+</style>
+</head>
+<body>
+  <section class="card" aria-label="Card alert">
+    <header class="header">
+      <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+        <circle cx="12" cy="12" r="11.2"/>
+        <circle cx="15.4" cy="8.8" r="1.6" fill="currentColor" stroke="none"/>
+        <path d="M5.2 16.8 L10 11.2 L14 15.6 L16.6 13 L18.8 15.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="titles">
+        <h1 class="title">Card title</h1>
+        <p class="metadata">Additional metadata</p>
+      </div>
+    </header>
+
+    <svg class="more" width="28" height="8" viewBox="0 0 28 8" fill="currentColor" aria-hidden="true">
+      <circle cx="4" cy="4" r="2.25"/>
+      <circle cx="14" cy="4" r="2.25"/>
+      <circle cx="24" cy="4" r="2.25"/>
+    </svg>
+
+    <p class="description">
+      Copilot is an AI tool designed to improve productivity<br>
+      by integrating with Microsoft applications, offering<br>
+      content generation and task automation features.
+    </p>
+
+    <div class="actions">
+      <button type="button" class="button button-primary">
+        <svg class="button-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <circle cx="12" cy="12" r="11.2"/>
+        </svg>
+        Button
+      </button>
+      <button type="button" class="button button-secondary">
+        <svg class="button-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <circle cx="12" cy="12" r="11.2"/>
+        </svg>
+        Button
+      </button>
+    </div>
+  </section>
+</body>
+</html>
