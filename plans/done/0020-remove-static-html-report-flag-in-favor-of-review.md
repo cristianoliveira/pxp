@@ -1,7 +1,7 @@
 ---
 id: TASK-0020
 title: Remove static HTML report flag in favor of review
-status: doing
+status: done
 depends_on: []
 priority: normal
 tags: []
@@ -15,11 +15,11 @@ The primary interactive workflow is split between a static `--report` HTML artif
 ## Desired outcome
 `pxp review` is the single supported human-review workflow. Comparison remains non-interactive and machine-readable. Agents do not generate a static HTML report when they need human feedback.
 
-## Current evidence
-- Root comparison declares `--report` in `internal/commands/command.go` and writes through `internal/report` from `internal/commands/compare.go`.
-- Report behavior and path collisions have command tests in `internal/commands/compare_test.go`.
-- README and `skills/pxp/SKILL.md` still recommend `--report` for interactive inspection.
-- `pxp review` already persists immutable screenshots, overlays, context, and feedback while owning the blocking human decision lifecycle.
+## Initial evidence
+- Root comparison declared `--report` in `internal/commands/command.go` and wrote through `internal/report` from `internal/commands/compare.go`.
+- Report behavior and path collisions had command tests in `internal/commands/compare_test.go`.
+- README and `skills/pxp/SKILL.md` recommended `--report` for interactive inspection.
+- `pxp review` already persisted immutable screenshots, overlays, context, and feedback while owning the blocking human decision lifecycle.
 
 ## Compatibility decision
 
@@ -43,14 +43,24 @@ flag will not be silently ignored or retained as an indefinite deprecation.
 5. Verify help, invalid legacy invocation, review loop, machine-readable comparison, masks/overlays, and skill behavior.
 
 ## Acceptance criteria
-- [ ] Interactive documentation and agent skills use `pxp review`, wait for the explicit human decision, and do not recommend `--report` as a review fallback.
-- [ ] Root comparison help no longer advertises `--report`; the chosen compatibility behavior for legacy use is explicit, tested, and provides a self-correcting migration to `pxp review` rather than silently ignoring the flag.
-- [ ] Removing report output does not change comparison metrics, structured stdout, exit codes, masks, overlays, crops, regions, thresholds, or validation gates.
-- [ ] `pxp review` still provides Reference / Current / Overlay, immutable round evidence, context, annotations, explicit Submit/Approve, foreground wait, and server cleanup.
-- [ ] Tests cover command help, legacy `--report` behavior, non-interactive comparison, and a blocking review completion. Remove obsolete report-render assertions rather than replacing them with markup-string tests.
-- [ ] Search and public docs contain no stale command examples or claims that comparison generates HTML reports. Uses of the word “report” for diagnostics or human summaries remain valid and are not blindly removed.
-- [ ] Release notes call out the breaking CLI change and migration command. If semantic-version policy requires deprecation first, record owner and removal milestone.
-- [ ] `internal/report` is deleted only if a fresh usage/ownership check shows it is unreachable after flag removal; otherwise document its remaining responsibility.
+- [x] Interactive documentation and agent skills use `pxp review`, wait for the explicit human decision, and do not recommend `--report` as a review fallback.
+- [x] Root comparison help no longer advertises `--report`; legacy use is explicitly tested and provides a self-correcting migration to `pxp review` rather than silently ignoring the flag.
+- [x] Removing report output does not change comparison metrics, structured stdout, exit codes, masks, overlays, crops, regions, thresholds, or validation gates.
+- [x] `pxp review` still provides Reference / Current / Overlay, immutable round evidence, context, annotations, explicit Submit/Approve, foreground wait, and server cleanup.
+- [x] Tests cover command help, legacy `--report` behavior, non-interactive comparison, and a blocking review completion; obsolete report-render assertions were removed.
+- [x] Search and public docs contain no stale command examples or claims that comparison generates HTML reports. Uses of the word “report” for diagnostics or human summaries remain valid.
+- [x] Release notes call out the breaking CLI change and migration command.
+- [x] `internal/report` was deleted only after a fresh usage/ownership check showed it was unreachable after flag removal.
+
+## Completion evidence
+
+- Implementation merged to `origin/main` at `4399bd1` via PR #40; cleanup follow-up was `905cc69`.
+- Kelly QA PASS on exact `905cc69`; report: `.tmp/reports/13-09-26/task-0020-qa.md`.
+- Watcher generation 36 passed format, vet, lint, full tests, review browser e2e, and install; quality gate passed at 79.6% coverage.
+- GitHub CI passed lint and macOS/Ubuntu tests.
+- Compatibility policy: deliberate breaking removal. `--report` is absent from help; `--report path` and `--report=path` return usage exit code 2 with a migration diagnostic to `pxp review`, never silently ignored.
+- Exact parity checks confirmed structured comparison metrics and mask/overlay bytes remain unchanged after path normalization.
+- Board closed from clean latest `origin/main` (`4399bd1`) with this transition commit.
 
 ## Non-goals and authorization
 Do not remove `pxp` comparison, overlays, masks, structured metrics, or saved review-round artifacts. Do not add a replacement export format in this task. This plan does not authorize implementation; removing a public flag is a breaking change and requires explicit implementation approval after compatibility review.
