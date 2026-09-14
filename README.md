@@ -16,9 +16,11 @@ Comparison runs locally, without an API key or a vision model.
 - Masks and overlays with the images and metrics needed for machine-readable comparison.
 - Optional metric limits when you want a comparison to fail in CI.
 
-The output is meant for agents too. Comparison results use TOON by default, with JSON available through `--json`.
-Results are bounded so the agent doesn't need to read every mismatch at once.
-Optional visual descriptions can add context, but they don't change the measurements.
+## Review loop
+
+Once the agent finish an implementation it handsoff for review
+
+https://github.com/user-attachments/assets/4e7057fa-fe7e-4d01-94ca-67b5e9774634
 
 ## Install
 
