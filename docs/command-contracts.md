@@ -10,6 +10,10 @@ The [review-loop vision and goals](review-loop-vision.md) describe the intended 
 - `--json` selects compatibility JSON.
 - Comparison, probe, and scan results include bounded output by default.
 - Use `--full` or the relevant limit flag to request complete diagnostic output.
+- Comparison is non-interactive and writes structured metrics plus requested image
+  artifacts. Human review uses `pxp review` and waits for an explicit decision.
+- The removed comparison `--report` flag returns a migration diagnostic that
+  points to `pxp review`; it is not silently ignored.
 
 ## Exit codes
 

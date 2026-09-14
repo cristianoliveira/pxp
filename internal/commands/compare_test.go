@@ -41,11 +41,10 @@ func TestComparisonThresholdValidationRejectsInvalidValues(t *testing.T) {
 }
 
 func TestComparisonRequestValidationRejectsUnsafeArtifactPathsAndUnknownProvider(t *testing.T) {
-	assert.EqualError(t, validateComparisonArtifactPaths("reference.png", "actual.png", "reference.png", "", ""), "--output must not overwrite an input image")
-	assert.EqualError(t, validateComparisonArtifactPaths("reference.png", "actual.png", "mask.png", "mask.png", ""), "--overlay must differ from --output")
-	assert.EqualError(t, validateComparisonArtifactPaths("reference.png", "actual.png", "mask.png", "overlay.png", "mask.png"), "--report must not overwrite an input, mask, or overlay")
+	assert.EqualError(t, validateComparisonArtifactPaths("reference.png", "actual.png", "reference.png", ""), "--output must not overwrite an input image")
+	assert.EqualError(t, validateComparisonArtifactPaths("reference.png", "actual.png", "mask.png", "mask.png"), "--overlay must differ from --output")
 	assert.EqualError(t, validateVisualContextProvider(true, "unknown"), `unsupported visual context provider "unknown"`)
-	assert.NoError(t, validateComparisonArtifactPaths("reference.png", "actual.png", "mask.png", "overlay.png", "report.html"))
+	assert.NoError(t, validateComparisonArtifactPaths("reference.png", "actual.png", "mask.png", "overlay.png"))
 	assert.NoError(t, validateVisualContextProvider(true, "openrouter"))
 }
 
@@ -95,6 +94,23 @@ func TestCommandUsageErrorsShowCorrectionsAndLocalExamples(t *testing.T) {
 	require.NoError(t, help.Err)
 	assert.Contains(t, help.Stdout, "Examples:")
 	assert.Contains(t, help.Stdout, "pxp probe reference.png actual.png --at 12,24")
+}
+
+func TestRemovedReportFlagExplainsReviewMigration(t *testing.T) {
+	result := executeCommand(NewCommand(), "reference.png", "actual.png", "--report", "legacy.html")
+
+	require.Error(t, result.Err)
+	assert.ErrorContains(t, result.Err, "--report was removed")
+	assert.ErrorContains(t, result.Err, "pxp review <reference.png> <actual.png>")
+	assert.ErrorContains(t, result.Err, "omit --report for structured comparison")
+	assert.Equal(t, 2, clipkg.ExitCode(result.Err))
+}
+
+func TestComparisonHelpOmitsRemovedReportFlag(t *testing.T) {
+	result := executeCommand(NewCommand(), "--help")
+
+	require.NoError(t, result.Err)
+	assert.NotContains(t, result.Stdout, "--report")
 }
 
 func TestDiffImageCommandProducesMaskAndJSONMetrics(t *testing.T) {
@@ -162,27 +178,6 @@ func TestDiffImageCommandPreservesAnalysisArtifacts(t *testing.T) {
 	assert.FileExists(t, overlay)
 }
 
-func TestDiffImageCommandWritesReportWithoutExplicitMaskOutput(t *testing.T) {
-	dir := t.TempDir()
-	reference := filepath.Join(dir, "reference.png")
-	actual := filepath.Join(dir, "actual.png")
-	report := filepath.Join(dir, "report.html")
-	writeTestPNG(t, reference, image.NewRGBA(image.Rect(0, 0, 2, 2)))
-	writeTestPNG(t, actual, image.NewRGBA(image.Rect(0, 0, 2, 2)))
-
-	defaultMask := filepath.Join(dir, "actual.diff.png")
-	result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), reference, actual, "--report", report)
-
-	require.NoError(t, result.Err)
-	assert.Contains(t, result.Stdout, defaultMask)
-	_, statErr := os.Stat(defaultMask)
-	require.NoError(t, statErr)
-	content, err := os.ReadFile(report)
-	require.NoError(t, err)
-	assert.Contains(t, string(content), "Pixel Perfect Report")
-	assert.Contains(t, string(content), "data:image/png;base64,")
-}
-
 func TestDiffImageCommandPrefersMetadataLogicalCrop(t *testing.T) {
 	dir := t.TempDir()
 	reference := filepath.Join(dir, "reference.png")
@@ -201,68 +196,12 @@ func TestDiffImageCommandPrefersMetadataLogicalCrop(t *testing.T) {
 	assert.Equal(t, &diff.Bounds{X: 1, Y: 0, Width: 2, Height: 2}, comparison.Inputs.Reference.Crop)
 }
 
-func TestDiffImageCommandWritesHTMLReport(t *testing.T) {
-	dir := t.TempDir()
-	reference := filepath.Join(dir, "reference.png")
-	actual := filepath.Join(dir, "actual.png")
-	mask := filepath.Join(dir, "mask.png")
-	report := filepath.Join(dir, "report.html")
-	writeTestPNG(t, reference, image.NewRGBA(image.Rect(0, 0, 2, 2)))
-	writeTestPNG(t, actual, image.NewRGBA(image.Rect(0, 0, 2, 2)))
-
-	result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), reference, actual, "--output", mask, "--report", report)
-
-	require.NoError(t, result.Err)
-	content, err := os.ReadFile(report)
-	require.NoError(t, err)
-	html := string(content)
-	assert.Contains(t, html, "Pixel Perfect Report")
-	assert.Contains(t, html, "Global metrics")
-	assert.Contains(t, html, "data:image/png;base64,")
-	assert.Contains(t, html, "Reference")
-	assert.Contains(t, html, "Actual")
-	assert.Contains(t, html, "Mask")
-	assert.Contains(t, html, "Threshold: 0")
-	assert.Contains(t, html, "Perceptual threshold: 0.1")
-}
-
-func TestDiffImageCommandHTMLReportIncludesCropAndRegionProvenance(t *testing.T) {
-	dir := t.TempDir()
-	reference := filepath.Join(dir, "reference.png")
-	actual := filepath.Join(dir, "actual.png")
-	mask := filepath.Join(dir, "mask.png")
-	report := filepath.Join(dir, "report.html")
-	referenceImage := image.NewRGBA(image.Rect(0, 0, 4, 2))
-	actualImage := image.NewRGBA(image.Rect(0, 0, 2, 2))
-	actualImage.Set(1, 1, image.White)
-	writeTestPNG(t, reference, referenceImage)
-	writeTestPNG(t, actual, actualImage)
-
-	result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), reference, actual, "--reference-crop", "1,0,2,2", "--actual-crop", "0,0,2,2", "--region", "0,0,2,2", "--output", mask, "--report", report)
-
-	require.NoError(t, result.Err)
-	content, err := os.ReadFile(report)
-	require.NoError(t, err)
-	html := string(content)
-	assert.Contains(t, html, "Reference crop: 1,0,2,2")
-	assert.Contains(t, html, "Actual crop: 0,0,2,2")
-	assert.Contains(t, html, "Compared region: 0,0,2,2")
-	assert.Contains(t, html, "1,1,1,1")
-	assert.Contains(t, html, "2,1,1,1")
-}
-
 func TestDiffImageCommandHelpDocumentsVisualContextPrompt(t *testing.T) {
 	command := newCommand(imageio.CompareImagesWithThresholds)
 	result := executeCommand(command, "--help")
 
 	require.NoError(t, result.Err)
 	assert.Contains(t, result.Stdout, "--visual-context-prompt")
-}
-
-func TestDiffImageCommandRejectsReportPathCollisions(t *testing.T) {
-	result := executeCommand(newCommand(imageio.CompareImagesWithThresholds), "reference.png", "actual.png", "--output", "mask.png", "--report", "mask.png")
-
-	assert.EqualError(t, result.Err, "--report must not overwrite an input, mask, or overlay")
 }
 
 func TestDiffImageCommandValidatesVisualContextProviderBeforeReadingImages(t *testing.T) {

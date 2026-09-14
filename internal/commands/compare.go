@@ -16,7 +16,6 @@ import (
 	"github.com/cristianoliveira/pxp/internal/imagecontext"
 	diff "github.com/cristianoliveira/pxp/internal/imagediff"
 	"github.com/cristianoliveira/pxp/internal/imageio"
-	reportpkg "github.com/cristianoliveira/pxp/internal/report"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +26,6 @@ type comparisonOptions struct {
 	configuration             *comparisonConfiguration
 	output                    string
 	overlay                   string
-	report                    string
 	annotations               string
 	threshold                 uint8
 	perceptualThreshold       float64
@@ -130,7 +128,6 @@ func readComparisonOptions(
 	}
 	output, _ := cmd.Flags().GetString("output")
 	overlay, _ := cmd.Flags().GetString("overlay")
-	report, _ := cmd.Flags().GetString("report")
 	annotationsPath, _ := cmd.Flags().GetString("annotations")
 	threshold, _ := cmd.Flags().GetUint8("threshold")
 	perceptualThreshold, _ := cmd.Flags().GetFloat64("perceptual-threshold")
@@ -153,7 +150,6 @@ func readComparisonOptions(
 		configuration:             configuration,
 		output:                    output,
 		overlay:                   overlay,
-		report:                    report,
 		annotations:               annotationsPath,
 		threshold:                 threshold,
 		perceptualThreshold:       perceptualThreshold,
@@ -190,7 +186,7 @@ func validateComparisonOptions(options *comparisonOptions, referencePath, actual
 		return err
 	}
 	if err := validateComparisonArtifactPaths(
-		referencePath, actualPath, options.output, options.overlay, options.report,
+		referencePath, actualPath, options.output, options.overlay,
 	); err != nil {
 		return err
 	}
@@ -386,18 +382,6 @@ func writeComparisonOutput(
 		}
 		return cli.NewResultError(validationErr)
 	}
-	if err := writeComparisonReport(
-		options.report,
-		inputs,
-		options.output,
-		options.overlay,
-		options.threshold,
-		options.perceptualThreshold,
-		options.region,
-		outputResult.ImageComparison,
-	); err != nil {
-		return err
-	}
 	if err := addVisualContext(
 		options.visualContextEnabled,
 		options.provider,
@@ -517,7 +501,7 @@ func validateVisualContextProvider(enabled bool, provider string) error {
 }
 
 func validateComparisonArtifactPaths(
-	referencePath, actualPath, outputPath, overlayPath, reportPath string,
+	referencePath, actualPath, outputPath, overlayPath string,
 ) error {
 	if outputPath != "" &&
 		(samePath(outputPath, referencePath) || samePath(outputPath, actualPath)) {
@@ -530,36 +514,7 @@ func validateComparisonArtifactPaths(
 	if overlayPath != "" && outputPath != "" && samePath(overlayPath, outputPath) {
 		return fmt.Errorf("--overlay must differ from --output")
 	}
-	if reportPath != "" &&
-		//nolint:lll // keep this expression together
-		(samePath(reportPath, referencePath) || samePath(reportPath, actualPath) || (outputPath != "" && samePath(reportPath, outputPath)) || samePath(reportPath, overlayPath)) {
-		return fmt.Errorf("--report must not overwrite an input, mask, or overlay")
-	}
 	return nil
-}
-
-func writeComparisonReport(
-	report string,
-	inputs preparedImageInputs,
-	maskPath, overlayPath string,
-	threshold uint8,
-	perceptualThreshold float64,
-	region *diff.Bounds,
-	result diff.ImageComparison,
-) error {
-	if report == "" {
-		return nil
-	}
-	return reportpkg.Write(report, reportpkg.Input{
-		ReferencePath:       inputs.referencePath,
-		ActualPath:          inputs.actualPath,
-		MaskPath:            maskPath,
-		OverlayPath:         overlayPath,
-		Threshold:           threshold,
-		PerceptualThreshold: perceptualThreshold,
-		ComparedRegion:      region,
-		Result:              result,
-	})
 }
 
 func addVisualContext(

@@ -12,13 +12,12 @@
 - [Visual context](imagecontext/AGENTS.md) owns optional provider protocols.
 - [Annotations](annotations/AGENTS.md) owns annotation data integrity and geometry.
 - [Review](review/AGENTS.md) owns localhost annotated review rounds.
-- [Reports](report/AGENTS.md) owns HTML presentation.
 - [Output](output/AGENTS.md) owns structured output and serialization.
 - [CLI runtime](cli/AGENTS.md) owns shared process helpers and error contracts.
 
 # Connections
 
-The command package coordinates capabilities. Core image evidence consumes in-memory inputs; image and annotation persistence adapters sit at the edge. Provider and report packages consume comparison results without changing their meaning.
+The command package coordinates capabilities. Core image evidence consumes in-memory inputs; image and annotation persistence adapters sit at the edge. Provider packages consume comparison results without changing their meaning.
 
 # Placement
 

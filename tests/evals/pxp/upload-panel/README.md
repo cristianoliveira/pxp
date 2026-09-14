@@ -64,7 +64,7 @@ The runner:
    Browser, OS, or font drift blocks the run; it is not permission to update the golden.
 6. Runs the same content/Retry checks on every control. Compares each capture with
    both the design PNG and accepted render at threshold 8, without resizing,
-   cropping, or ignored regions. Saves screenshots, overlays, reports, and JSON.
+   cropping, or ignored regions. Saves screenshots, overlays, masks, and JSON.
 7. Closes its own browser/server and writes `results.json`.
 
 | Exit | Meaning |
@@ -146,8 +146,8 @@ icon too?”. [The review record](reviews/retry-icon.json) and
 only to this change, not all icon changes or a universal pixel tolerance.
 
 Alternatives require passing content and Retry checks but do not prescribe
-`visual_difference`. Some changed pixels alone do not reject them. Review the
-runner's `retry-icon/accepted-delta-report.html` to inspect the change.
+`visual_difference`. Some changed pixels alone do not reject them. Review the runner's `retry-icon` metrics and overlay artifacts to inspect the change.
+
 
 [`alternative-observations.json`](alternative-observations.json) stores measured
 results and screenshot/checker hashes. [`observations.json`](observations.json)

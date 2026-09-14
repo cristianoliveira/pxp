@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/cristianoliveira/pxp/internal/cli"
 	diff "github.com/cristianoliveira/pxp/internal/imagediff"
@@ -45,7 +46,6 @@ func newCommand(compare imageComparer) *cobra.Command {
 		String("mask", "", "full-size PNG selecting compared pixels (visible non-black includes)")
 	command.Flags().
 		String("overlay", "", "path for directional overlay (reference red, actual green)")
-	command.Flags().String("report", "", "write a self-contained HTML report to this path")
 	command.Flags().
 		//nolint:lll // keep this expression together
 		Int("suggest-offset", 0, "report best whole-image translation within this pixel radius without applying it")
@@ -115,6 +115,18 @@ func NewCommand() *cobra.Command {
 	return newCommandWithExecutable(cli.CurrentExecutablePath)
 }
 
+func flagUsageError(command *cobra.Command, err error) error {
+	if err != nil && strings.HasPrefix(err.Error(), "unknown flag: --report") {
+		return cli.NewUsageErrorWithDetails(
+			fmt.Errorf("--report was removed; comparison no longer writes HTML reports"),
+			"--report",
+			"Use `pxp review <reference.png> <actual.png>` for human review, "+
+				"or omit --report for structured comparison.",
+		)
+	}
+	return cli.NewFlagUsageError(command, err)
+}
+
 func newCommandWithExecutable(resolveExecutable func() (string, error)) *cobra.Command {
 	command := newCommand(nil)
 	command.Use = "pxp <reference.png> <actual.png>"
@@ -147,7 +159,7 @@ Next:
 `, executable)
 		return err
 	}
-	command.SetFlagErrorFunc(cli.NewFlagUsageError)
+	command.SetFlagErrorFunc(flagUsageError)
 	cli.MarkUsageErrors(command)
 	return command
 }

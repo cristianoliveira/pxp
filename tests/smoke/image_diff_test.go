@@ -51,26 +51,23 @@ func TestPixelPerfectReportsAdvisoryRegionMovement(t *testing.T) {
 	assert.Greater(t, comparison.MovedRegions[0].Confidence, 0.0)
 }
 
-func TestPixelPerfectCreatesMissingArtifactDirectories(t *testing.T) {
+func TestPixelPerfectCreatesMissingMaskAndOverlayDirectories(t *testing.T) {
 	binary := buildCommand(t, "pxp")
 	fixtures := filepath.Join("fixtures", "image-diff")
 	dir := t.TempDir()
 	mask := filepath.Join(dir, "missing", "masks", "diff.png")
 	overlay := filepath.Join(dir, "missing", "overlays", "diff.png")
-	report := filepath.Join(dir, "missing", "reports", "diff.html")
 
 	output, err := pixelPerfectCommand(binary,
 		filepath.Join(fixtures, "reference.png"),
 		filepath.Join(fixtures, "two-regions.png"),
 		"--output", mask,
 		"--overlay", overlay,
-		"--report", report,
 	).CombinedOutput()
 
 	require.NoError(t, err, string(output))
 	assert.FileExists(t, mask)
 	assert.FileExists(t, overlay)
-	assert.FileExists(t, report)
 }
 
 func TestPixelPerfectProbeCLI(t *testing.T) {

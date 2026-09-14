@@ -6,7 +6,7 @@
 - `imageio`: PNG decoding/normalization and mask, crop, and overlay persistence; delegates computation to `imagediff`.
 - `commands`: Cobra workflow/composition boundary; loads adapters and supplies paths/options to domain operations.
 - `artifact`: filesystem creation and parent-directory ownership.
-- `report`, `output`: HTML and structured serialization at presentation edges.
+- `output`: structured serialization at the presentation edge.
 - `imagecontext`: provider HTTP/configuration at the optional integration edge.
 - `cli`, `cmd/pxp`: process, exit policy, and executable composition.
 
