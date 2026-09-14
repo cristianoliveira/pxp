@@ -1,7 +1,7 @@
 ---
 id: TASK-0021
 title: Prepare v0.2.0 README and release communication
-status: todo
+status: doing
 depends_on: []
 priority: normal
 tags: []
