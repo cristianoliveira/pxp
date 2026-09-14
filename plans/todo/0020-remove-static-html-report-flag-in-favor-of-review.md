@@ -40,4 +40,3 @@ The primary interactive workflow is split between a static `--report` HTML artif
 
 ## Non-goals and authorization
 Do not remove `pxp` comparison, overlays, masks, structured metrics, or saved review-round artifacts. Do not add a replacement export format in this task. This plan does not authorize implementation; removing a public flag is a breaking change and requires explicit implementation approval after compatibility review.
-
