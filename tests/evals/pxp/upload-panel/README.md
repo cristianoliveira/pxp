@@ -173,7 +173,7 @@ Cancel all, Retry, and keyboard collapse/expand separately.
 
 The source must reproduce both raw captures at threshold 0 before reference
 metrics are recorded. The coordinator produces source hashes, screenshots,
-`reference-metrics.json`, mask, overlay, report, and `result.json`. Metrics are
+`reference-metrics.json`, mask, overlay, and `result.json`. Metrics are
 review evidence, not an automatic visual-quality cutoff. Candidate source is
 executable code: use a disposable environment without secrets or production access.
 
