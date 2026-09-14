@@ -1,7 +1,7 @@
 ---
 id: TASK-0022
 title: Add pxp anatomy command for single-image element bounds
-status: todo
+status: doing
 depends_on: []
 priority: normal
 tags: [cli, imagediff]
