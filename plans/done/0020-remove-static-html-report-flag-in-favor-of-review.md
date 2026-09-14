@@ -1,7 +1,7 @@
 ---
 id: TASK-0020
 title: Remove static HTML report flag in favor of review
-status: doing
+status: done
 depends_on: []
 priority: normal
 tags: []
@@ -43,14 +43,17 @@ flag will not be silently ignored or retained as an indefinite deprecation.
 5. Verify help, invalid legacy invocation, review loop, machine-readable comparison, masks/overlays, and skill behavior.
 
 ## Acceptance criteria
-- [ ] Interactive documentation and agent skills use `pxp review`, wait for the explicit human decision, and do not recommend `--report` as a review fallback.
-- [ ] Root comparison help no longer advertises `--report`; the chosen compatibility behavior for legacy use is explicit, tested, and provides a self-correcting migration to `pxp review` rather than silently ignoring the flag.
-- [ ] Removing report output does not change comparison metrics, structured stdout, exit codes, masks, overlays, crops, regions, thresholds, or validation gates.
-- [ ] `pxp review` still provides Reference / Current / Overlay, immutable round evidence, context, annotations, explicit Submit/Approve, foreground wait, and server cleanup.
-- [ ] Tests cover command help, legacy `--report` behavior, non-interactive comparison, and a blocking review completion. Remove obsolete report-render assertions rather than replacing them with markup-string tests.
-- [ ] Search and public docs contain no stale command examples or claims that comparison generates HTML reports. Uses of the word “report” for diagnostics or human summaries remain valid and are not blindly removed.
-- [ ] Release notes call out the breaking CLI change and migration command. If semantic-version policy requires deprecation first, record owner and removal milestone.
-- [ ] `internal/report` is deleted only if a fresh usage/ownership check shows it is unreachable after flag removal; otherwise document its remaining responsibility.
+- [x] Interactive documentation and agent skills use `pxp review`, wait for the explicit human decision, and do not recommend `--report` as a review fallback.
+- [x] Root comparison help no longer advertises `--report`; the chosen compatibility behavior for legacy use is explicit, tested, and provides a self-correcting migration to `pxp review` rather than silently ignoring the flag.
+- [x] Removing report output does not change comparison metrics, structured stdout, exit codes, masks, overlays, crops, regions, thresholds, or validation gates.
+- [x] `pxp review` still provides Reference / Current / Overlay, immutable round evidence, context, annotations, explicit Submit/Approve, foreground wait, and server cleanup.
+- [x] Tests cover command help, legacy `--report` behavior, non-interactive comparison, and a blocking review completion. Remove obsolete report-render assertions rather than replacing them with markup-string tests.
+- [x] Search and public docs contain no stale command examples or claims that comparison generates HTML reports. Uses of the word “report” for diagnostics or human summaries remain valid and are not blindly removed.
+- [x] Release notes call out the breaking CLI change and migration command. If semantic-version policy requires deprecation first, record owner and removal milestone.
+- [x] `internal/report` is deleted only if a fresh usage/ownership check shows it is unreachable after flag removal; otherwise document its remaining responsibility.
+
+## Completion evidence
+Implemented and merged in PR #40 at `4399bd1`. Independent QA passed exact implementation `905cc69`, including the legacy migration diagnostic, structured comparison parity, review lifecycle, fresh report-package reachability scan, race, vet, full tests, and quality checks. The v0.2.0 release notes document the breaking migration.
 
 ## Non-goals and authorization
-Do not remove `pxp` comparison, overlays, masks, structured metrics, or saved review-round artifacts. Do not add a replacement export format in this task. This plan does not authorize implementation; removing a public flag is a breaking change and requires explicit implementation approval after compatibility review.
+Do not remove `pxp` comparison, overlays, masks, structured metrics, or saved review-round artifacts. Do not add a replacement export format in this task. Implementation was explicitly authorized after compatibility review.
