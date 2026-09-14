@@ -14,6 +14,7 @@ remains non-interactive and machine-readable.
   feedback for the next round.
 - Use numbered annotation markers and compact pin notes.
 - Run coverage, complexity, and browser behavior quality gates.
+- Report the build version with `pxp --version`; release archives use the tag.
 
 ### Breaking change
 
@@ -36,8 +37,9 @@ without `--report` and consume its TOON output or `--json` output.
 
 ### Release preparation
 
-The release workflow runs `go test ./...`, builds six platform archives, and
-writes `checksums.txt`. Prepare and verify the release before publishing:
+The release workflow runs `go test ./...`, builds six platform archives with
+`pxp --version` set to the pushed tag, and writes `checksums.txt`. Prepare and
+verify the release before publishing:
 
 ```bash
 make test

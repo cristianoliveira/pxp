@@ -62,7 +62,11 @@ Make sure your Go binary directory is on `PATH`. Or build a local executable:
 ```bash
 go build -o bin/pxp ./cmd/pxp
 ./bin/pxp --help
+./bin/pxp --version
 ```
+
+`--version` reports the build version. Local `make build` uses `git describe`;
+release archives use their pushed tag.
 
 ## Try it
 

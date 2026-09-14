@@ -10,11 +10,13 @@
     utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
+        version = "0.2.0";
         pxp = pkgs.buildGoModule {
           pname = "pxp";
-          version = "0.1.0";
+          inherit version;
           src = ./.;
-          vendorHash = "sha256-yN6RmmJD1ir+2LDnjMCySiiO31iE4jg/SuPp6FylrBw=";
+          vendorHash = "sha256-4pKNmHBJn50Q1hdv/7g+ep7nxEkdCCqj2eyUkZIMB5Q=";
+          ldflags = [ "-X main.version=${version}" ];
           subPackages = [ "cmd/pxp" ];
           proxyVendor = true;
         };
