@@ -161,7 +161,7 @@ A tag such as `v0.2.0-rc.1` creates a prerelease.
 
 ### Everyday checks
 
-Run these checks while changing the code:
+Run the fast checks while changing the code:
 
 ```bash
 make test
@@ -172,7 +172,7 @@ make vet
 
 ### Advanced checks
 
-Run these checks before requesting release or compatibility review:
+Run these checks before release or compatibility review:
 
 ```bash
 make quality
@@ -180,7 +180,7 @@ make quality-test
 make test-race
 ```
 
-`make quality` requires at least 78.0% statement coverage. It also enforces a
-maximum cyclomatic complexity of 40 and a maximum function size of 203 lines or
-127 statements. The browser watcher uses `playwright-cli` 0.1.9 and Chromium.
-See [the quality guardrails](docs/quality-guardrails.md) for policy details.
+`make quality` requires 78.0% statement coverage. It limits complexity to 40
+and function size to 203 lines or 127 statements. The browser watcher uses
+`playwright-cli` 0.1.9 and Chromium. See [the quality guardrails](docs/quality-guardrails.md)
+for details.
