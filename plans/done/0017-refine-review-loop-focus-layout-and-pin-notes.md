@@ -1,7 +1,7 @@
 ---
 id: TASK-0017
 title: Remove redundant Focus-mode framing from review loop
-status: doing
+status: done
 depends_on: []
 priority: normal
 tags: []
