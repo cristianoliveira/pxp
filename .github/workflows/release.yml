@@ -29,6 +29,7 @@ jobs:
         shell: bash
         env:
           CGO_ENABLED: '0'
+          VERSION: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           mkdir -p dist
@@ -38,7 +39,7 @@ jobs:
               binary=pxp
               if [ "$os" = windows ]; then binary=pxp.exe; fi
               mkdir -p "build/$name"
-              GOOS="$os" GOARCH="$arch" go build -trimpath -o "build/$name/$binary" ./cmd/pxp
+              GOOS="$os" GOARCH="$arch" go build -trimpath -ldflags "-X main.version=$VERSION" -o "build/$name/$binary" ./cmd/pxp
               cp README.md "build/$name/"
               if [ "$os" = windows ]; then
                 (cd "build/$name" && zip -q "../../dist/$name.zip" "$binary" README.md)

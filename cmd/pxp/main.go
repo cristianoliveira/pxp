@@ -11,10 +11,13 @@ import (
 	"github.com/cristianoliveira/pxp/internal/commands"
 )
 
+var version = "dev"
+
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	command := commands.NewCommand()
+	command.Version = version
 	command.SetContext(ctx)
 	command.SilenceErrors = true
 	command.SilenceUsage = true
