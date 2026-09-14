@@ -3,7 +3,7 @@
 You give a coding agent a screenshot and ask it to build the UI. The result looks close, but the spacing is off, a color doesn't match, and now you need to explain what to fix in plain english, good luck.
 
 `pxp` compares the reference PNG with a screenshot of your implementation.
-It shows where they differ, gives you numbers to compare between changes, and generates an overlay and an HTML report you can inspect yourself.
+It shows where they differ, gives you numbers to compare between changes, and generates masks and overlays for inspection.
 
 The idea is to give the agent something more useful than “it still looks wrong”.
 Comparison runs locally, without an API key or a vision model.
@@ -13,7 +13,7 @@ Comparison runs locally, without an API key or a vision model.
 - Regions where the images differ, so you can focus on a smaller area.
 - Raw and perceptual metrics to check what changed between iterations.
 - Pixel probes and row or column scans for questions about colors and spacing.
-- Masks, overlays, and an HTML report with the images and metrics in one file.
+- Masks and overlays with the images and metrics needed for machine-readable comparison.
 - Optional metric limits when you want a comparison to fail in CI.
 
 The output is meant for agents too. Comparison results use TOON by default, with JSON available through `--json`.
@@ -69,12 +69,13 @@ go build -o bin/pxp ./cmd/pxp
 Capture your UI and compare it with the reference:
 
 ```bash
-pxp reference.png actual.png --overlay overlay.png --report visual-diff.html
+pxp reference.png actual.png --overlay overlay.png --json > metrics.json
 ```
 
-This prints the metrics and writes `actual.diff.png`, `overlay.png`, and `visual-diff.html`.
-Open the report, pick something to fix, then capture again and compare with the same settings.
-Keep the previous capture so you can check whether the change helped.
+This prints structured metrics and writes `actual.diff.png` and `overlay.png`.
+For human feedback, run `pxp review reference.png actual.png` and wait for the
+explicit Submit feedback or Approve decision. Keep the previous capture so you
+can check whether the change helped.
 
 For a local, annotated human review loop, use `pxp review`:
 
@@ -116,6 +117,13 @@ You still need to check those things. The numbers help you investigate; they are
 
 Finding different pixels doesn't fail the command by itself.
 Set `--max-*` limits if you need a pass/fail check, using tolerances that make sense for your captures.
+
+## Breaking CLI change
+
+The comparison `--report` flag was removed. Comparison remains non-interactive
+and emits structured metrics; use `pxp review reference.png actual.png` for the
+blocking annotated human-review workflow. Legacy `--report` invocations fail
+with a migration diagnostic instead of being silently ignored.
 
 ## Using it with an agent
 

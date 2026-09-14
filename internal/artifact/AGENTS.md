@@ -4,13 +4,12 @@
 
 # Boundaries
 
-It creates parent directories and writes bytes or open files with caller-selected permissions. It does not know artifact formats, image semantics, reports, or command policy.
+It creates parent directories and writes bytes or open files with caller-selected permissions. It does not know artifact formats, image semantics, or command policy.
 
 # Connections
 
 - [Image I/O](../imageio/AGENTS.md): uses file creation when encoding PNG artifacts.
 - [Annotation persistence](../annotationio/AGENTS.md): uses file creation for annotation JSON.
-- [Reports](../report/AGENTS.md): uses byte persistence for HTML reports.
 - [Review](../review/AGENTS.md): supports immutable review snapshot artifacts through its image and feedback workflows.
 
 # Landmarks

@@ -1,6 +1,6 @@
 # Purpose
 
-`pxp` is an offline, agent-facing CLI that compares PNG screenshots and emits deterministic visual-regression evidence: metrics, mismatch regions, probes, scans, masks, overlays, and HTML reports.
+`pxp` is an offline, agent-facing CLI that compares PNG screenshots and emits deterministic visual-regression evidence: metrics, mismatch regions, probes, scans, masks, and overlays. Human review runs through the blocking `pxp review` loop.
 
 # Architecture
 
@@ -11,7 +11,7 @@
 - [Visual context](internal/imagecontext/AGENTS.md) owns optional provider-backed descriptions.
 - [Annotations](internal/annotations/AGENTS.md) owns annotation contracts and geometry.
 - [Review](internal/review/AGENTS.md) owns the localhost annotated review loop.
-- [Reports](internal/report/AGENTS.md), [output](internal/output/AGENTS.md), and [artifact persistence](internal/artifact/AGENTS.md) own presentation and persistence boundaries.
+- [Output](internal/output/AGENTS.md) and [artifact persistence](internal/artifact/AGENTS.md) own presentation and persistence boundaries.
 - [CLI runtime](internal/cli/AGENTS.md) owns shared process and error behavior.
 
 Composition is wired at the executable and command boundaries. Provider calls stay optional and at the edge; deterministic image metrics do not depend on them.
@@ -32,13 +32,11 @@ Composition is wired at the executable and command boundaries. Provider calls st
 - `internal/commands/command.go:NewCommand`: creates the CLI command tree.
 - `internal/imageio/imageio.go:CompareImagesWithThresholds`: starts file-backed deterministic comparison.
 - `internal/output/printer.go:Printer.Structured`: emits the default structured result.
-- `internal/report/report.go:Render`: creates self-contained report bytes.
 
 # Boundary flows
 
 - Information flow: `internal/commands/command.go:NewCommand` -> `internal/cli/error_output.go:RenderError` via `cmd/pxp/main.go:main`; value: `error`.
 - Information flow: `internal/annotationio/annotationio.go:Load` -> `internal/annotations/annotations.go:Document.Intersections` via `internal/commands/command.go:NewCommand`; value: `annotations.Document`.
-- Information flow: `internal/imageio/imageio.go:CompareImagesWithThresholds` -> `internal/report/report.go:Render` via `internal/commands/command.go:NewCommand`; value: `imagediff.ImageComparison`.
 - Information flow: `internal/imageio/imageio.go:CompareImagesWithThresholds` -> `internal/output/printer.go:Printer.Structured` via `internal/commands/command.go:NewCommand`; value: `imagediff.ImageComparison`.
 
 # Placement

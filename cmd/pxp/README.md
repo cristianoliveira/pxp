@@ -33,17 +33,21 @@ Supply a reference screenshot and a screenshot of your implementation:
 ```bash
 pxp reference.png actual.png \
   --overlay overlay.png \
-  --report visual-diff.html
+  --json > metrics.json
 ```
 
-This prints TOON metrics and writes:
+This prints structured metrics and writes:
 
 - `actual.diff.png`: a transparent changed-pixel mask; override with `--output`.
 - `overlay.png`: a directional overlay, with reference differences in red and
   actual differences in green.
-- `visual-diff.html`: a self-contained report.
 
 Use `--json` for compatibility JSON. Keep input and output paths separate.
+For human review, use `pxp review reference.png actual.png`; it waits for an
+explicit Submit feedback or Approve decision.
+
+The removed `--report` flag returns a migration diagnostic pointing to
+`pxp review`; it is not silently ignored.
 
 **A difference alone does not fail the command.** Add `--max-*` flags to set a
 pass/fail rule. Invalid inputs and file errors still fail without those flags.

@@ -91,8 +91,6 @@ def compare(reference, actual, directory, name, threshold):
             str(directory / f"{name}-mask.png"),
             "--overlay",
             str(directory / f"{name}-overlay.png"),
-            "--report",
-            str(directory / f"{name}-report.html"),
         ],
         directory,
         directory / f"{name}-metrics.json",

@@ -11,7 +11,6 @@ It coordinates capabilities but does not implement image algorithms, provider pr
 - [Image comparison](../imagediff/AGENTS.md): performs deterministic measurements and image artifacts.
 - [Annotations](../annotations/AGENTS.md): loads and matches semantic region metadata.
 - [Visual context](../imagecontext/AGENTS.md): provides optional provider-backed descriptions.
-- [Reports](../report/AGENTS.md): renders HTML from comparison inputs and results.
 - [Output](../output/AGENTS.md): emits structured command results.
 - [CLI runtime](../cli/AGENTS.md): supplies shared printer and error policy.
 
@@ -21,10 +20,9 @@ It coordinates capabilities but does not implement image algorithms, provider pr
 
 # Boundary flows
 
-- Information flow: `internal/imageio/imageio.go:CompareImagesWithThresholds` -> `internal/report/report.go:Render` via `internal/commands/command.go:NewCommand`; value: `imagediff.ImageComparison`.
 - Information flow: `internal/imageio/imageio.go:CompareImagesWithThresholds` -> `internal/output/printer.go:Printer.Structured` via `internal/commands/command.go:NewCommand`; value: `imagediff.ImageComparison`.
 - Information flow: `internal/imageio/imageio.go:CompareImagesWithThresholds` -> `internal/imagecontext/openrouter.go:OpenRouter.Describe` via `internal/commands/command.go:NewCommand`; value: `[]imagecontext.Region`.
 
 # Placement
 
-Put command option semantics and sequencing here. Put reusable evidence in `imagediff`, provider adapters in `imagecontext`, report presentation in `report`, and process behavior in `cli`.
+Put command option semantics and sequencing here. Put reusable evidence in `imagediff`, provider adapters in `imagecontext`, and process behavior in `cli`.

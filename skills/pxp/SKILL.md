@@ -35,8 +35,7 @@ The deliverable is real code, verified behavior, and measured visual progress—
 ```bash
 pxp reference.png actual.png \
   --threshold 8 --json \
-  --output diff-mask.png --overlay diff-overlay.png \
-  --report diff-report.html > metrics.json
+  --output diff-mask.png --overlay diff-overlay.png > metrics.json
 ```
 
 Use separate filenames per iteration so the baseline survives.
@@ -62,4 +61,4 @@ Default budget: **five measured refinement iterations**, unless the user sets an
 
 - For an annotated, multi-round human handoff, use the `pxp-review-loop` skill and run `pxp review` in the foreground; keep Submit feedback distinct from Approve.
 - Hand the local review URL to the human and wait for their explicit decision. Do not submit feedback, approve, or generate follow-up reports on their behalf.
-- A form for feedback, on submit download a report for you to continue.
+- A form for feedback; after Submit feedback, read the persisted feedback path to continue.
