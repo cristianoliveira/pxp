@@ -16,7 +16,7 @@ Agents need absolute element geometry from one screenshot (text-line bands, icon
 Design agreed with the user on 2026-09-14; full direction in `docs/anatomy-vision.md`.
 
 Approach:
-- Evidence in `internal/imagediff`: background detection (most frequent border color, deterministic tie-break, `--background` override) + connected components reused from `findRegions`; no gap grouping by default (`--group N` opt-in).
+- Evidence in `internal/imagediff`: background detection (most frequent image color, deterministic tie-break, `--background` override) + deterministic connected components; no gap grouping by default (`--group N` opt-in).
 - Command in `internal/commands/anatomy.go`, wired in `command.go`; output via `internal/output.Printer` (TOON default, `--json` compat).
 - Default fields: bounds x,y,w,h; pixels; density; dominant color. Reading-order sort. `total`/`returned`/`truncated` + `--full` escape, matching scan's bounded-output contract.
 - Flags: `--threshold 8`, `--background`, `--group 0`, `--min-pixels 4`, `--limit`, `--full`, `--format`.

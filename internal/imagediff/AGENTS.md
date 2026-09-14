@@ -1,6 +1,6 @@
 # Purpose
 
-`internal/imagediff` owns deterministic image evidence over already-decoded images: threshold and perceptual metrics, masks, mismatch regions, classifications, overlays, probes, scans, and movement/offset suggestions.
+`internal/imagediff` owns deterministic image evidence over already-decoded images: threshold and perceptual metrics, masks, mismatch regions, classifications, overlays, probes, scans, anatomy geometry, and movement/offset suggestions.
 
 # Boundaries
 
@@ -21,6 +21,7 @@ The package is the source of truth for measurements. It does not open files, enc
 - `internal/imagediff/overlay.go:DecodedImages.Overlay`: produces an in-memory comparison overlay.
 - `internal/imagediff/probe.go:DecodedImages.Probe`: measures normalized RGBA values at a point.
 - `internal/imagediff/scan.go:DecodedImages.Scan`: produces deterministic horizontal or vertical color runs.
+- `internal/imagediff/anatomy.go:DiscoverAnatomy`: discovers foreground element geometry from one decoded image.
 
 # Placement
 

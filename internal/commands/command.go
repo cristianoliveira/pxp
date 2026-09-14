@@ -72,6 +72,7 @@ func newCommand(compare imageComparer) *cobra.Command {
 	command.Flags().String("visual-context-model", "", "override the visual context model")
 	command.Flags().
 		String("visual-context-prompt", "", "extra advisory focus for visual context analysis")
+	command.AddCommand(newAnatomyCommand())
 	command.AddCommand(newProbeCommand())
 	command.AddCommand(newScanCommand())
 	command.AddCommand(newReviewCommand())

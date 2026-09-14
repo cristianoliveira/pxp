@@ -1,7 +1,8 @@
 # pxp
 
-Harness image comparison between two PNG files and report what changed. Use the metrics, mismatch regions,
-and image artifacts to debug a UI or check a visual regression in CI.
+Compare two PNG files or discover deterministic element geometry from one image.
+Use the metrics, mismatch regions, and image artifacts to debug a UI or check a
+visual regression in CI.
 
 `pxp` works offline without external credentials or a vision model. It does
 not capture screenshots, resize inputs, or align them automatically. Prepared
@@ -52,8 +53,22 @@ The removed `--report` flag returns a migration diagnostic pointing to
 **A difference alone does not fail the command.** Add `--max-*` flags to set a
 pass/fail rule. Invalid inputs and file errors still fail without those flags.
 
-Run `pxp --help` for comparison options, `pxp probe --help`
-for pixel inspection, and `pxp scan --help` for row and column scans.
+Run `pxp --help` for comparison options, `pxp anatomy --help` for single-image
+geometry, `pxp probe --help` for pixel inspection, and `pxp scan --help` for row
+and column scans.
+
+Discover element bounds from one screenshot:
+
+```bash
+pxp anatomy screenshot.png --json
+pxp anatomy screenshot.png --group 8 --min-pixels 8 --format toon
+```
+
+Anatomy returns connected foreground components in reading order. Each element
+includes bounds, pixel count, density, and dominant color. Use `--background
+#RRGGBB` to override the detected background, `--limit` to bound output, and
+`--full` to return every element. Anatomy reports geometry only; it does not
+perform OCR or semantic recognition.
 
 ## Find the cause of a difference
 
@@ -81,6 +96,7 @@ image space; it does not move that region's origin to zero.
 | Comparison | TOON | 20 mismatch regions |
 | `probe` | CSV | 25 points |
 | `scan` | CSV | 25 color runs per image |
+| `anatomy` | TOON | 25 elements |
 
 Comparison uses `--max-regions` or `--full`. Probe and scan use `--limit` or
 `--full`; do not combine those two flags. Truncated probe/scan output gives exact

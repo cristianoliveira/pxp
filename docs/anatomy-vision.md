@@ -13,7 +13,8 @@ This document defines desired outcomes, not an implementation recipe. It records
 ## Goals
 
 ### 1. Element discovery needs only one image
-`pxp anatomy <image.png>` reports element bounds from a single file. Background is detected from the image itself (most frequent border color, deterministic tie-break; explicit `--background #RRGGBB` overrides). Content is pixels differing from background by more than the comparison threshold.
+`pxp anatomy <image.png>` reports element bounds from a single file. Background is detected from the image itself (most frequent image color, deterministic tie-break; explicit `--background #RRGGBB` overrides).
+ Content is pixels differing from background by more than the comparison threshold.
 
 Success means the card-alert fixture yields its known elements (icon, title band, metadata band, three description lines, two buttons, ellipsis) as separate regions without any companion file.
 

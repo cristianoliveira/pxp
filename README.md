@@ -77,6 +77,12 @@ pxp reference.png actual.png --overlay overlay.png --json > metrics.json
 This prints structured metrics and writes `actual.diff.png` and `overlay.png`.
 Keep the previous capture so you can check whether the change helped.
 
+For deterministic geometry from one screenshot, run:
+
+```bash
+pxp anatomy screenshot.png --json
+```
+
 For annotated human review, run:
 
 ```bash

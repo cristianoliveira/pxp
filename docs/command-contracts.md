@@ -27,12 +27,29 @@ The [review-loop vision and goals](review-loop-vision.md) describe the intended 
 
 ```bash
 pxp reference.png actual.png --json
+pxp anatomy screenshot.png --json
+pxp anatomy screenshot.png --group 8 --min-pixels 8 --format toon
 pxp probe reference.png actual.png --at 20,20 --format json
 pxp scan reference.png actual.png --row 20 --format json
 pxp review reference.png actual.png --out .pxp-review
 pxp review reference.png actual.png --out .pxp-review --open --json
 pxp review reference.png actual.png --context-file review-context.json --json
 ```
+
+## Single-image anatomy
+
+`pxp anatomy <image.png>` discovers foreground elements from one PNG. It
+selects the most frequent image color as the background unless `--background
+#RRGGBB` is supplied, then returns connected components in reading order. The
+default threshold is 8 and the default minimum is 4 pixels. Components are not
+grouped unless `--group N` is supplied. `--limit` bounds the `elements` array;
+`--full` returns every element. The result includes `bounds`, `pixels`,
+`density`, and `dominantColor`, plus `total`, `returned`, and `truncated`.
+A solid-color image returns an explicit empty result with the
+`foreground-elements` query and a message.
+
+Anatomy is deterministic geometry evidence. It does not perform OCR, semantic
+recognition, or image comparison.
 
 ## Local annotated review loop
 

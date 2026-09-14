@@ -14,45 +14,45 @@ import (
 )
 
 func LoadDecodedImages(referencePath, actualPath string) (*imagediff.DecodedImages, error) {
-	type result struct {
-		image *image.NRGBA
-		err   error
+	reference, referenceErr := loadDecodedImage(referencePath, "reference")
+	if referenceErr != nil {
+		return nil, referenceErr
 	}
-	load := func(path, label string) result {
-		file, err := os.Open(path)
-		if err != nil {
-			return result{err: fmt.Errorf("decode %s: %w", label, err)}
-		}
-		decoded, decodeErr := png.Decode(file)
-		closeErr := file.Close()
-		if decodeErr != nil {
-			return result{err: fmt.Errorf("decode %s: %w", label, decodeErr)}
-		}
-		if closeErr != nil {
-			return result{err: fmt.Errorf("decode %s: %w", label, closeErr)}
-		}
-		bounds := decoded.Bounds()
-		normalized := image.NewNRGBA(image.Rect(0, 0, bounds.Dx(), bounds.Dy()))
-		draw.Draw(normalized, normalized.Bounds(), decoded, bounds.Min, draw.Src)
-		return result{image: normalized}
+	actual, actualErr := loadDecodedImage(actualPath, "actual")
+	if actualErr != nil {
+		return nil, actualErr
 	}
-	reference, actual := load(referencePath, "reference"), load(actualPath, "actual")
-	if reference.err != nil {
-		return nil, reference.err
-	}
-	if actual.err != nil {
-		return nil, actual.err
-	}
-	if reference.image.Bounds().Size() != actual.image.Bounds().Size() {
+	if reference.Bounds().Size() != actual.Bounds().Size() {
 		return nil, fmt.Errorf(
 			"image dimensions differ: reference is %dx%d, actual is %dx%d",
-			reference.image.Bounds().Dx(),
-			reference.image.Bounds().Dy(),
-			actual.image.Bounds().Dx(),
-			actual.image.Bounds().Dy(),
+			reference.Bounds().Dx(), reference.Bounds().Dy(),
+			actual.Bounds().Dx(), actual.Bounds().Dy(),
 		)
 	}
-	return &imagediff.DecodedImages{Reference: reference.image, Actual: actual.image}, nil
+	return &imagediff.DecodedImages{Reference: reference, Actual: actual}, nil
+}
+
+func LoadDecodedImage(path string) (*image.NRGBA, error) {
+	return loadDecodedImage(path, "image")
+}
+
+func loadDecodedImage(path, label string) (*image.NRGBA, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("decode %s: %w", label, err)
+	}
+	decoded, decodeErr := png.Decode(file)
+	closeErr := file.Close()
+	if decodeErr != nil {
+		return nil, fmt.Errorf("decode %s: %w", label, decodeErr)
+	}
+	if closeErr != nil {
+		return nil, fmt.Errorf("decode %s: %w", label, closeErr)
+	}
+	bounds := decoded.Bounds()
+	normalized := image.NewNRGBA(image.Rect(0, 0, bounds.Dx(), bounds.Dy()))
+	draw.Draw(normalized, normalized.Bounds(), decoded, bounds.Min, draw.Src)
+	return normalized, nil
 }
 
 func PNGDimensions(path string) (int, int, error) {
