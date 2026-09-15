@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/pxp-icon.svg" width="128" alt="pxp focus frame logo">
+</p>
+
 # pxp - Pixel Perfect
 
 You give a coding agent a screenshot and ask it to build the UI. The result looks close, but the spacing is off, a color doesn't match, and now you need to explain what to fix in plain english, good luck.
