@@ -144,6 +144,28 @@ Keep screenshots, agent outputs, reports, and run workspaces outside the skill
 and untracked. Stop each run's browser and server before starting another run.
 Never reuse a run directory or copy an accepted solution into the starter fixture.
 
-These cases test execution with a supplied skill. They do not test whether an
-agent selects that skill from its installed catalog. A successful run also does
-not establish a universal pixel tolerance or a general quality improvement.
+These cases test execution with a supplied skill. They do not test whether an agent selects that skill from its installed catalog. A successful run also does not establish a universal pixel tolerance or a general quality improvement.
+
+## Anatomy workflow controls (TASK-0025)
+
+`tests/evals/pxp/anatomy-workflow/` contains immutable control and holdout
+inputs for the single-image `pxp anatomy` workflow. Prompts are separate from
+reviewer-authored geometry and error expectations, so accepted answers are not
+leaked into agent inputs. The controls cover simple and grouped geometry,
+solid/empty images, bounded truncation, malformed input, and an ambiguous
+screenshot-like holdout. Semantic UI labels are explicitly disallowed.
+
+Run the deterministic offline harness after building `pxp`:
+
+```sh
+go build -o /tmp/pxp ./cmd/pxp
+python3 skills/pxp/evals/anatomy_workflow.py \
+  --pxp /tmp/pxp \
+  --output /tmp/pxp-anatomy-eval.json
+```
+
+The report records fixture and prompt hashes, command round trips, output bytes,
+errors, truncation, and geometry checks. It compares anatomy with bounded
+setup-cost controls for comparison, probe, scan, and review. Review is checked
+for availability only because launching it requires an interactive decision.
+Generated reports belong outside source-controlled fixtures.

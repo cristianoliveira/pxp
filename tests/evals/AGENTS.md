@@ -4,7 +4,7 @@
 
 # Boundaries
 
-This tree contains holdout inputs, accepted or alternative evidence, and independent verification helpers. It is not production code and must not be treated as skill content or a target implementation.
+This tree contains holdout inputs, accepted or alternative evidence, and independent verification helpers. The `pxp/anatomy-workflow` controls keep prompts separate from reviewer-authored geometry and explicitly test semantic overclaiming. It is not production code and must not be treated as skill content or a target implementation.
 
 # Connections
 

@@ -1,0 +1,5 @@
+{
+  "exit_code": 1,
+  "stdout_contains": ["Could not decode an input image.", "Provide valid PNG files and retry."],
+  "semantic_result": "error"
+}
