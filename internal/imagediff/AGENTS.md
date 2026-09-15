@@ -21,6 +21,7 @@ The package is the source of truth for measurements. It does not open files, enc
 - `internal/imagediff/overlay.go:DecodedImages.Overlay`: produces an in-memory comparison overlay.
 - `internal/imagediff/probe.go:DecodedImages.Probe`: measures normalized RGBA values at a point.
 - `internal/imagediff/scan.go:DecodedImages.Scan`: produces deterministic horizontal or vertical color runs.
+- `internal/imagediff/scan.go:DecodedImages.ScanBand`: preserves exact runs for each inclusive source row or column.
 - `internal/imagediff/anatomy.go:DiscoverAnatomy`: discovers foreground element geometry from one decoded image.
 
 # Placement

@@ -31,10 +31,31 @@ pxp anatomy screenshot.png --json
 pxp anatomy screenshot.png --group 8 --min-pixels 8 --format toon
 pxp probe reference.png actual.png --at 20,20 --format json
 pxp scan reference.png actual.png --row 20 --format json
+pxp scan reference.png actual.png --rows 20:30 --format json
+pxp scan reference.png actual.png --columns 40:48
 pxp review reference.png actual.png --out .pxp-review
 pxp review reference.png actual.png --out .pxp-review --open --json
 pxp review reference.png actual.png --context-file review-context.json --json
 ```
+
+## Scan bands
+
+`pxp scan` accepts inclusive ranges with `--rows START:END` or
+`--columns START:END`. Range coordinates use the same cropped comparison space
+as `--row` and `--column`; the normalized `start` and `end` are included in
+structured band output. Each source row or column remains a separate result
+with its exact color runs. No pixels are averaged across a band.
+
+Band output has `query: scan-band`, `total`, `returned`, and `truncated`. The
+existing `--limit` bounds source lines per image in a band, and `--full`
+recovers every line. A truncated response includes the exact `--full` command.
+Ranges are inclusive, so `--rows 20:30` scans 11 rows. A band helps inspect
+thick borders, separators, text/background bands, and the region returned by
+`pxp anatomy`; it does not infer semantic UI labels.
+
+`--rows` and `--columns` are mutually exclusive with each other and with
+`--row`, `--column`, `--x`, and `--y`. Malformed, reversed, empty, and
+out-of-bounds ranges are usage errors with exit code 2.
 
 ## Single-image anatomy
 

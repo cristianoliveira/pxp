@@ -1,7 +1,7 @@
 ---
 id: TASK-0024
 title: Scan multi-row and column bands
-status: todo
+status: doing
 depends_on: []
 priority: normal
 tags: [cli, imagediff, scan]

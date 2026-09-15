@@ -84,6 +84,8 @@ pxp probe reference.png actual.png --at 20,20 --at 30,20
 # Read color runs across a row or down a column.
 pxp scan reference.png actual.png --row 20
 pxp scan reference.png actual.png --column 30
+pxp scan reference.png actual.png --rows 20:30 --format json
+pxp scan reference.png actual.png --columns 40:48
 ```
 
 Choose coordinates inside your images. A region keeps coordinates in the prepared
@@ -113,6 +115,13 @@ pxp probe reference.png actual.png \
 Line endpoints are inclusive. `--step` samples every Nth point; `--radius` expands
 selections into deduplicated squares. Selected points must be in bounds.
 `--row` aliases `--y`; `--column` aliases `--x`.
+
+Use `--rows START:END` or `--columns START:END` for inclusive band scans. Each
+source row or column is returned separately with its exact runs; colors are not
+averaged. For example, `--rows 20:30` scans 11 rows and helps inspect thick
+borders, separators, text/background bands, or an area returned by `pxp
+anatomy`. Band `--limit` bounds source lines per image, and `--full` recovers
+all lines. Band coordinates are in cropped comparison space.
 
 ## Metrics
 

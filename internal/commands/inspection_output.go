@@ -29,6 +29,31 @@ func writeProbeCSV(command *cobra.Command, output probeOutput) error {
 	return writeTruncationCSV(writer, output.Total, output.Returned, output.Truncated, output.Hint)
 }
 
+func writeScanBandCSV(command *cobra.Command, output scanBandOutput) error {
+	writer := command.OutOrStdout()
+	//nolint:lll // keep this expression together
+	if _, err := fmt.Fprintln(writer, "image,axis,index,start,end,length,hex,input_axis,input_index"); err != nil {
+		return err
+	}
+	for _, line := range output.Reference {
+		input := inputLine(output.Axis, line.Index, output.Inputs)
+		if err := writeScanRunsCSV(
+			writer, "ref", output.Axis, line.Index, line.Runs, input, true,
+		); err != nil {
+			return err
+		}
+	}
+	for _, line := range output.Actual {
+		input := inputLine(output.Axis, line.Index, output.Inputs)
+		if err := writeScanRunsCSV(
+			writer, "act", output.Axis, line.Index, line.Runs, input, false,
+		); err != nil {
+			return err
+		}
+	}
+	return writeTruncationCSV(writer, output.Total, output.Returned, output.Truncated, output.Hint)
+}
+
 func writeScanCSV(command *cobra.Command, output scanOutput) error {
 	writer := command.OutOrStdout()
 	//nolint:lll // keep this expression together
