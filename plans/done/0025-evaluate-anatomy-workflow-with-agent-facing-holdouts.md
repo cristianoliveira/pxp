@@ -1,7 +1,7 @@
 ---
 id: TASK-0025
 title: Evaluate anatomy workflow with agent-facing holdouts
-status: doing
+status: done
 depends_on: []
 priority: normal
 tags: []
