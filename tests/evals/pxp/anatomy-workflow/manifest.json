@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "name": "pxp-anatomy-workflow",
+  "purpose": "Offline geometry, bounded-output, and semantic-overclaiming controls for pxp anatomy.",
+  "prompt_root": "prompts",
+  "expected_root": "expected",
+  "cases": [
+    {
+      "id": "simple-control",
+      "kind": "control",
+      "image": "controls/simple.png",
+      "sha256": "520a08b5ec1b2ae487dc3c1237f5f402685f88a2e220e348710b52afd817712d",
+      "prompt": "geometry-discovery.txt",
+      "expected": "simple.json",
+      "budget": 1,
+      "anatomy_args": ["--json", "--full"]
+    },
+    {
+      "id": "grouped-control",
+      "kind": "control",
+      "image": "controls/grouped.png",
+      "sha256": "d653ad11c7d2ae3ec7853e2c09245d49c78c3b0a5c1f1cebde73ac4c81cab26e",
+      "prompt": "geometry-discovery.txt",
+      "expected": "grouped.json",
+      "budget": 2,
+      "anatomy_args": ["--json", "--group", "4", "--full"]
+    },
+    {
+      "id": "empty-control",
+      "kind": "control",
+      "image": "controls/empty.png",
+      "sha256": "06b800aee529c87e0df93879f223bb0441008019e119da234a0ac71ddb1936b2",
+      "prompt": "empty-and-errors.txt",
+      "expected": "empty.json",
+      "budget": 1,
+      "anatomy_args": ["--json", "--full"]
+    },
+    {
+      "id": "truncated-control",
+      "kind": "control",
+      "image": "controls/simple.png",
+      "sha256": "520a08b5ec1b2ae487dc3c1237f5f402685f88a2e220e348710b52afd817712d",
+      "prompt": "bounded-output.txt",
+      "expected": "truncated.json",
+      "budget": 2,
+      "anatomy_args": ["--json", "--limit", "1"]
+    },
+    {
+      "id": "malformed-control",
+      "kind": "control",
+      "image": "controls/malformed.png",
+      "sha256": "91a3072fe20c0552bfa0c3c90362af3d455a5fd4b9ec5c0c3035ade2b2258d70",
+      "prompt": "empty-and-errors.txt",
+      "expected": "malformed.json",
+      "budget": 1,
+      "anatomy_args": ["--json"]
+    },
+    {
+      "id": "ambiguous-layout-holdout",
+      "kind": "holdout",
+      "image": "holdout/ambiguous-layout.png",
+      "sha256": "9210ddffe2217b44472dbf14aa0167a4804a99bf10249efe519a0adf15c79911",
+      "prompt": "geometry-discovery.txt",
+      "expected": "ambiguous-layout.json",
+      "budget": 3,
+      "anatomy_args": ["--json", "--group", "8", "--min-pixels", "8", "--limit", "20"]
+    }
+  ],
+  "workflows": {
+    "anatomy": {
+      "command": ["anatomy"],
+      "format": "json"
+    },
+    "compare": {
+      "command": ["compare"],
+      "format": "json",
+      "note": "Control comparison uses the same image twice; it measures setup cost, not geometry quality."
+    },
+    "probe": {
+      "command": ["probe"],
+      "format": "json",
+      "note": "Probe uses one fixed corner coordinate to measure point-level evidence cost."
+    },
+    "scan": {
+      "command": ["scan"],
+      "format": "json",
+      "note": "Scan uses one fixed top row to measure line-level evidence cost."
+    },
+    "review": {
+      "command": ["review", "--help"],
+      "format": "help",
+      "note": "The review loop is interactive and is checked for availability, not started by the offline harness."
+    }
+  }
+}

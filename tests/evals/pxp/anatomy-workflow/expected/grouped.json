@@ -1,0 +1,9 @@
+{
+  "background": "#FFFFFF",
+  "group": 4,
+  "width": 20,
+  "height": 8,
+  "elements": [
+    {"bounds": {"x": 2, "y": 2, "width": 7, "height": 2}, "pixels": 8, "dominantColor": "#000000"}
+  ]
+}

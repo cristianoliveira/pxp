@@ -1,0 +1,1 @@
+Use the available pxp workflow with at most the case command budget to inspect this screenshot while respecting bounded output. Report whether the response is complete, how to recover omitted evidence, and only the geometry present in the response. Do not infer UI semantics from region order or color.

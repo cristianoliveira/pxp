@@ -1,0 +1,1 @@
+Use the available pxp workflow with at most the case command budget to inspect this input. Distinguish a valid image with no foreground evidence from an unreadable input. Report the command error or explicit empty result exactly, including the next corrective action. Do not invent geometry or semantic labels.

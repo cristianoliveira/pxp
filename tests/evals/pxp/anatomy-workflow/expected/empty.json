@@ -1,0 +1,10 @@
+{
+  "background": "#FFFFFF",
+  "width": 8,
+  "height": 6,
+  "total": 0,
+  "returned": 0,
+  "truncated": false,
+  "query": "foreground-elements",
+  "message_contains": "no foreground-elements found"
+}

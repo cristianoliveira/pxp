@@ -1,0 +1,13 @@
+{
+  "background": "#FFFFFF",
+  "width": 436,
+  "height": 406,
+  "min_elements_with_group_8_min_pixels_8": 12,
+  "anchor_bounds": [
+    {"x": 12, "y": 63, "width": 209, "height": 3},
+    {"x": 28, "y": 79, "width": 24, "height": 24},
+    {"x": 28, "y": 125, "width": 24, "height": 24}
+  ],
+  "semantic_claims_allowed": false,
+  "note": "Anchors are geometry checks only; they do not establish UI roles."
+}
